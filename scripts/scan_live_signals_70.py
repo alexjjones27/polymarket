@@ -190,7 +190,7 @@ def verify_candidate(hit: dict) -> dict | None:
     if not asks:
         return None
     best_ask = float(asks[0]["price"])
-    ask_depth = float(asks[0]["size"])
+    ask_depth = float(asks[0]["size"])  # order-book size is in SHARES, not dollars
     spread = best_ask - float(bids[0]["price"]) if bids else None
 
     sizing = kelly_size(hit["report_bucket"], best_ask, BANKROLL)
@@ -199,6 +199,7 @@ def verify_candidate(hit: dict) -> dict | None:
 
     return {
         **hit, **sizing, "token_id": tok, "real_best_ask": best_ask, "real_ask_depth": ask_depth,
+        "real_ask_depth_notional": ask_depth * best_ask,
         "real_spread": spread, "true_crossing_age_hours": round(age_hours, 1),
         "neg_risk_market_id": m.get("negRiskMarketID"),
     }
@@ -217,6 +218,15 @@ def kelly_size(bucket: str, price: float, bankroll: float, fraction: float = 0.2
 
 
 def allocate_portfolio(rows: list[dict], bankroll: float) -> list[dict]:
+    """Caps the stake by real_ask_depth_notional (pass 2's freshly re-fetched
+    real order book, converted from shares to dollars) -- NOT the pass-1
+    live_ask_depth_notional field on `hit`, which is a stale estimate taken
+    near the ORIGINAL (possibly since-moved) crossing price and can
+    undercount or completely miss the real depth once price has moved
+    between pass 1 and pass 2 (observed live: a candidate whose price moved
+    $0.72 -> $0.85 between passes had a real $34 of depth at the new price,
+    but a stale pass-1 estimate of $0 -- which silently zeroed its position
+    under the old logic)."""
     ranked = sorted(rows, key=lambda r: r["margin"], reverse=True)
     agg_used = 0.0
     cat_used: dict[str, float] = {}
@@ -225,8 +235,8 @@ def allocate_portfolio(rows: list[dict], bankroll: float) -> list[dict]:
         room_agg = AGG_CAP_PCT * bankroll - agg_used
         room_cat = CAT_CAP_PCT * bankroll - cat_used.get(bucket, 0.0)
         stake = max(0.0, min(r["per_trade_capped"], room_agg, room_cat))
-        if r.get("live_ask_depth_notional") is not None:
-            stake = min(stake, r["live_ask_depth_notional"])
+        if r.get("real_ask_depth_notional") is not None:
+            stake = min(stake, r["real_ask_depth_notional"])
         r["portfolio_position_size"] = round(stake, 4)
         agg_used += stake
         cat_used[bucket] = cat_used.get(bucket, 0.0) + stake
@@ -318,7 +328,7 @@ def main():
         print(f"- {r['question'][:65]!r} [{r['outcome']}] real ask ${r['real_best_ask']:.3f}  "
               f"({r['report_bucket']}, crossed {r['true_crossing_age_hours']:.1f}h ago)\n"
               f"    position: ${r['portfolio_position_size']:.2f}  margin={r['margin']*100:.1f}%  "
-              f"spread={r['real_spread']*100:.1f}c  depth=${r['real_ask_depth']:.0f}{below_min}")
+              f"spread={r['real_spread']*100:.1f}c  depth=${r['real_ask_depth_notional']:.0f}{below_min}")
 
     print(f"\n{n_funded} positions funded, ${total_deployed:.2f} of ${BANKROLL:.2f} deployed "
           f"({total_deployed/BANKROLL*100:.1f}% of bankroll)")
