@@ -236,11 +236,11 @@ def allocate_portfolio(rows: list[dict], bankroll: float) -> list[dict]:
 def main():
     print(f"Bankroll for this scan: ${BANKROLL:.2f}")
     print("Fetching currently active (open) Polymarket markets ...")
-    today = pmf.pd.Timestamp.utcnow().strftime("%Y-%m-%d")
+    today = pmf.pd.Timestamp.now("UTC").strftime("%Y-%m-%d")
     far_future = "2028-01-01"
     markets = fetch_active_markets(today, far_future)
     markets += fetch_active_markets(
-        (pmf.pd.Timestamp.utcnow() - pmf.pd.Timedelta(days=1)).strftime("%Y-%m-%d"), today
+        (pmf.pd.Timestamp.now("UTC") - pmf.pd.Timedelta(days=1)).strftime("%Y-%m-%d"), today
     )
     markets = pmf._dedupe_by_id(markets)
     markets = [m for m in markets if pmf._safe_json_list(m.get("clobTokenIds"))]

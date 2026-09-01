@@ -89,6 +89,108 @@ def test_empty_series_returns_none():
 
 
 # ---------------------------------------------------------------------------
+# Multi-episode coarse-to-fine zoom (fetch_token_lifetime_prices)
+# ---------------------------------------------------------------------------
+
+def test_approach_episode_starts_finds_every_contiguous_run():
+    import polymarket_final_pct as pmf
+    coarse = pd.DataFrame({
+        "t": [0, 3600, 7200, 10800, 14400, 18000],
+        "p": [0.98, 0.99, 0.50, 0.30, 0.97, 0.98],
+    })
+    # two contiguous runs >= 0.97: [t=0,3600] and [t=14400,18000]
+    assert pmf._approach_episode_starts(coarse, 0.97) == [0, 14400]
+
+
+def test_approach_episode_starts_empty_when_never_approaches():
+    import polymarket_final_pct as pmf
+    coarse = pd.DataFrame({"t": [0, 3600], "p": [0.5, 0.6]})
+    assert pmf._approach_episode_starts(coarse, 0.97) == []
+
+
+def test_fetch_token_lifetime_prices_short_lifetime_uses_fine_direct(monkeypatch):
+    import polymarket_final_pct as pmf
+    fine = price_df([0.5, 0.99])
+    monkeypatch.setattr(pmf, "fetch_price_series", lambda token_id, s, e, fidelity: fine)
+    df, source = pmf.fetch_token_lifetime_prices("tok", 0, 5 * 86400)  # <= 15-day window
+    assert source == "fine_direct"
+    assert df.equals(fine)
+
+
+def test_fetch_token_lifetime_prices_never_approaching_stays_coarse_only(monkeypatch):
+    # No fine-grained call should be made at all when the coarse series never
+    # gets close to the threshold -- verified by making any such call raise.
+    import polymarket_final_pct as pmf
+    coarse = pd.DataFrame({"t": [0, 86400, 2 * 86400], "p": [0.3, 0.4, 0.5]})
+
+    def fake(token_id, s, e, fidelity):
+        if fidelity == pmf.COARSE_FIDELITY_MIN:
+            return coarse
+        raise AssertionError("should never zoom in when coarse never approaches the threshold")
+
+    monkeypatch.setattr(pmf, "fetch_price_series", fake)
+    df, source = pmf.fetch_token_lifetime_prices("tok", 0, 40 * 86400)
+    assert source == "coarse_only"
+    assert df.equals(coarse)
+
+
+def test_fetch_token_lifetime_prices_finds_crossing_in_a_later_approach_episode(monkeypatch):
+    """Regression test: a market that approaches the threshold early, retreats,
+    and only truly crosses much later in its life used to be silently missed,
+    because the old zoom logic only ever looked at the FIRST approach episode's
+    15-day window. Real, plausible shape: a long-running market that flirts
+    with favorite status, cools off, then becomes the real favorite months
+    later."""
+    import polymarket_final_pct as pmf
+
+    early_center = 1 * 86400
+    late_center = 30 * 86400
+    coarse = pd.DataFrame({
+        "t": [early_center, 2 * 86400, late_center, late_center + 3600],
+        "p": [0.98, 0.50, 0.98, 0.98],
+    })
+    early_zoom = price_df([0.98, 0.985, 0.97], start_t=early_center, step=60)  # approaches, never crosses
+    late_zoom = price_df([0.991, 0.992, 0.993], start_t=late_center, step=60)  # the real crossing
+
+    def fake(token_id, s, e, fidelity):
+        if fidelity == pmf.COARSE_FIDELITY_MIN:
+            return coarse
+        if s <= early_center <= e:
+            return early_zoom
+        if s <= late_center <= e:
+            return late_zoom
+        raise AssertionError(f"unexpected fine-grained window [{s}, {e}]")
+
+    monkeypatch.setattr(pmf, "fetch_price_series", fake)
+    df, source = pmf.fetch_token_lifetime_prices("tok", 0, 40 * 86400)
+    assert source == "fine_zoom"
+
+    hit = detect_crossing(df, threshold=0.99, n_consecutive=3)
+    assert hit is not None
+    assert hit["entry_time_s"] == late_center + 2 * 60  # 3rd confirming snapshot of the LATE episode
+
+
+def test_fetch_token_lifetime_prices_truncates_beyond_max_zoom_episodes(monkeypatch):
+    import polymarket_final_pct as pmf
+    n_episodes = pmf.MAX_ZOOM_EPISODES + 3
+    coarse_rows = []
+    for i in range(n_episodes):
+        center = i * 5 * 86400
+        coarse_rows.append({"t": center, "p": 0.98})
+        coarse_rows.append({"t": center + 3600, "p": 0.30})  # retreat, so each is its own episode
+    coarse = pd.DataFrame(coarse_rows)
+
+    def fake(token_id, s, e, fidelity):
+        if fidelity == pmf.COARSE_FIDELITY_MIN:
+            return coarse
+        return price_df([0.98], start_t=s)  # never actually crosses; only episode count matters here
+
+    monkeypatch.setattr(pmf, "fetch_price_series", fake)
+    df, source = pmf.fetch_token_lifetime_prices("tok", 0, n_episodes * 5 * 86400)
+    assert source == "fine_zoom_truncated"
+
+
+# ---------------------------------------------------------------------------
 # Fees (confirmed formula: fee = shares * feeRate * p * (1-p); maker == 0)
 # ---------------------------------------------------------------------------
 

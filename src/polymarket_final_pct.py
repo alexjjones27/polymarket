@@ -304,7 +304,7 @@ def fetch_resolved_markets_census(
     failure -- that bucket is skipped (uncached, so retried next run) rather
     than crashing the entire census."""
     if date_max is None:
-        date_max = pd.Timestamp.utcnow().strftime("%Y-%m-%d")
+        date_max = pd.Timestamp.now("UTC").strftime("%Y-%m-%d")
 
     leaves = _plan_leaf_buckets(date_min, date_max, cache_dir)
     all_markets: list[dict] = []
@@ -585,7 +585,27 @@ def fetch_live_gas_estimate(assumed_gas_units: int = 150_000) -> float:
 
 COARSE_FIDELITY_MIN = 60       # 1h bars for the full-lifetime overview pass
 COARSE_APPROACH_THRESHOLD = 0.97  # trigger a fine-grained zoom once coarse data gets this close
-ZOOM_LOOKBACK_S = 2 * 86400    # look back this far before the first coarse approach point
+ZOOM_LOOKBACK_S = 2 * 86400    # look back this far before each coarse approach episode
+MAX_ZOOM_EPISODES = 10  # safety valve on fine-grained fetches per market (see docstring)
+
+
+def _approach_episode_starts(coarse: pd.DataFrame, threshold: float) -> list[int]:
+    """Start timestamp of every maximal contiguous run of coarse closes
+    >= threshold, in chronological order -- not just the first. A market can
+    approach the threshold, retreat, and re-approach again much later in its
+    lifetime (a long-running market oscillating near-favorite status before
+    finally settling); zooming only into the first such episode would
+    silently miss a genuine later crossing that falls outside that one
+    window."""
+    mask = (coarse["p"] >= threshold).to_numpy()
+    ts = coarse["t"].to_numpy()
+    starts = []
+    prev = False
+    for t, m in zip(ts, mask):
+        if m and not prev:
+            starts.append(int(t))
+        prev = m
+    return starts
 
 
 def fetch_token_lifetime_prices(token_id: str, start_s: int, end_s: int) -> tuple[pd.DataFrame, str]:
@@ -595,10 +615,22 @@ def fetch_token_lifetime_prices(token_id: str, start_s: int, end_s: int) -> tupl
     Longer-lived markets get a coarse (1h) overview first; if that overview
     never approaches the threshold, no further calls are made (the token
     never seriously threatened a crossing); otherwise a fine-grained (1-min)
-    zoom is fetched around the first approach point. Returns (df, source)
-    where source is one of "fine_direct", "fine_zoom", "coarse_only" (never
-    approached threshold -- coarse resolution is sufficient to know that),
-    or "no_data"."""
+    zoom is fetched around EVERY coarse approach episode (not just the
+    first -- see _approach_episode_starts), and the zoomed chunks are
+    concatenated into one combined series so a later caller's detect_crossing
+    still finds the true first qualifying run, chronologically, across the
+    market's whole lifetime. Capped at MAX_ZOOM_EPISODES episodes as a
+    safety valve against a market that oscillates near the threshold
+    pathologically often; that edge case is labeled distinctly
+    ("fine_zoom_truncated") rather than silently dropping the remainder.
+    Returns (df, source) where source is one of "fine_direct", "fine_zoom",
+    "fine_zoom_truncated", "coarse_only" (never approached threshold --
+    coarse resolution is sufficient to know that), or "no_data".
+
+    This function does not take a threshold parameter -- COARSE_APPROACH_THRESHOLD
+    is a fixed, generous margin below every entry threshold this project tests
+    (0.98/0.99/0.995), so the same fetched data is reusable across all of them
+    (see threshold_sensitivity's caching note)."""
     if end_s - start_s <= PRICES_MAX_WINDOW_S:
         df = fetch_price_series(token_id, start_s, end_s, fidelity=1)
         return df, ("fine_direct" if not df.empty else "no_data")
@@ -607,17 +639,24 @@ def fetch_token_lifetime_prices(token_id: str, start_s: int, end_s: int) -> tupl
     if coarse.empty:
         return coarse, "no_data"
 
-    approach = coarse[coarse["p"] >= COARSE_APPROACH_THRESHOLD]
-    if approach.empty:
+    episode_starts = _approach_episode_starts(coarse, COARSE_APPROACH_THRESHOLD)
+    if not episode_starts:
         return coarse, "coarse_only"
 
-    zoom_center = int(approach["t"].iloc[0])
-    zoom_start = max(start_s, zoom_center - ZOOM_LOOKBACK_S)
-    zoom_end = min(end_s, zoom_start + PRICES_MAX_WINDOW_S)
-    fine = fetch_price_series(token_id, zoom_start, zoom_end, fidelity=1)
-    if fine.empty:
+    fine_chunks = []
+    for zoom_center in episode_starts[:MAX_ZOOM_EPISODES]:
+        zoom_start = max(start_s, zoom_center - ZOOM_LOOKBACK_S)
+        zoom_end = min(end_s, zoom_start + PRICES_MAX_WINDOW_S)
+        fine = fetch_price_series(token_id, zoom_start, zoom_end, fidelity=1)
+        if not fine.empty:
+            fine_chunks.append(fine)
+
+    if not fine_chunks:
         return coarse, "coarse_only"
-    return fine, "fine_zoom"
+
+    combined = pd.concat(fine_chunks).drop_duplicates(subset="t").sort_values("t").reset_index(drop=True)
+    source = "fine_zoom" if len(episode_starts) <= MAX_ZOOM_EPISODES else "fine_zoom_truncated"
+    return combined, source
 
 
 def detect_crossing(df: pd.DataFrame, threshold: float = 0.99, n_consecutive: int = 3) -> Optional[dict]:
