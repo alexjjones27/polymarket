@@ -62,13 +62,13 @@ def main():
     print("API credentials derived OK (no funds moved by this step).")
 
     book = client.get_order_book(args.token_id)
-    asks = sorted(book["asks"], key=lambda a: float(a["price"]))
+    asks = sorted(book.asks or [], key=lambda a: float(a.price))
     if not asks:
         print("No live asks on this book -- cannot buy right now.")
         sys.exit(1)
     best_ask = asks[0]
-    price = float(best_ask["price"])
-    available = float(best_ask["size"])
+    price = float(best_ask.price)
+    available = float(best_ask.size)
 
     size = round(args.usd / price, 2)
     if size > available:
