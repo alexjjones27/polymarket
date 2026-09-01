@@ -1,26 +1,26 @@
 {
-  "n_census": 683677,
-  "n_conflict_markets": 590,
-  "n_crossings": 515,
+  "n_census": 683693,
+  "n_conflict_markets": 591,
+  "n_crossings": 517,
   "favorite_side_metrics": {
-    "n_trades": 515,
-    "n_flips": 1,
-    "win_rate": 0.9980582524271845,
-    "flip_rate": 0.001941747572815534,
+    "n_trades": 517,
+    "n_flips": 2,
+    "win_rate": 0.9961315280464217,
+    "flip_rate": 0.0038684719535783366,
     "flip_rate_wilson_95": [
-      0.0003428483990741854,
-      0.01091581013983966
+      0.0010615163724319167,
+      0.013993849685502501
     ],
     "flip_rate_clopper_pearson_95": [
-      4.9159583830561256e-05,
-      0.010770828191669876
+      0.00046883372467005323,
+      0.013903818402730648
     ],
-    "total_pnl": 306.6950062896843,
-    "total_notional": 51500.0,
-    "total_return": 0.0059552428405763936,
-    "annualized_return": 0.5885786618724662,
-    "avg_holding_days_winners": 3.686649495427723,
-    "avg_holding_days_flips": 6.994467592592593
+    "total_pnl": 207.3492589318584,
+    "total_notional": 51700.0,
+    "total_return": 0.004010623963865733,
+    "annualized_return": 0.3978459921677957,
+    "avg_holding_days_winners": 3.6796709913733148,
+    "avg_holding_days_flips": 3.6376909722222224
   },
   "flips": [
     {
@@ -64,20 +64,80 @@
         "disputed"
       ],
       "flip_heuristic_category": "disputed_resolution"
+    },
+    {
+      "market_id": "3700194",
+      "condition_id": "0x137cf69002f2f24c6cbc7572321db1f6fd995f53d2457fda7e52f7fd82446794",
+      "question": "US ceasefire against Iran continues through August 31?",
+      "token_id": "36883966188402112469990905672991660623877201475532264419725150949897779581736",
+      "outcome_index": 0,
+      "outcome_label": "Yes",
+      "category": "other",
+      "report_bucket": "other",
+      "entry_time": "2026-08-30 14:56:15+00:00",
+      "resolution_time": "2026-08-30 21:40:46+00:00",
+      "holding_days": 0.2809143518518519,
+      "entry_price": 0.99,
+      "data_source": "fine_zoom",
+      "days_to_scheduled_end_at_entry": 1.231076388888889,
+      "desired_shares": 101.01010101010101,
+      "shares": 101.01010101010101,
+      "depth_capped": false,
+      "cap_shares": null,
+      "notional": 100.0,
+      "fee_frac": 0.0,
+      "fee_cost": 0.0,
+      "gas_cost": 0.0,
+      "won": false,
+      "resolved_outcome_index": 1,
+      "payout": 0.0,
+      "pnl_gross": -100.0,
+      "pnl_net": -100.0,
+      "flip_market_id": "3700194",
+      "flip_question": "US ceasefire against Iran continues through August 31?",
+      "flip_slug": "us-x-iran-ceasefire-continues-through-august-31",
+      "flip_description": "This market will resolve to \u201cNo\u201d if the United States takes a qualifying military action against Iran by the specified date, 11:59 PM Iran Standard Time. Otherwise this market will resolve to \u201cYes.\u201d\n\nA qualifying military action refers to an air strike or a surface-to-surface missile strike, initiated by the United States, that directly impacts Iran. An air strike includes bombs, air-to-surface missiles, and air-launched drones. A surface-to-surface missile strike includes one-way attack drones ",
+      "flip_resolutionSource": "",
+      "flip_umaResolutionStatus": "resolved",
+      "flip_umaResolutionStatuses": [
+        "proposed",
+        "proposed"
+      ],
+      "flip_heuristic_category": "needs_manual_review"
     }
   ],
   "longshot_mirror": {
-    "n_trades": 515,
-    "n_wins": 1,
-    "win_rate_pct": 0.194,
-    "avg_entry_price_pct": 0.7849,
-    "total_staked": 51500.0,
-    "total_pnl": -40973.68,
-    "roi_pct": -79.561,
+    "n_trades": 517,
+    "n_wins": 2,
+    "win_rate_pct": 0.387,
+    "avg_entry_price_pct": 0.785,
+    "total_staked": 51700.0,
+    "total_pnl": -31173.68,
+    "roi_pct": -60.297,
     "trades": [
+      {
+        "market_id": "1096308",
+        "question": "Another US strike on Venezuela on January 3?",
+        "longshot_entry_price": 0.010000000000000009,
+        "shares": 9999.99999999999,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
       {
         "market_id": "1096311",
         "question": "Another US strike on Venezuela on January 6?",
+        "longshot_entry_price": 0.009499999999999953,
+        "shares": 10526.315789473736,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "1096310",
+        "question": "Another US strike on Venezuela on January 5?",
         "longshot_entry_price": 0.009499999999999953,
         "shares": 10526.315789473736,
         "notional": 100.0,
@@ -96,26 +156,6 @@
         "pnl": -100.0
       },
       {
-        "market_id": "1096312",
-        "question": "Another US strike on Venezuela on January 7?",
-        "longshot_entry_price": 0.010000000000000009,
-        "shares": 9999.99999999999,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "1096314",
-        "question": "Another US strike on Venezuela on January 9?",
-        "longshot_entry_price": 0.009000000000000008,
-        "shares": 11111.1111111111,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
         "market_id": "1096313",
         "question": "Another US strike on Venezuela on January 8?",
         "longshot_entry_price": 0.007000000000000006,
@@ -126,70 +166,10 @@
         "pnl": -100.0
       },
       {
-        "market_id": "1096308",
-        "question": "Another US strike on Venezuela on January 3?",
+        "market_id": "1096312",
+        "question": "Another US strike on Venezuela on January 7?",
         "longshot_entry_price": 0.010000000000000009,
         "shares": 9999.99999999999,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "1096310",
-        "question": "Another US strike on Venezuela on January 5?",
-        "longshot_entry_price": 0.009499999999999953,
-        "shares": 10526.315789473736,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "1096315",
-        "question": "Another US strike on Venezuela on January 10?",
-        "longshot_entry_price": 0.009499999999999953,
-        "shares": 10526.315789473736,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "1096316",
-        "question": "Another US strike on Venezuela on January 11?",
-        "longshot_entry_price": 0.010000000000000009,
-        "shares": 9999.99999999999,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "1096317",
-        "question": "Another US strike on Venezuela on January 12?",
-        "longshot_entry_price": 0.00649999999999995,
-        "shares": 15384.615384615503,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "1057411",
-        "question": "North Korea missile launch by January 31?",
-        "longshot_entry_price": 0.0024999999999999467,
-        "shares": 40000.00000000085,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "1065882",
-        "question": "Russia strike on Kyiv municipality by January 10, 2026?",
-        "longshot_entry_price": 0.00649999999999995,
-        "shares": 15384.615384615503,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -206,6 +186,56 @@
         "pnl": -100.0
       },
       {
+        "market_id": "1057411",
+        "question": "North Korea missile launch by January 31?",
+        "longshot_entry_price": 0.0024999999999999467,
+        "shares": 40000.00000000085,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "1096315",
+        "question": "Another US strike on Venezuela on January 10?",
+        "longshot_entry_price": 0.009499999999999953,
+        "shares": 10526.315789473736,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "1096314",
+        "question": "Another US strike on Venezuela on January 9?",
+        "longshot_entry_price": 0.009000000000000008,
+        "shares": 11111.1111111111,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "1096317",
+        "question": "Another US strike on Venezuela on January 12?",
+        "longshot_entry_price": 0.00649999999999995,
+        "shares": 15384.615384615503,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "1096316",
+        "question": "Another US strike on Venezuela on January 11?",
+        "longshot_entry_price": 0.010000000000000009,
+        "shares": 9999.99999999999,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
         "market_id": "1065881",
         "question": "Russia strike on Kyiv municipality by January 17, 2026?",
         "longshot_entry_price": 0.0050000000000000044,
@@ -216,10 +246,10 @@
         "pnl": -100.0
       },
       {
-        "market_id": "1097352",
-        "question": "Another US strike on Venezuela by January 31?",
-        "longshot_entry_price": 0.009499999999999953,
-        "shares": 10526.315789473736,
+        "market_id": "1065882",
+        "question": "Russia strike on Kyiv municipality by January 10, 2026?",
+        "longshot_entry_price": 0.00649999999999995,
+        "shares": 15384.615384615503,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -236,8 +266,28 @@
         "pnl": -100.0
       },
       {
-        "market_id": "1096322",
-        "question": "US x Venezuela ceasefire by January 31?",
+        "market_id": "1116707",
+        "question": "U.S. strike on Somalia by January 31?",
+        "longshot_entry_price": 0.008499999999999952,
+        "shares": 11764.705882353008,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "1115274",
+        "question": "North Korea missile launch by January 31?",
+        "longshot_entry_price": 0.0030000000000000027,
+        "shares": 33333.33333333331,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "1097352",
+        "question": "Another US strike on Venezuela by January 31?",
         "longshot_entry_price": 0.009499999999999953,
         "shares": 10526.315789473736,
         "notional": 100.0,
@@ -256,18 +306,18 @@
         "pnl": -100.0
       },
       {
-        "market_id": "1115274",
-        "question": "North Korea missile launch by January 31?",
-        "longshot_entry_price": 0.0030000000000000027,
-        "shares": 33333.33333333331,
+        "market_id": "1107380",
+        "question": "US strike on Mexico by March 31?",
+        "longshot_entry_price": 0.008499999999999952,
+        "shares": 11764.705882353008,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
         "pnl": -100.0
       },
       {
-        "market_id": "1116707",
-        "question": "U.S. strike on Somalia by January 31?",
+        "market_id": "1129015",
+        "question": "Russia strike on Kyiv municipality by January 17, 2026?",
         "longshot_entry_price": 0.008499999999999952,
         "shares": 11764.705882353008,
         "notional": 100.0,
@@ -286,18 +336,18 @@
         "pnl": -100.0
       },
       {
-        "market_id": "1129015",
-        "question": "Russia strike on Kyiv municipality by January 17, 2026?",
-        "longshot_entry_price": 0.008499999999999952,
-        "shares": 11764.705882353008,
+        "market_id": "1144153",
+        "question": "Russia strike on Kyiv municipality by January 11?",
+        "longshot_entry_price": 0.009000000000000008,
+        "shares": 11111.1111111111,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
         "pnl": -100.0
       },
       {
-        "market_id": "1097350",
-        "question": "Another US strike on Venezuela by January 17?",
+        "market_id": "1096322",
+        "question": "US x Venezuela ceasefire by January 31?",
         "longshot_entry_price": 0.009499999999999953,
         "shares": 10526.315789473736,
         "notional": 100.0,
@@ -316,56 +366,6 @@
         "pnl": -100.0
       },
       {
-        "market_id": "1144154",
-        "question": "Russia strike on Kyiv municipality by January 17?",
-        "longshot_entry_price": 0.006000000000000005,
-        "shares": 16666.666666666653,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "1107380",
-        "question": "US strike on Mexico by March 31?",
-        "longshot_entry_price": 0.008499999999999952,
-        "shares": 11764.705882353008,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "1144153",
-        "question": "Russia strike on Kyiv municipality by January 11?",
-        "longshot_entry_price": 0.009000000000000008,
-        "shares": 11111.1111111111,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "1107361",
-        "question": "US strike on Mexico by January 31?",
-        "longshot_entry_price": 0.010000000000000009,
-        "shares": 9999.99999999999,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "1107284",
-        "question": "US strike on Colombia by January 31?",
-        "longshot_entry_price": 0.010000000000000009,
-        "shares": 9999.99999999999,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
         "market_id": "1121884",
         "question": "Israel strike on Yemen by March 31, 2026?",
         "longshot_entry_price": 0.0044999999999999485,
@@ -376,30 +376,20 @@
         "pnl": -100.0
       },
       {
-        "market_id": "1170484",
-        "question": "Russia strike on Kyiv municipality by January 19?",
-        "longshot_entry_price": 0.008499999999999952,
-        "shares": 11764.705882353008,
+        "market_id": "1144154",
+        "question": "Russia strike on Kyiv municipality by January 17?",
+        "longshot_entry_price": 0.006000000000000005,
+        "shares": 16666.666666666653,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
         "pnl": -100.0
       },
       {
-        "market_id": "1170485",
-        "question": "Russia strike on Kyiv municipality by January 31?",
-        "longshot_entry_price": 0.007000000000000006,
-        "shares": 14285.714285714274,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "1124807",
-        "question": "Trump invokes War Powers against Venezuela by January 15?",
-        "longshot_entry_price": 0.008000000000000007,
-        "shares": 12499.999999999989,
+        "market_id": "1097350",
+        "question": "Another US strike on Venezuela by January 17?",
+        "longshot_entry_price": 0.009499999999999953,
+        "shares": 10526.315789473736,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -426,6 +416,66 @@
         "pnl": -100.0
       },
       {
+        "market_id": "1169205",
+        "question": "Iran Strike on Israel by February 28?",
+        "longshot_entry_price": 0.008499999999999952,
+        "shares": 11764.705882353008,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "1090489",
+        "question": "Israel x Hamas ceasefire cancelled by June 30?",
+        "longshot_entry_price": 0.009499999999999953,
+        "shares": 10526.315789473736,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "1107361",
+        "question": "US strike on Mexico by January 31?",
+        "longshot_entry_price": 0.010000000000000009,
+        "shares": 9999.99999999999,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "1170484",
+        "question": "Russia strike on Kyiv municipality by January 19?",
+        "longshot_entry_price": 0.008499999999999952,
+        "shares": 11764.705882353008,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "1170485",
+        "question": "Russia strike on Kyiv municipality by January 31?",
+        "longshot_entry_price": 0.007000000000000006,
+        "shares": 14285.714285714274,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "1169204",
+        "question": "Iran Strike on Israel by January 31?",
+        "longshot_entry_price": 0.008499999999999952,
+        "shares": 11764.705882353008,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
         "market_id": "1168879",
         "question": "Iran strike on Qatar by January 31, 2026?",
         "longshot_entry_price": 0.007499999999999951,
@@ -436,10 +486,10 @@
         "pnl": -100.0
       },
       {
-        "market_id": "1169205",
-        "question": "Iran Strike on Israel by February 28?",
-        "longshot_entry_price": 0.008499999999999952,
-        "shares": 11764.705882353008,
+        "market_id": "1197803",
+        "question": "Russia strike on Kyiv municipality by January 31, 2026?",
+        "longshot_entry_price": 0.008000000000000007,
+        "shares": 12499.999999999989,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -466,56 +516,6 @@
         "pnl": -100.0
       },
       {
-        "market_id": "1197803",
-        "question": "Russia strike on Kyiv municipality by January 31, 2026?",
-        "longshot_entry_price": 0.008000000000000007,
-        "shares": 12499.999999999989,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "1169204",
-        "question": "Iran Strike on Israel by January 31?",
-        "longshot_entry_price": 0.008499999999999952,
-        "shares": 11764.705882353008,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "1090489",
-        "question": "Israel x Hamas ceasefire cancelled by June 30?",
-        "longshot_entry_price": 0.009499999999999953,
-        "shares": 10526.315789473736,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "1171613",
-        "question": "Hezbollah strike on Israel by January 31?",
-        "longshot_entry_price": 0.006000000000000005,
-        "shares": 16666.666666666653,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "1236759",
-        "question": "Will Russia strike on Kyiv municipality on January 22?",
-        "longshot_entry_price": 0.010000000000000009,
-        "shares": 9999.99999999999,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
         "market_id": "1184659",
         "question": "U.S. strike on Somalia by January 31?",
         "longshot_entry_price": 0.009000000000000008,
@@ -526,28 +526,8 @@
         "pnl": -100.0
       },
       {
-        "market_id": "1236760",
-        "question": "Will Russia strike on Kyiv municipality on January 23?",
-        "longshot_entry_price": 0.010000000000000009,
-        "shares": 9999.99999999999,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "1236761",
-        "question": "Will Russia strike on Kyiv municipality on January 24?",
-        "longshot_entry_price": 0.00649999999999995,
-        "shares": 15384.615384615503,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "1236762",
-        "question": "Will Russia strike on Kyiv municipality on January 25?",
+        "market_id": "1124807",
+        "question": "Trump invokes War Powers against Venezuela by January 15?",
         "longshot_entry_price": 0.008000000000000007,
         "shares": 12499.999999999989,
         "notional": 100.0,
@@ -556,38 +536,8 @@
         "pnl": -100.0
       },
       {
-        "market_id": "1236763",
-        "question": "Will Russia strike on Kyiv municipality on January 26?",
-        "longshot_entry_price": 0.009499999999999953,
-        "shares": 10526.315789473736,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "1107581",
-        "question": "US strike on Cuba by March 31?",
-        "longshot_entry_price": 0.009499999999999953,
-        "shares": 10526.315789473736,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "1236764",
-        "question": "Will Russia strike on Kyiv municipality on January 27?",
-        "longshot_entry_price": 0.009499999999999953,
-        "shares": 10526.315789473736,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "1236765",
-        "question": "Will Russia strike on Kyiv municipality on January 28?",
+        "market_id": "1107284",
+        "question": "US strike on Colombia by January 31?",
         "longshot_entry_price": 0.010000000000000009,
         "shares": 9999.99999999999,
         "notional": 100.0,
@@ -596,8 +546,8 @@
         "pnl": -100.0
       },
       {
-        "market_id": "1236767",
-        "question": "Will Russia strike on Kyiv municipality on January 30?",
+        "market_id": "1236759",
+        "question": "Will Russia strike on Kyiv municipality on January 22?",
         "longshot_entry_price": 0.010000000000000009,
         "shares": 9999.99999999999,
         "notional": 100.0,
@@ -616,20 +566,10 @@
         "pnl": -100.0
       },
       {
-        "market_id": "1221308",
-        "question": "North Korea missile launch by February 28?",
-        "longshot_entry_price": 0.0050000000000000044,
-        "shares": 19999.99999999998,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "1236766",
-        "question": "Will Russia strike on Kyiv municipality on January 29?",
-        "longshot_entry_price": 0.009000000000000008,
-        "shares": 11111.1111111111,
+        "market_id": "1236761",
+        "question": "Will Russia strike on Kyiv municipality on January 24?",
+        "longshot_entry_price": 0.00649999999999995,
+        "shares": 15384.615384615503,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -646,8 +586,98 @@
         "pnl": -100.0
       },
       {
-        "market_id": "1236768",
-        "question": "Will Russia strike on Kyiv municipality on January 31?",
+        "market_id": "1236760",
+        "question": "Will Russia strike on Kyiv municipality on January 23?",
+        "longshot_entry_price": 0.010000000000000009,
+        "shares": 9999.99999999999,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "1221308",
+        "question": "North Korea missile launch by February 28?",
+        "longshot_entry_price": 0.0050000000000000044,
+        "shares": 19999.99999999998,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "1171613",
+        "question": "Hezbollah strike on Israel by January 31?",
+        "longshot_entry_price": 0.006000000000000005,
+        "shares": 16666.666666666653,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "1236763",
+        "question": "Will Russia strike on Kyiv municipality on January 26?",
+        "longshot_entry_price": 0.009499999999999953,
+        "shares": 10526.315789473736,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "1058147",
+        "question": "Ukraine coup attempt by June 30?",
+        "longshot_entry_price": 0.010000000000000009,
+        "shares": 9999.99999999999,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "1236765",
+        "question": "Will Russia strike on Kyiv municipality on January 28?",
+        "longshot_entry_price": 0.010000000000000009,
+        "shares": 9999.99999999999,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "1107581",
+        "question": "US strike on Cuba by March 31?",
+        "longshot_entry_price": 0.009499999999999953,
+        "shares": 10526.315789473736,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "1236762",
+        "question": "Will Russia strike on Kyiv municipality on January 25?",
+        "longshot_entry_price": 0.008000000000000007,
+        "shares": 12499.999999999989,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "1254549",
+        "question": "U.S. strike on Somalia by January 31?",
+        "longshot_entry_price": 0.0014999999999999458,
+        "shares": 66666.66666666907,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "1236767",
+        "question": "Will Russia strike on Kyiv municipality on January 30?",
         "longshot_entry_price": 0.010000000000000009,
         "shares": 9999.99999999999,
         "notional": 100.0,
@@ -666,10 +696,30 @@
         "pnl": -100.0
       },
       {
-        "market_id": "1254549",
-        "question": "U.S. strike on Somalia by January 31?",
-        "longshot_entry_price": 0.0014999999999999458,
-        "shares": 66666.66666666907,
+        "market_id": "1236766",
+        "question": "Will Russia strike on Kyiv municipality on January 29?",
+        "longshot_entry_price": 0.009000000000000008,
+        "shares": 11111.1111111111,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "1236768",
+        "question": "Will Russia strike on Kyiv municipality on January 31?",
+        "longshot_entry_price": 0.010000000000000009,
+        "shares": 9999.99999999999,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "1236764",
+        "question": "Will Russia strike on Kyiv municipality on January 27?",
+        "longshot_entry_price": 0.009499999999999953,
+        "shares": 10526.315789473736,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -686,16 +736,6 @@
         "pnl": -100.0
       },
       {
-        "market_id": "1058147",
-        "question": "Ukraine coup attempt by June 30?",
-        "longshot_entry_price": 0.010000000000000009,
-        "shares": 9999.99999999999,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
         "market_id": "1278722",
         "question": "Will Leavitt say \"Peace plan\" or \"Peace agreement\" during the next press briefing?",
         "longshot_entry_price": 0.007000000000000006,
@@ -706,80 +746,10 @@
         "pnl": -100.0
       },
       {
-        "market_id": "1280180",
-        "question": "Will there be between 6 and 9 US strikes on Somalia in February 2026?",
-        "longshot_entry_price": 0.0050000000000000044,
-        "shares": 19999.99999999998,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "1272946",
-        "question": "U.S. strike on Nigeria by February 28, 2026?",
-        "longshot_entry_price": 0.006000000000000005,
-        "shares": 16666.666666666653,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "1296540",
-        "question": "U.S. strike on Somalia by February 7?",
-        "longshot_entry_price": 0.005499999999999949,
-        "shares": 18181.818181818348,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "1280182",
-        "question": "Will there be between 14 and 17 US strikes on Somalia in February 2026?",
-        "longshot_entry_price": 0.009000000000000008,
-        "shares": 11111.1111111111,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "1243277",
-        "question": "Ukraine officially agrees to a US backed ceasefire framework by February 28?",
-        "longshot_entry_price": 0.008000000000000007,
-        "shares": 12499.999999999989,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "1285896",
-        "question": "North Korea missile launch by February 14?",
-        "longshot_entry_price": 0.0014999999999999458,
-        "shares": 66666.66666666907,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "1280179",
-        "question": "Will there be 5 or fewer US strikes on Somalia in February 2026?",
-        "longshot_entry_price": 0.0024999999999999467,
-        "shares": 40000.00000000085,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "1280183",
-        "question": "Will there be between 18 and 21 US strikes on Somalia in February 2026?",
-        "longshot_entry_price": 0.009499999999999953,
-        "shares": 10526.315789473736,
+        "market_id": "1171663",
+        "question": "Russia x Ukraine ceasefire by June 30, 2026?",
+        "longshot_entry_price": 0.0004999999999999449,
+        "shares": 200000.00000002203,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -796,10 +766,40 @@
         "pnl": -100.0
       },
       {
-        "market_id": "1123479",
-        "question": "Iran coup attempt by June 30?",
-        "longshot_entry_price": 0.009000000000000008,
-        "shares": 11111.1111111111,
+        "market_id": "1280180",
+        "question": "Will there be between 6 and 9 US strikes on Somalia in February 2026?",
+        "longshot_entry_price": 0.0050000000000000044,
+        "shares": 19999.99999999998,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "1296540",
+        "question": "U.S. strike on Somalia by February 7?",
+        "longshot_entry_price": 0.005499999999999949,
+        "shares": 18181.818181818348,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "1272946",
+        "question": "U.S. strike on Nigeria by February 28, 2026?",
+        "longshot_entry_price": 0.006000000000000005,
+        "shares": 16666.666666666653,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "1285896",
+        "question": "North Korea missile launch by February 14?",
+        "longshot_entry_price": 0.0014999999999999458,
+        "shares": 66666.66666666907,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -816,6 +816,36 @@
         "pnl": -100.0
       },
       {
+        "market_id": "1280179",
+        "question": "Will there be 5 or fewer US strikes on Somalia in February 2026?",
+        "longshot_entry_price": 0.0024999999999999467,
+        "shares": 40000.00000000085,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "1280182",
+        "question": "Will there be between 14 and 17 US strikes on Somalia in February 2026?",
+        "longshot_entry_price": 0.009000000000000008,
+        "shares": 11111.1111111111,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "1123479",
+        "question": "Iran coup attempt by June 30?",
+        "longshot_entry_price": 0.009000000000000008,
+        "shares": 11111.1111111111,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
         "market_id": "1374265",
         "question": "U.S. strike on Somalia by February 21?",
         "longshot_entry_price": 0.007000000000000006,
@@ -826,10 +856,10 @@
         "pnl": -100.0
       },
       {
-        "market_id": "1243248",
-        "question": "Russia x Ukraine ceasefire by February 28, 2026?",
-        "longshot_entry_price": 0.006000000000000005,
-        "shares": 16666.666666666653,
+        "market_id": "1243277",
+        "question": "Ukraine officially agrees to a US backed ceasefire framework by February 28?",
+        "longshot_entry_price": 0.008000000000000007,
+        "shares": 12499.999999999989,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -846,28 +876,8 @@
         "pnl": -100.0
       },
       {
-        "market_id": "1394437",
-        "question": "Iran Strike on Israel by December 31?",
-        "longshot_entry_price": 0.0040000000000000036,
-        "shares": 24999.999999999978,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "1394436",
-        "question": "Iran Strike on Israel by March 31?",
-        "longshot_entry_price": 0.0014999999999999458,
-        "shares": 66666.66666666907,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "1280181",
-        "question": "Will there be between 10 and 13 US strikes on Somalia in February 2026?",
+        "market_id": "1280183",
+        "question": "Will there be between 18 and 21 US strikes on Somalia in February 2026?",
         "longshot_entry_price": 0.009499999999999953,
         "shares": 10526.315789473736,
         "notional": 100.0,
@@ -876,18 +886,8 @@
         "pnl": -100.0
       },
       {
-        "market_id": "1397805",
-        "question": "U.S. strike on Somalia by February 28?",
-        "longshot_entry_price": 0.0034999999999999476,
-        "shares": 28571.428571428998,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "1171663",
-        "question": "Russia x Ukraine ceasefire by June 30, 2026?",
+        "market_id": "1367172",
+        "question": "North Korea missile launch by February 28?",
         "longshot_entry_price": 0.0004999999999999449,
         "shares": 200000.00000002203,
         "notional": 100.0,
@@ -906,8 +906,68 @@
         "pnl": -100.0
       },
       {
-        "market_id": "1367172",
-        "question": "North Korea missile launch by February 28?",
+        "market_id": "1272952",
+        "question": "U.S. strike on Nigeria by June 30, 2026?",
+        "longshot_entry_price": 0.0040000000000000036,
+        "shares": 24999.999999999978,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "1397805",
+        "question": "U.S. strike on Somalia by February 28?",
+        "longshot_entry_price": 0.0034999999999999476,
+        "shares": 28571.428571428998,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "1394436",
+        "question": "Iran Strike on Israel by March 31?",
+        "longshot_entry_price": 0.0014999999999999458,
+        "shares": 66666.66666666907,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "1394437",
+        "question": "Iran Strike on Israel by December 31?",
+        "longshot_entry_price": 0.0040000000000000036,
+        "shares": 24999.999999999978,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "1438350",
+        "question": "North Korea missile launch by March 15?",
+        "longshot_entry_price": 0.010000000000000009,
+        "shares": 9999.99999999999,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "1394368",
+        "question": "Will the U.S. invade Iran by March 31?",
+        "longshot_entry_price": 0.010000000000000009,
+        "shares": 9999.99999999999,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "1394342",
+        "question": "Iran strike on US military by March 31?",
         "longshot_entry_price": 0.0004999999999999449,
         "shares": 200000.00000002203,
         "notional": 100.0,
@@ -926,48 +986,18 @@
         "pnl": -100.0
       },
       {
-        "market_id": "1394342",
-        "question": "Iran strike on US military by March 31?",
-        "longshot_entry_price": 0.0004999999999999449,
-        "shares": 200000.00000002203,
+        "market_id": "1323366",
+        "question": "Ukraine officially agrees to a US backed ceasefire framework by June 30?",
+        "longshot_entry_price": 0.005499999999999949,
+        "shares": 18181.818181818348,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
         "pnl": -100.0
       },
       {
-        "market_id": "1438350",
-        "question": "North Korea missile launch by March 15?",
-        "longshot_entry_price": 0.010000000000000009,
-        "shares": 9999.99999999999,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "1296541",
-        "question": "U.S. strike on Somalia by February 28?",
-        "longshot_entry_price": 0.008000000000000007,
-        "shares": 12499.999999999989,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "1394368",
-        "question": "Will the U.S. invade Iran by March 31?",
-        "longshot_entry_price": 0.010000000000000009,
-        "shares": 9999.99999999999,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "1454777",
-        "question": "U.S. strike on Somalia by March 7?",
+        "market_id": "1280181",
+        "question": "Will there be between 10 and 13 US strikes on Somalia in February 2026?",
         "longshot_entry_price": 0.009499999999999953,
         "shares": 10526.315789473736,
         "notional": 100.0,
@@ -986,20 +1016,10 @@
         "pnl": -100.0
       },
       {
-        "market_id": "1272952",
-        "question": "U.S. strike on Nigeria by June 30, 2026?",
-        "longshot_entry_price": 0.0040000000000000036,
-        "shares": 24999.999999999978,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "1301491",
-        "question": "Houthi strike on Israel by February 28?",
-        "longshot_entry_price": 0.008499999999999952,
-        "shares": 11764.705882353008,
+        "market_id": "1454777",
+        "question": "U.S. strike on Somalia by March 7?",
+        "longshot_entry_price": 0.009499999999999953,
+        "shares": 10526.315789473736,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -1016,30 +1036,10 @@
         "pnl": -100.0
       },
       {
-        "market_id": "1483688",
-        "question": "Iran/Hezbollah strike on Cyprus by March 7?",
-        "longshot_entry_price": 0.009000000000000008,
-        "shares": 11111.1111111111,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "1487620",
-        "question": "U.S. strike on Somalia by March 7?",
-        "longshot_entry_price": 0.0050000000000000044,
-        "shares": 19999.99999999998,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "1485995",
-        "question": "House passes Massie-Khanna war powers resolution by March 13?",
-        "longshot_entry_price": 0.00649999999999995,
-        "shares": 15384.615384615503,
+        "market_id": "1296541",
+        "question": "U.S. strike on Somalia by February 28?",
+        "longshot_entry_price": 0.008000000000000007,
+        "shares": 12499.999999999989,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -1056,10 +1056,50 @@
         "pnl": -100.0
       },
       {
-        "market_id": "1439533",
-        "question": "Will there be between 14 and 17 US strikes on Somalia in March 2026?",
+        "market_id": "1487620",
+        "question": "U.S. strike on Somalia by March 7?",
+        "longshot_entry_price": 0.0050000000000000044,
+        "shares": 19999.99999999998,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "1483688",
+        "question": "Iran/Hezbollah strike on Cyprus by March 7?",
+        "longshot_entry_price": 0.009000000000000008,
+        "shares": 11111.1111111111,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "1301491",
+        "question": "Houthi strike on Israel by February 28?",
+        "longshot_entry_price": 0.008499999999999952,
+        "shares": 11764.705882353008,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "1485995",
+        "question": "House passes Massie-Khanna war powers resolution by March 13?",
         "longshot_entry_price": 0.00649999999999995,
         "shares": 15384.615384615503,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "1243248",
+        "question": "Russia x Ukraine ceasefire by February 28, 2026?",
+        "longshot_entry_price": 0.006000000000000005,
+        "shares": 16666.666666666653,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -1086,110 +1126,10 @@
         "pnl": -100.0
       },
       {
-        "market_id": "1439534",
-        "question": "Will there be between 18 and 21 US strikes on Somalia in March 2026?",
-        "longshot_entry_price": 0.007499999999999951,
-        "shares": 13333.33333333342,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
         "market_id": "1508944",
         "question": "Will \"Bomb\" be said on the first Joe Rogan Experience episode of the week? (March 15)",
         "longshot_entry_price": 0.010000000000000009,
         "shares": 9999.99999999999,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "1439535",
-        "question": "Will there be 22 or more US strikes on Somalia in March 2026?",
-        "longshot_entry_price": 0.00649999999999995,
-        "shares": 15384.615384615503,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "1439532",
-        "question": "Will there be between 10 and 13 US strikes on Somalia in March 2026?",
-        "longshot_entry_price": 0.006000000000000005,
-        "shares": 16666.666666666653,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "1487679",
-        "question": "Houthi strike on Israel by March 15, 2026?",
-        "longshot_entry_price": 0.008000000000000007,
-        "shares": 12499.999999999989,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "1323366",
-        "question": "Ukraine officially agrees to a US backed ceasefire framework by June 30?",
-        "longshot_entry_price": 0.005499999999999949,
-        "shares": 18181.818181818348,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "1487678",
-        "question": "Houthi strike on Israel by March 6, 2026?",
-        "longshot_entry_price": 0.009000000000000008,
-        "shares": 11111.1111111111,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "1570796",
-        "question": "Will Trump say \"Roadside Bomb\" this week? (March 22)",
-        "longshot_entry_price": 0.0050000000000000044,
-        "shares": 19999.99999999998,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "1608614",
-        "question": "Will Leavitt say \"Ceasefire\" during the next White House Press Briefing?",
-        "longshot_entry_price": 0.0050000000000000044,
-        "shares": 19999.99999999998,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "1570791",
-        "question": "Will Trump say \"Ceasefire\" this week? (March 22)",
-        "longshot_entry_price": 0.008000000000000007,
-        "shares": 12499.999999999989,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "1439530",
-        "question": "Will there be 5 or fewer US strikes on Somalia in March 2026?",
-        "longshot_entry_price": 0.007000000000000006,
-        "shares": 14285.714285714274,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -1206,6 +1146,16 @@
         "pnl": -100.0
       },
       {
+        "market_id": "1487679",
+        "question": "Houthi strike on Israel by March 15, 2026?",
+        "longshot_entry_price": 0.008000000000000007,
+        "shares": 12499.999999999989,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
         "market_id": "1484894",
         "question": "US x Iran ceasefire by May 31?",
         "longshot_entry_price": 0.008499999999999952,
@@ -1216,8 +1166,8 @@
         "pnl": -100.0
       },
       {
-        "market_id": "1487680",
-        "question": "Houthi strike on Israel by March 31, 2026?",
+        "market_id": "1487678",
+        "question": "Houthi strike on Israel by March 6, 2026?",
         "longshot_entry_price": 0.009000000000000008,
         "shares": 11111.1111111111,
         "notional": 100.0,
@@ -1226,40 +1176,20 @@
         "pnl": -100.0
       },
       {
-        "market_id": "1439560",
-        "question": "Russia x Ukraine ceasefire by April 30, 2026?",
-        "longshot_entry_price": 0.009499999999999953,
-        "shares": 10526.315789473736,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "1665571",
-        "question": "Will Trump post \"Bomb\" or \"Bomber\" on Truth Social this week?",
-        "longshot_entry_price": 0.0050000000000000044,
-        "shares": 19999.99999999998,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "1912775",
-        "question": "Trump announces US x Iran ceasefire end by April 15, 2026?",
-        "longshot_entry_price": 0.007499999999999951,
-        "shares": 13333.33333333342,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "1707841",
-        "question": "Israel x Hezbollah ceasefire by April 30, 2026?",
+        "market_id": "1439533",
+        "question": "Will there be between 14 and 17 US strikes on Somalia in March 2026?",
         "longshot_entry_price": 0.00649999999999995,
         "shares": 15384.615384615503,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "1570796",
+        "question": "Will Trump say \"Roadside Bomb\" this week? (March 22)",
+        "longshot_entry_price": 0.0050000000000000044,
+        "shares": 19999.99999999998,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -1276,6 +1206,96 @@
         "pnl": -100.0
       },
       {
+        "market_id": "1570791",
+        "question": "Will Trump say \"Ceasefire\" this week? (March 22)",
+        "longshot_entry_price": 0.008000000000000007,
+        "shares": 12499.999999999989,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "1665571",
+        "question": "Will Trump post \"Bomb\" or \"Bomber\" on Truth Social this week?",
+        "longshot_entry_price": 0.0050000000000000044,
+        "shares": 19999.99999999998,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "1487680",
+        "question": "Houthi strike on Israel by March 31, 2026?",
+        "longshot_entry_price": 0.009000000000000008,
+        "shares": 11111.1111111111,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "1608614",
+        "question": "Will Leavitt say \"Ceasefire\" during the next White House Press Briefing?",
+        "longshot_entry_price": 0.0050000000000000044,
+        "shares": 19999.99999999998,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "1439534",
+        "question": "Will there be between 18 and 21 US strikes on Somalia in March 2026?",
+        "longshot_entry_price": 0.007499999999999951,
+        "shares": 13333.33333333342,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "1439532",
+        "question": "Will there be between 10 and 13 US strikes on Somalia in March 2026?",
+        "longshot_entry_price": 0.006000000000000005,
+        "shares": 16666.666666666653,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "1559953",
+        "question": "US x Iran ceasefire before Trump visits China?",
+        "longshot_entry_price": 0.008000000000000007,
+        "shares": 12499.999999999989,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "1439535",
+        "question": "Will there be 22 or more US strikes on Somalia in March 2026?",
+        "longshot_entry_price": 0.00649999999999995,
+        "shares": 15384.615384615503,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "1707841",
+        "question": "Israel x Hezbollah ceasefire by April 30, 2026?",
+        "longshot_entry_price": 0.00649999999999995,
+        "shares": 15384.615384615503,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
         "market_id": "1794811",
         "question": "Will Leavitt say \"Peace Deal\" during the next White House press briefing?",
         "longshot_entry_price": 0.0050000000000000044,
@@ -1286,30 +1306,40 @@
         "pnl": -100.0
       },
       {
-        "market_id": "1706788",
-        "question": "US x Iran ceasefire by April 7?",
-        "longshot_entry_price": 0.008499999999999952,
-        "shares": 11764.705882353008,
+        "market_id": "1439530",
+        "question": "Will there be 5 or fewer US strikes on Somalia in March 2026?",
+        "longshot_entry_price": 0.007000000000000006,
+        "shares": 14285.714285714274,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
         "pnl": -100.0
       },
       {
-        "market_id": "1706788",
-        "question": "US x Iran ceasefire by April 7?",
+        "market_id": "1439560",
+        "question": "Russia x Ukraine ceasefire by April 30, 2026?",
         "longshot_entry_price": 0.009499999999999953,
         "shares": 10526.315789473736,
         "notional": 100.0,
-        "won": true,
-        "payout": 10526.315789473736,
-        "pnl": 10426.315789473736
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
       },
       {
-        "market_id": "1485279",
-        "question": "Congress passes Iran war powers resolution by March 31?",
-        "longshot_entry_price": 0.010000000000000009,
-        "shares": 9999.99999999999,
+        "market_id": "1912775",
+        "question": "Trump announces US x Iran ceasefire end by April 15, 2026?",
+        "longshot_entry_price": 0.007499999999999951,
+        "shares": 13333.33333333342,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "1734822",
+        "question": "US x Iran ceasefire before Oil hits $120?",
+        "longshot_entry_price": 0.009000000000000008,
+        "shares": 11111.1111111111,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -1336,18 +1366,38 @@
         "pnl": -100.0
       },
       {
-        "market_id": "1921096",
-        "question": "Will Trump announce that the US x Iran ceasefire has been broken by April 14, 2026?",
-        "longshot_entry_price": 0.010000000000000009,
-        "shares": 9999.99999999999,
+        "market_id": "1918790",
+        "question": "Will the US x Iran ceasefire be extended by April 14, 2026?",
+        "longshot_entry_price": 0.008000000000000007,
+        "shares": 12499.999999999989,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
         "pnl": -100.0
       },
       {
-        "market_id": "1918790",
-        "question": "Will the US x Iran ceasefire be extended by April 14, 2026?",
+        "market_id": "1706788",
+        "question": "US x Iran ceasefire by April 7?",
+        "longshot_entry_price": 0.008499999999999952,
+        "shares": 11764.705882353008,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "1706788",
+        "question": "US x Iran ceasefire by April 7?",
+        "longshot_entry_price": 0.009499999999999953,
+        "shares": 10526.315789473736,
+        "notional": 100.0,
+        "won": true,
+        "payout": 10526.315789473736,
+        "pnl": 10426.315789473736
+      },
+      {
+        "market_id": "1919417",
+        "question": "US x Iran permanent peace deal by April 22, 2026?",
         "longshot_entry_price": 0.008000000000000007,
         "shares": 12499.999999999989,
         "notional": 100.0,
@@ -1366,40 +1416,20 @@
         "pnl": -100.0
       },
       {
-        "market_id": "1796268",
-        "question": "Pakistan x Afghanistan ceasefire by April 30?",
+        "market_id": "1912777",
+        "question": "Trump announces US x Iran ceasefire end by April 21, 2026?",
+        "longshot_entry_price": 0.006000000000000005,
+        "shares": 16666.666666666653,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "1921096",
+        "question": "Will Trump announce that the US x Iran ceasefire has been broken by April 14, 2026?",
         "longshot_entry_price": 0.010000000000000009,
         "shares": 9999.99999999999,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "1919417",
-        "question": "US x Iran permanent peace deal by April 22, 2026?",
-        "longshot_entry_price": 0.008000000000000007,
-        "shares": 12499.999999999989,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "1559953",
-        "question": "US x Iran ceasefire before Trump visits China?",
-        "longshot_entry_price": 0.008000000000000007,
-        "shares": 12499.999999999989,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "1487672",
-        "question": "Israel x Hezbollah ceasefire by March 31, 2026?",
-        "longshot_entry_price": 0.008499999999999952,
-        "shares": 11764.705882353008,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -1416,70 +1446,20 @@
         "pnl": -100.0
       },
       {
-        "market_id": "1707527",
-        "question": "Congress passes Iran war powers resolution by April 30?",
-        "longshot_entry_price": 0.009499999999999953,
-        "shares": 10526.315789473736,
+        "market_id": "1930316",
+        "question": "Will Leavitt say \"Ceasefire\" during the next White House press briefing?",
+        "longshot_entry_price": 0.0050000000000000044,
+        "shares": 19999.99999999998,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
         "pnl": -100.0
       },
       {
-        "market_id": "1912777",
-        "question": "Trump announces US x Iran ceasefire end by April 21, 2026?",
-        "longshot_entry_price": 0.006000000000000005,
-        "shares": 16666.666666666653,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "1938984",
-        "question": "Israel x Hezbollah ceasefire by April 15, 2026?",
-        "longshot_entry_price": 0.009499999999999953,
-        "shares": 10526.315789473736,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "1641497",
-        "question": "Israel strike on Yemen by April 30, 2026?",
-        "longshot_entry_price": 0.007000000000000006,
-        "shares": 14285.714285714274,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "1919421",
-        "question": "US x Iran permanent peace deal by April 30, 2026?",
-        "longshot_entry_price": 0.009499999999999953,
-        "shares": 10526.315789473736,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "1992058",
-        "question": "Will the US x Iran ceasefire be extended by April 18, 2026?",
-        "longshot_entry_price": 0.007000000000000006,
-        "shares": 14285.714285714274,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "1734822",
-        "question": "US x Iran ceasefire before Oil hits $120?",
-        "longshot_entry_price": 0.009000000000000008,
-        "shares": 11111.1111111111,
+        "market_id": "1487672",
+        "question": "Israel x Hezbollah ceasefire by March 31, 2026?",
+        "longshot_entry_price": 0.008499999999999952,
+        "shares": 11764.705882353008,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -1496,10 +1476,10 @@
         "pnl": -100.0
       },
       {
-        "market_id": "1930316",
-        "question": "Will Leavitt say \"Ceasefire\" during the next White House press briefing?",
-        "longshot_entry_price": 0.0050000000000000044,
-        "shares": 19999.99999999998,
+        "market_id": "1641497",
+        "question": "Israel strike on Yemen by April 30, 2026?",
+        "longshot_entry_price": 0.007000000000000006,
+        "shares": 14285.714285714274,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -1516,6 +1496,36 @@
         "pnl": -100.0
       },
       {
+        "market_id": "1938984",
+        "question": "Israel x Hezbollah ceasefire by April 15, 2026?",
+        "longshot_entry_price": 0.009499999999999953,
+        "shares": 10526.315789473736,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "1796268",
+        "question": "Pakistan x Afghanistan ceasefire by April 30?",
+        "longshot_entry_price": 0.010000000000000009,
+        "shares": 9999.99999999999,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "1992058",
+        "question": "Will the US x Iran ceasefire be extended by April 18, 2026?",
+        "longshot_entry_price": 0.007000000000000006,
+        "shares": 14285.714285714274,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
         "market_id": "1930370",
         "question": "Will Trump endorse an Israeli Ceasefire in Lebanon by April 30?",
         "longshot_entry_price": 0.006000000000000005,
@@ -1526,8 +1536,8 @@
         "pnl": -100.0
       },
       {
-        "market_id": "2182250",
-        "question": "US x Iran permanent peace deal by May 13, 2026?",
+        "market_id": "1707527",
+        "question": "Congress passes Iran war powers resolution by April 30?",
         "longshot_entry_price": 0.009499999999999953,
         "shares": 10526.315789473736,
         "notional": 100.0,
@@ -1546,8 +1556,8 @@
         "pnl": -100.0
       },
       {
-        "market_id": "2099029",
-        "question": "US x Iran permanent peace deal by May 15, 2026?",
+        "market_id": "1919421",
+        "question": "US x Iran permanent peace deal by April 30, 2026?",
         "longshot_entry_price": 0.009499999999999953,
         "shares": 10526.315789473736,
         "notional": 100.0,
@@ -1556,18 +1566,28 @@
         "pnl": -100.0
       },
       {
-        "market_id": "2002530",
-        "question": "Israel x Hezbollah permanent peace deal by April 26, 2026?",
-        "longshot_entry_price": 0.009000000000000008,
-        "shares": 11111.1111111111,
+        "market_id": "2182250",
+        "question": "US x Iran permanent peace deal by May 13, 2026?",
+        "longshot_entry_price": 0.009499999999999953,
+        "shares": 10526.315789473736,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
         "pnl": -100.0
       },
       {
-        "market_id": "2243894",
-        "question": "Russia x Ukraine ceasefire agreement by May 31, 2026?",
+        "market_id": "1485279",
+        "question": "Congress passes Iran war powers resolution by March 31?",
+        "longshot_entry_price": 0.010000000000000009,
+        "shares": 9999.99999999999,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "2099029",
+        "question": "US x Iran permanent peace deal by May 15, 2026?",
         "longshot_entry_price": 0.009499999999999953,
         "shares": 10526.315789473736,
         "notional": 100.0,
@@ -1586,10 +1606,10 @@
         "pnl": -100.0
       },
       {
-        "market_id": "2002562",
-        "question": "Israel x Iran permanent peace deal by April 22, 2026?",
-        "longshot_entry_price": 0.008499999999999952,
-        "shares": 11764.705882353008,
+        "market_id": "2002530",
+        "question": "Israel x Hezbollah permanent peace deal by April 26, 2026?",
+        "longshot_entry_price": 0.009000000000000008,
+        "shares": 11111.1111111111,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -1606,70 +1626,20 @@
         "pnl": -100.0
       },
       {
-        "market_id": "2243895",
-        "question": "Russia x Ukraine ceasefire agreement by June 30, 2026?",
-        "longshot_entry_price": 0.0034999999999999476,
-        "shares": 28571.428571428998,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "2002563",
-        "question": "Israel x Iran permanent peace deal by April 30, 2026?",
-        "longshot_entry_price": 0.009000000000000008,
-        "shares": 11111.1111111111,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "2117401",
-        "question": "Pakistan x Afghanistan ceasefire by June 30?",
-        "longshot_entry_price": 0.009000000000000008,
-        "shares": 11111.1111111111,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "2126516",
-        "question": "Israel x Iran permanent peace deal by July 31, 2026?",
-        "longshot_entry_price": 0.010000000000000009,
-        "shares": 9999.99999999999,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "2354003",
-        "question": "US announces new Iran agreement/ceasefire extension by June 30?",
-        "longshot_entry_price": 0.00649999999999995,
-        "shares": 15384.615384615503,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "2364342",
-        "question": "Israel announces Lebanon ceasefire extension by June 7?",
-        "longshot_entry_price": 0.0050000000000000044,
-        "shares": 19999.99999999998,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "2270330",
-        "question": "US x Iran permanent peace deal by June 15, 2026?",
+        "market_id": "2243894",
+        "question": "Russia x Ukraine ceasefire agreement by May 31, 2026?",
         "longshot_entry_price": 0.009499999999999953,
         "shares": 10526.315789473736,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "2002562",
+        "question": "Israel x Iran permanent peace deal by April 22, 2026?",
+        "longshot_entry_price": 0.008499999999999952,
+        "shares": 11764.705882353008,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -1686,8 +1656,48 @@
         "pnl": -100.0
       },
       {
-        "market_id": "2412340",
-        "question": "Will Trump say \"Ceasefire\" this week?",
+        "market_id": "2354003",
+        "question": "US announces new Iran agreement/ceasefire extension by June 30?",
+        "longshot_entry_price": 0.00649999999999995,
+        "shares": 15384.615384615503,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "2117401",
+        "question": "Pakistan x Afghanistan ceasefire by June 30?",
+        "longshot_entry_price": 0.009000000000000008,
+        "shares": 11111.1111111111,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "2270330",
+        "question": "US x Iran permanent peace deal by June 15, 2026?",
+        "longshot_entry_price": 0.009499999999999953,
+        "shares": 10526.315789473736,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "2270338",
+        "question": "US x Iran permanent peace deal by July 31, 2026?",
+        "longshot_entry_price": 0.009499999999999953,
+        "shares": 10526.315789473736,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "2364342",
+        "question": "Israel announces Lebanon ceasefire extension by June 7?",
         "longshot_entry_price": 0.0050000000000000044,
         "shares": 19999.99999999998,
         "notional": 100.0,
@@ -1706,20 +1716,30 @@
         "pnl": -100.0
       },
       {
-        "market_id": "2508400",
-        "question": "US announces new Iran agreement/ceasefire extension by June 17?",
-        "longshot_entry_price": 0.0050000000000000044,
-        "shares": 19999.99999999998,
+        "market_id": "2243895",
+        "question": "Russia x Ukraine ceasefire agreement by June 30, 2026?",
+        "longshot_entry_price": 0.0034999999999999476,
+        "shares": 28571.428571428998,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
         "pnl": -100.0
       },
       {
-        "market_id": "2475213",
-        "question": "Trump announces US x Iran ceasefire over by June 15?",
-        "longshot_entry_price": 0.009499999999999953,
-        "shares": 10526.315789473736,
+        "market_id": "2126516",
+        "question": "Israel x Iran permanent peace deal by July 31, 2026?",
+        "longshot_entry_price": 0.010000000000000009,
+        "shares": 9999.99999999999,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "2412340",
+        "question": "Will Trump say \"Ceasefire\" this week?",
+        "longshot_entry_price": 0.0050000000000000044,
+        "shares": 19999.99999999998,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -1736,10 +1756,20 @@
         "pnl": -100.0
       },
       {
-        "market_id": "2270338",
-        "question": "US x Iran permanent peace deal by July 31, 2026?",
+        "market_id": "2475213",
+        "question": "Trump announces US x Iran ceasefire over by June 15?",
         "longshot_entry_price": 0.009499999999999953,
         "shares": 10526.315789473736,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "2508400",
+        "question": "US announces new Iran agreement/ceasefire extension by June 17?",
+        "longshot_entry_price": 0.0050000000000000044,
+        "shares": 19999.99999999998,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -1756,30 +1786,10 @@
         "pnl": -100.0
       },
       {
-        "market_id": "2097537",
-        "question": "Congress passes Iran war powers resolution by May 31?",
-        "longshot_entry_price": 0.008499999999999952,
-        "shares": 11764.705882353008,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "2126515",
-        "question": "Israel x Iran permanent peace deal by May 31, 2026?",
+        "market_id": "2002563",
+        "question": "Israel x Iran permanent peace deal by April 30, 2026?",
         "longshot_entry_price": 0.009000000000000008,
         "shares": 11111.1111111111,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "2002564",
-        "question": "Israel x Iran permanent peace deal by June 30, 2026?",
-        "longshot_entry_price": 0.009499999999999953,
-        "shares": 10526.315789473736,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -1796,10 +1806,30 @@
         "pnl": -100.0
       },
       {
-        "market_id": "2264326",
-        "question": "Russia x Ukraine ceasefire by June 30, 2026?",
+        "market_id": "2002564",
+        "question": "Israel x Iran permanent peace deal by June 30, 2026?",
         "longshot_entry_price": 0.009499999999999953,
         "shares": 10526.315789473736,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "251619",
+        "question": "Russian Coup: Putin vs Wagner",
+        "longshot_entry_price": 0.0050000000000000044,
+        "shares": 19999.99999999998,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "2413571",
+        "question": "US x Iran permanent peace deal by August 31, 2026?",
+        "longshot_entry_price": 0.007499999999999951,
+        "shares": 13333.33333333342,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -1826,70 +1856,10 @@
         "pnl": -100.0
       },
       {
-        "market_id": "251619",
-        "question": "Russian Coup: Putin vs Wagner",
-        "longshot_entry_price": 0.0050000000000000044,
-        "shares": 19999.99999999998,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "2354012",
-        "question": "Israel x Hezbollah permanent peace deal by June 30, 2026?",
-        "longshot_entry_price": 0.008000000000000007,
-        "shares": 12499.999999999989,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "253222",
-        "question": "Will the Hamas x Israel ceasefire last 10 days?",
-        "longshot_entry_price": 0.010000000000000009,
-        "shares": 9999.99999999999,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "253205",
-        "question": "Will the Hamas x Israel ceasefire last 8 days?",
-        "longshot_entry_price": 0.0010000000000000009,
-        "shares": 99999.99999999991,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "2475212",
-        "question": "Trump announces US x Iran ceasefire over by June 30?",
+        "market_id": "2264326",
+        "question": "Russia x Ukraine ceasefire by June 30, 2026?",
         "longshot_entry_price": 0.009499999999999953,
         "shares": 10526.315789473736,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "2354011",
-        "question": "Israel x Hezbollah permanent peace deal by June 15, 2026?",
-        "longshot_entry_price": 0.008499999999999952,
-        "shares": 11764.705882353008,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "2413571",
-        "question": "US x Iran permanent peace deal by August 31, 2026?",
-        "longshot_entry_price": 0.007499999999999951,
-        "shares": 13333.33333333342,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -1906,10 +1876,110 @@
         "pnl": -100.0
       },
       {
+        "market_id": "2097537",
+        "question": "Congress passes Iran war powers resolution by May 31?",
+        "longshot_entry_price": 0.008499999999999952,
+        "shares": 11764.705882353008,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
         "market_id": "252839",
         "question": "Israel and Hamas ceasefire by Nov 30?",
         "longshot_entry_price": 0.0004999999999999449,
         "shares": 200000.00000002203,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "253205",
+        "question": "Will the Hamas x Israel ceasefire last 8 days?",
+        "longshot_entry_price": 0.0010000000000000009,
+        "shares": 99999.99999999991,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "253222",
+        "question": "Will the Hamas x Israel ceasefire last 10 days?",
+        "longshot_entry_price": 0.010000000000000009,
+        "shares": 9999.99999999999,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "2354012",
+        "question": "Israel x Hezbollah permanent peace deal by June 30, 2026?",
+        "longshot_entry_price": 0.008000000000000007,
+        "shares": 12499.999999999989,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "2126515",
+        "question": "Israel x Iran permanent peace deal by May 31, 2026?",
+        "longshot_entry_price": 0.009000000000000008,
+        "shares": 11111.1111111111,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "2475212",
+        "question": "Trump announces US x Iran ceasefire over by June 30?",
+        "longshot_entry_price": 0.009499999999999953,
+        "shares": 10526.315789473736,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "253252",
+        "question": "Another Israel x Hamas ceasefire in 2023?",
+        "longshot_entry_price": 0.0050000000000000044,
+        "shares": 19999.99999999998,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "2354011",
+        "question": "Israel x Hezbollah permanent peace deal by June 15, 2026?",
+        "longshot_entry_price": 0.008499999999999952,
+        "shares": 11764.705882353008,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "252608",
+        "question": "Will China invade Taiwan in 2023?",
+        "longshot_entry_price": 0.010000000000000009,
+        "shares": 9999.99999999999,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "251795",
+        "question": "Will Russia & Ukraine declare a ceasefire by EOY?",
+        "longshot_entry_price": 0.010000000000000009,
+        "shares": 9999.99999999999,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -1936,10 +2006,10 @@
         "pnl": -100.0
       },
       {
-        "market_id": "253252",
-        "question": "Another Israel x Hamas ceasefire in 2023?",
-        "longshot_entry_price": 0.0050000000000000044,
-        "shares": 19999.99999999998,
+        "market_id": "253429",
+        "question": "Another Israel x Hamas ceasefire before February?",
+        "longshot_entry_price": 0.009000000000000008,
+        "shares": 11111.1111111111,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -1956,30 +2026,20 @@
         "pnl": -100.0
       },
       {
-        "market_id": "252608",
-        "question": "Will China invade Taiwan in 2023?",
-        "longshot_entry_price": 0.010000000000000009,
-        "shares": 9999.99999999999,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "253429",
-        "question": "Another Israel x Hamas ceasefire before February?",
-        "longshot_entry_price": 0.009000000000000008,
-        "shares": 11111.1111111111,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
         "market_id": "254033",
         "question": "US call for Gaza ceasefire before March?",
         "longshot_entry_price": 0.0050000000000000044,
         "shares": 19999.99999999998,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "254766",
+        "question": "Israel x Hamas ceasefire by Monday?",
+        "longshot_entry_price": 0.0004999999999999449,
+        "shares": 200000.00000002203,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -2006,26 +2066,6 @@
         "pnl": -100.0
       },
       {
-        "market_id": "254766",
-        "question": "Israel x Hamas ceasefire by Monday?",
-        "longshot_entry_price": 0.0004999999999999449,
-        "shares": 200000.00000002203,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "254040",
-        "question": "Will Israel invade Lebanon before March?",
-        "longshot_entry_price": 0.009499999999999953,
-        "shares": 10526.315789473736,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
         "market_id": "254174",
         "question": "Israel x Hamas ceasefire before March?",
         "longshot_entry_price": 0.009000000000000008,
@@ -2046,50 +2086,10 @@
         "pnl": -100.0
       },
       {
-        "market_id": "251795",
-        "question": "Will Russia & Ukraine declare a ceasefire by EOY?",
-        "longshot_entry_price": 0.010000000000000009,
-        "shares": 9999.99999999999,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
         "market_id": "2685282",
         "question": "Will Leavitt say \"Ceasefire\" during the next White House Press Briefing?",
         "longshot_entry_price": 0.005499999999999949,
         "shares": 18181.818181818348,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "254493",
-        "question": "Will Azerbaijan invade Armenia before April?",
-        "longshot_entry_price": 0.006000000000000005,
-        "shares": 16666.666666666653,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "254050",
-        "question": "Will Russia invade Alaska before March?",
-        "longshot_entry_price": 0.007000000000000006,
-        "shares": 14285.714285714274,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "254570",
-        "question": "Israel x Hamas ceasefire before April?",
-        "longshot_entry_price": 0.0040000000000000036,
-        "shares": 24999.999999999978,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -2106,30 +2106,10 @@
         "pnl": -100.0
       },
       {
-        "market_id": "501863",
-        "question": "Israel x Hamas ceasefire before September?",
-        "longshot_entry_price": 0.008499999999999952,
-        "shares": 11764.705882353008,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "501793",
-        "question": "Will China invade Taiwan in May?",
-        "longshot_entry_price": 0.008000000000000007,
-        "shares": 12499.999999999989,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "2937526",
-        "question": "US x Iran Effective Ceasefire by August 14?",
-        "longshot_entry_price": 0.007499999999999951,
-        "shares": 13333.33333333342,
+        "market_id": "254493",
+        "question": "Will Azerbaijan invade Armenia before April?",
+        "longshot_entry_price": 0.006000000000000005,
+        "shares": 16666.666666666653,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -2146,10 +2126,30 @@
         "pnl": -100.0
       },
       {
-        "market_id": "3128786",
-        "question": "Israel x Iran ceasefire continues through August 9?",
+        "market_id": "254040",
+        "question": "Will Israel invade Lebanon before March?",
         "longshot_entry_price": 0.009499999999999953,
         "shares": 10526.315789473736,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "2937526",
+        "question": "US x Iran Effective Ceasefire by August 14?",
+        "longshot_entry_price": 0.007499999999999951,
+        "shares": 13333.33333333342,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "254570",
+        "question": "Israel x Hamas ceasefire before April?",
+        "longshot_entry_price": 0.0040000000000000036,
+        "shares": 24999.999999999978,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -2166,10 +2166,10 @@
         "pnl": -100.0
       },
       {
-        "market_id": "502260",
-        "question": "Next Israel x Hamas ceasefire in August?",
-        "longshot_entry_price": 0.007499999999999951,
-        "shares": 13333.33333333342,
+        "market_id": "3128786",
+        "question": "Israel x Iran ceasefire continues through August 9?",
+        "longshot_entry_price": 0.009499999999999953,
+        "shares": 10526.315789473736,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -2186,8 +2186,8 @@
         "pnl": -100.0
       },
       {
-        "market_id": "500325",
-        "question": "Will Israel invade Lebanon before May?",
+        "market_id": "501793",
+        "question": "Will China invade Taiwan in May?",
         "longshot_entry_price": 0.008000000000000007,
         "shares": 12499.999999999989,
         "notional": 100.0,
@@ -2206,30 +2206,30 @@
         "pnl": -100.0
       },
       {
+        "market_id": "502260",
+        "question": "Next Israel x Hamas ceasefire in August?",
+        "longshot_entry_price": 0.007499999999999951,
+        "shares": 13333.33333333342,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "254050",
+        "question": "Will Russia invade Alaska before March?",
+        "longshot_entry_price": 0.007000000000000006,
+        "shares": 14285.714285714274,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
         "market_id": "500409",
         "question": "Israel x Hamas ceasefire before May?",
         "longshot_entry_price": 0.010000000000000009,
         "shares": 9999.99999999999,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "502258",
-        "question": "Next Israel x Hamas ceasefire in June?",
-        "longshot_entry_price": 0.008000000000000007,
-        "shares": 12499.999999999989,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "2817844",
-        "question": "Israel x Hamas Ceasefire Phase II by July 31?",
-        "longshot_entry_price": 0.009499999999999953,
-        "shares": 10526.315789473736,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -2246,10 +2246,20 @@
         "pnl": -100.0
       },
       {
-        "market_id": "504520",
-        "question": "Will Israel invade Lebanon by Friday?",
-        "longshot_entry_price": 0.009000000000000008,
-        "shares": 11111.1111111111,
+        "market_id": "500325",
+        "question": "Will Israel invade Lebanon before May?",
+        "longshot_entry_price": 0.008000000000000007,
+        "shares": 12499.999999999989,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "502258",
+        "question": "Next Israel x Hamas ceasefire in June?",
+        "longshot_entry_price": 0.008000000000000007,
+        "shares": 12499.999999999989,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -2266,10 +2276,10 @@
         "pnl": -100.0
       },
       {
-        "market_id": "505265",
-        "question": "Will Kamala Harris say \"Ceasefire\" during DNC speech?",
-        "longshot_entry_price": 0.0050000000000000044,
-        "shares": 19999.99999999998,
+        "market_id": "504520",
+        "question": "Will Israel invade Lebanon by Friday?",
+        "longshot_entry_price": 0.009000000000000008,
+        "shares": 11111.1111111111,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -2286,6 +2296,16 @@
         "pnl": -100.0
       },
       {
+        "market_id": "502261",
+        "question": "Next Israel x Hamas ceasefire in September?",
+        "longshot_entry_price": 0.008000000000000007,
+        "shares": 12499.999999999989,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
         "market_id": "504566",
         "question": "Iran strike on US military in August?",
         "longshot_entry_price": 0.010000000000000009,
@@ -2296,10 +2316,30 @@
         "pnl": -100.0
       },
       {
-        "market_id": "502261",
-        "question": "Next Israel x Hamas ceasefire in September?",
+        "market_id": "502265",
+        "question": "No Israel x Hamas ceasefire in 2024?",
+        "longshot_entry_price": 0.009000000000000008,
+        "shares": 11111.1111111111,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "502264",
+        "question": "Next Israel x Hamas ceasefire in December?",
         "longshot_entry_price": 0.008000000000000007,
         "shares": 12499.999999999989,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "505265",
+        "question": "Will Kamala Harris say \"Ceasefire\" during DNC speech?",
+        "longshot_entry_price": 0.0050000000000000044,
+        "shares": 19999.99999999998,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -2326,16 +2366,6 @@
         "pnl": -100.0
       },
       {
-        "market_id": "502259",
-        "question": "Next Israel x Hamas ceasefire in July?",
-        "longshot_entry_price": 0.009499999999999953,
-        "shares": 10526.315789473736,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
         "market_id": "506262",
         "question": "Will Trump say \"Ceasefire\" during Lex interview?",
         "longshot_entry_price": 0.005499999999999949,
@@ -2356,6 +2386,36 @@
         "pnl": -100.0
       },
       {
+        "market_id": "502259",
+        "question": "Next Israel x Hamas ceasefire in July?",
+        "longshot_entry_price": 0.009499999999999953,
+        "shares": 10526.315789473736,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "501863",
+        "question": "Israel x Hamas ceasefire before September?",
+        "longshot_entry_price": 0.008499999999999952,
+        "shares": 11764.705882353008,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "2817844",
+        "question": "Israel x Hamas Ceasefire Phase II by July 31?",
+        "longshot_entry_price": 0.009499999999999953,
+        "shares": 10526.315789473736,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
         "market_id": "507275",
         "question": "Will Kamala Harris say \"ceasefire\" during her Wisconsin rally?",
         "longshot_entry_price": 0.0050000000000000044,
@@ -2366,78 +2426,8 @@
         "pnl": -100.0
       },
       {
-        "market_id": "253399",
-        "question": "Ceasefire between Russia and Ukraine by June 30?",
-        "longshot_entry_price": 0.007000000000000006,
-        "shares": 14285.714285714274,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "505761",
-        "question": "Will Belarus invade Ukraine before October?",
-        "longshot_entry_price": 0.010000000000000009,
-        "shares": 9999.99999999999,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "502263",
-        "question": "Next Israel x Hamas ceasefire in November?",
-        "longshot_entry_price": 0.007000000000000006,
-        "shares": 14285.714285714274,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "502264",
-        "question": "Next Israel x Hamas ceasefire in December?",
-        "longshot_entry_price": 0.008000000000000007,
-        "shares": 12499.999999999989,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "502265",
-        "question": "No Israel x Hamas ceasefire in 2024?",
-        "longshot_entry_price": 0.009000000000000008,
-        "shares": 11111.1111111111,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
         "market_id": "504664",
         "question": "Will Israel invade Lebanon before November?",
-        "longshot_entry_price": 0.008499999999999952,
-        "shares": 11764.705882353008,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "502262",
-        "question": "Next Israel x Hamas ceasefire in October?",
-        "longshot_entry_price": 0.009000000000000008,
-        "shares": 11111.1111111111,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "508115",
-        "question": "Israel x Hezbollah Ceasefire in September?",
         "longshot_entry_price": 0.008499999999999952,
         "shares": 11764.705882353008,
         "notional": 100.0,
@@ -2456,30 +2446,40 @@
         "pnl": -100.0
       },
       {
-        "market_id": "505863",
-        "question": "Iran strike on US military before October?",
+        "market_id": "253399",
+        "question": "Ceasefire between Russia and Ukraine by June 30?",
+        "longshot_entry_price": 0.007000000000000006,
+        "shares": 14285.714285714274,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "508115",
+        "question": "Israel x Hezbollah Ceasefire in September?",
+        "longshot_entry_price": 0.008499999999999952,
+        "shares": 11764.705882353008,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "502263",
+        "question": "Next Israel x Hamas ceasefire in November?",
+        "longshot_entry_price": 0.007000000000000006,
+        "shares": 14285.714285714274,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "504642",
+        "question": "Israel x Hamas ceasefire in 2024?",
         "longshot_entry_price": 0.009499999999999953,
         "shares": 10526.315789473736,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "506342",
-        "question": "Ukraine strike on Moscow by September 30?",
-        "longshot_entry_price": 0.0044999999999999485,
-        "shares": 22222.222222222477,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "509050",
-        "question": "No Israel strike on Iran by Sunday?",
-        "longshot_entry_price": 0.006000000000000005,
-        "shares": 16666.666666666653,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -2496,8 +2496,58 @@
         "pnl": -100.0
       },
       {
-        "market_id": "504642",
-        "question": "Israel x Hamas ceasefire in 2024?",
+        "market_id": "502262",
+        "question": "Next Israel x Hamas ceasefire in October?",
+        "longshot_entry_price": 0.009000000000000008,
+        "shares": 11111.1111111111,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "505761",
+        "question": "Will Belarus invade Ukraine before October?",
+        "longshot_entry_price": 0.010000000000000009,
+        "shares": 9999.99999999999,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "506342",
+        "question": "Ukraine strike on Moscow by September 30?",
+        "longshot_entry_price": 0.0044999999999999485,
+        "shares": 22222.222222222477,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "507792",
+        "question": "Israel x Hezbollah Ceasefire in 2024?",
+        "longshot_entry_price": 0.009499999999999953,
+        "shares": 10526.315789473736,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "506968",
+        "question": "Will Israel invade Syria in 2024?",
+        "longshot_entry_price": 0.0024999999999999467,
+        "shares": 40000.00000000085,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "505863",
+        "question": "Iran strike on US military before October?",
         "longshot_entry_price": 0.009499999999999953,
         "shares": 10526.315789473736,
         "notional": 100.0,
@@ -2516,10 +2566,10 @@
         "pnl": -100.0
       },
       {
-        "market_id": "511472",
-        "question": "Iran strike on Israel by Nov 8?",
-        "longshot_entry_price": 0.00649999999999995,
-        "shares": 15384.615384615503,
+        "market_id": "509050",
+        "question": "No Israel strike on Iran by Sunday?",
+        "longshot_entry_price": 0.006000000000000005,
+        "shares": 16666.666666666653,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -2536,16 +2586,6 @@
         "pnl": -100.0
       },
       {
-        "market_id": "508378",
-        "question": "Will Israeli troops enter Beirut by October 31? ",
-        "longshot_entry_price": 0.009499999999999953,
-        "shares": 10526.315789473736,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
         "market_id": "511887",
         "question": "Iran strike on Israel on Nov 5?",
         "longshot_entry_price": 0.010000000000000009,
@@ -2556,20 +2596,10 @@
         "pnl": -100.0
       },
       {
-        "market_id": "506968",
-        "question": "Will Israel invade Syria in 2024?",
-        "longshot_entry_price": 0.0024999999999999467,
-        "shares": 40000.00000000085,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "508496",
-        "question": "Will Israeli troops enter Bint Jbeil by October 15?",
-        "longshot_entry_price": 0.006000000000000005,
-        "shares": 16666.666666666653,
+        "market_id": "511472",
+        "question": "Iran strike on Israel by Nov 8?",
+        "longshot_entry_price": 0.00649999999999995,
+        "shares": 15384.615384615503,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -2596,40 +2626,10 @@
         "pnl": -100.0
       },
       {
-        "market_id": "507753",
-        "question": "U.S. military strike on Lebanon before November?",
-        "longshot_entry_price": 0.010000000000000009,
-        "shares": 9999.99999999999,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "508673",
-        "question": "Strike on Dimonah nuclear base in October?",
-        "longshot_entry_price": 0.008000000000000007,
-        "shares": 12499.999999999989,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "511520",
-        "question": "Iran strike on Israel before December?",
-        "longshot_entry_price": 0.009499999999999953,
-        "shares": 10526.315789473736,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "511940",
-        "question": "Israel military strike against Iran in November?",
-        "longshot_entry_price": 0.007000000000000006,
-        "shares": 14285.714285714274,
+        "market_id": "508496",
+        "question": "Will Israeli troops enter Bint Jbeil by October 15?",
+        "longshot_entry_price": 0.006000000000000005,
+        "shares": 16666.666666666653,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -2646,8 +2646,18 @@
         "pnl": -100.0
       },
       {
-        "market_id": "507792",
-        "question": "Israel x Hezbollah Ceasefire in 2024?",
+        "market_id": "511940",
+        "question": "Israel military strike against Iran in November?",
+        "longshot_entry_price": 0.007000000000000006,
+        "shares": 14285.714285714274,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "511520",
+        "question": "Iran strike on Israel before December?",
         "longshot_entry_price": 0.009499999999999953,
         "shares": 10526.315789473736,
         "notional": 100.0,
@@ -2656,50 +2666,20 @@
         "pnl": -100.0
       },
       {
-        "market_id": "518877",
-        "question": "Israel announces ceasefire by January 17?",
-        "longshot_entry_price": 0.00649999999999995,
-        "shares": 15384.615384615503,
+        "market_id": "508378",
+        "question": "Will Israeli troops enter Beirut by October 31? ",
+        "longshot_entry_price": 0.009499999999999953,
+        "shares": 10526.315789473736,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
         "pnl": -100.0
       },
       {
-        "market_id": "518878",
-        "question": "Israel announces ceasefire by Sunday?",
-        "longshot_entry_price": 0.008499999999999952,
-        "shares": 11764.705882353008,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "507115",
-        "question": "Russia x Ukraine Ceasefire in 2024?",
+        "market_id": "507753",
+        "question": "U.S. military strike on Lebanon before November?",
         "longshot_entry_price": 0.010000000000000009,
         "shares": 9999.99999999999,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "508671",
-        "question": "Israel strike on Iranian nuclear facility in 2024?",
-        "longshot_entry_price": 0.00649999999999995,
-        "shares": 15384.615384615503,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "511042",
-        "question": "Another Iran strike on Israel in 2024?",
-        "longshot_entry_price": 0.009499999999999953,
-        "shares": 10526.315789473736,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -2716,10 +2696,30 @@
         "pnl": -100.0
       },
       {
-        "market_id": "518780",
-        "question": "Will 'The Death Of Slim Shady (Coup De Gr\u01cece)' win Best Rap Album?",
-        "longshot_entry_price": 0.0050000000000000044,
-        "shares": 19999.99999999998,
+        "market_id": "518878",
+        "question": "Israel announces ceasefire by Sunday?",
+        "longshot_entry_price": 0.008499999999999952,
+        "shares": 11764.705882353008,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "518877",
+        "question": "Israel announces ceasefire by January 17?",
+        "longshot_entry_price": 0.00649999999999995,
+        "shares": 15384.615384615503,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "508671",
+        "question": "Israel strike on Iranian nuclear facility in 2024?",
+        "longshot_entry_price": 0.00649999999999995,
+        "shares": 15384.615384615503,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -2736,10 +2736,10 @@
         "pnl": -100.0
       },
       {
-        "market_id": "518704",
-        "question": "Russia x Ukraine ceasefire by February 1?",
-        "longshot_entry_price": 0.010000000000000009,
-        "shares": 9999.99999999999,
+        "market_id": "508673",
+        "question": "Strike on Dimonah nuclear base in October?",
+        "longshot_entry_price": 0.008000000000000007,
+        "shares": 12499.999999999989,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -2756,10 +2756,30 @@
         "pnl": -100.0
       },
       {
-        "market_id": "517181",
-        "question": "Was the Cybertruck bombing a lone wolf attack?",
-        "longshot_entry_price": 0.007000000000000006,
-        "shares": 14285.714285714274,
+        "market_id": "521799",
+        "question": "Israel x Hamas Ceasefire Phase II by March 15?",
+        "longshot_entry_price": 0.009499999999999953,
+        "shares": 10526.315789473736,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "511042",
+        "question": "Another Iran strike on Israel in 2024?",
+        "longshot_entry_price": 0.009499999999999953,
+        "shares": 10526.315789473736,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "518780",
+        "question": "Will 'The Death Of Slim Shady (Coup De Gr\u01cece)' win Best Rap Album?",
+        "longshot_entry_price": 0.0050000000000000044,
+        "shares": 19999.99999999998,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -2786,10 +2806,10 @@
         "pnl": -100.0
       },
       {
-        "market_id": "526626",
-        "question": "Israel x Hamas ceasefire cancelled by next Friday?",
-        "longshot_entry_price": 0.0050000000000000044,
-        "shares": 19999.99999999998,
+        "market_id": "516496",
+        "question": "Israel x Hamas ceasefire by March 31?",
+        "longshot_entry_price": 0.0040000000000000036,
+        "shares": 24999.999999999978,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -2800,6 +2820,36 @@
         "question": "Israel x Hamas ceasefire cancelled by Friday?",
         "longshot_entry_price": 0.008000000000000007,
         "shares": 12499.999999999989,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "518704",
+        "question": "Russia x Ukraine ceasefire by February 1?",
+        "longshot_entry_price": 0.010000000000000009,
+        "shares": 9999.99999999999,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "524162",
+        "question": "Israel x Hamas ceasefire cancelled before April?",
+        "longshot_entry_price": 0.006000000000000005,
+        "shares": 16666.666666666653,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "526626",
+        "question": "Israel x Hamas ceasefire cancelled by next Friday?",
+        "longshot_entry_price": 0.0050000000000000044,
+        "shares": 19999.99999999998,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -2826,30 +2876,10 @@
         "pnl": -100.0
       },
       {
-        "market_id": "528757",
-        "question": "Israel x Hamas ceasefire by Friday?",
-        "longshot_entry_price": 0.007499999999999951,
-        "shares": 13333.33333333342,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "521799",
-        "question": "Israel x Hamas Ceasefire Phase II by March 15?",
-        "longshot_entry_price": 0.009499999999999953,
-        "shares": 10526.315789473736,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "516496",
-        "question": "Israel x Hamas ceasefire by March 31?",
-        "longshot_entry_price": 0.0040000000000000036,
-        "shares": 24999.999999999978,
+        "market_id": "507115",
+        "question": "Russia x Ukraine Ceasefire in 2024?",
+        "longshot_entry_price": 0.010000000000000009,
+        "shares": 9999.99999999999,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -2866,10 +2896,30 @@
         "pnl": -100.0
       },
       {
-        "market_id": "524162",
-        "question": "Israel x Hamas ceasefire cancelled before April?",
-        "longshot_entry_price": 0.006000000000000005,
-        "shares": 16666.666666666653,
+        "market_id": "517181",
+        "question": "Was the Cybertruck bombing a lone wolf attack?",
+        "longshot_entry_price": 0.007000000000000006,
+        "shares": 14285.714285714274,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "528757",
+        "question": "Israel x Hamas ceasefire by Friday?",
+        "longshot_entry_price": 0.007499999999999951,
+        "shares": 13333.33333333342,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "526814",
+        "question": "Sea/Air ceasefire in Ukraine before May? ",
+        "longshot_entry_price": 0.007000000000000006,
+        "shares": 14285.714285714274,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -2906,10 +2956,10 @@
         "pnl": -100.0
       },
       {
-        "market_id": "526814",
-        "question": "Sea/Air ceasefire in Ukraine before May? ",
-        "longshot_entry_price": 0.007000000000000006,
-        "shares": 14285.714285714274,
+        "market_id": "532899",
+        "question": "Will Black Sea ceasefire go into effect before May? ",
+        "longshot_entry_price": 0.009000000000000008,
+        "shares": 11111.1111111111,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -2926,8 +2976,8 @@
         "pnl": -100.0
       },
       {
-        "market_id": "528976",
-        "question": "Israel x Hamas ceasefire before May?",
+        "market_id": "540187",
+        "question": "India military strike on Pakistan by Friday?",
         "longshot_entry_price": 0.008499999999999952,
         "shares": 11764.705882353008,
         "notional": 100.0,
@@ -2936,18 +2986,8 @@
         "pnl": -100.0
       },
       {
-        "market_id": "532899",
-        "question": "Will Black Sea ceasefire go into effect before May? ",
-        "longshot_entry_price": 0.009000000000000008,
-        "shares": 11111.1111111111,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "540187",
-        "question": "India military strike on Pakistan by Friday?",
+        "market_id": "528976",
+        "question": "Israel x Hamas ceasefire before May?",
         "longshot_entry_price": 0.008499999999999952,
         "shares": 11764.705882353008,
         "notional": 100.0,
@@ -2976,6 +3016,16 @@
         "pnl": -100.0
       },
       {
+        "market_id": "537193",
+        "question": "Israel x Hamas ceasefire before June?",
+        "longshot_entry_price": 0.009499999999999953,
+        "shares": 10526.315789473736,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
         "market_id": "541331",
         "question": "Will Joe Biden say \"Ceasefire\" during his May\u202f8 interview?",
         "longshot_entry_price": 0.0050000000000000044,
@@ -2986,8 +3036,8 @@
         "pnl": -100.0
       },
       {
-        "market_id": "527883",
-        "question": "Russia x Ukraine Ceasefire in March?",
+        "market_id": "528977",
+        "question": "Israel x Hamas ceasefire before July?",
         "longshot_entry_price": 0.010000000000000009,
         "shares": 9999.99999999999,
         "notional": 100.0,
@@ -3016,60 +3066,10 @@
         "pnl": -100.0
       },
       {
-        "market_id": "537193",
-        "question": "Israel x Hamas ceasefire before June?",
-        "longshot_entry_price": 0.009499999999999953,
-        "shares": 10526.315789473736,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
         "market_id": "542491",
         "question": "Pakistan air/missile strike on Indian soil by Friday?",
         "longshot_entry_price": 0.005499999999999949,
         "shares": 18181.818181818348,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "542190",
-        "question": "Pakistan military strike on India in May?",
-        "longshot_entry_price": 0.008000000000000007,
-        "shares": 12499.999999999989,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "543357",
-        "question": "Pakistan air/missile strike on Indian soil by Friday?",
-        "longshot_entry_price": 0.008499999999999952,
-        "shares": 11764.705882353008,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "543359",
-        "question": "India air/missile strike on Pakistan soil by Friday?",
-        "longshot_entry_price": 0.007499999999999951,
-        "shares": 13333.33333333342,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "543367",
-        "question": "Another India x Pakistan ceasefire announced by Friday?",
-        "longshot_entry_price": 0.009499999999999953,
-        "shares": 10526.315789473736,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -3086,6 +3086,16 @@
         "pnl": -100.0
       },
       {
+        "market_id": "543357",
+        "question": "Pakistan air/missile strike on Indian soil by Friday?",
+        "longshot_entry_price": 0.008499999999999952,
+        "shares": 11764.705882353008,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
         "market_id": "542787",
         "question": "India x Pakistan ceasefire announced before June?",
         "longshot_entry_price": 0.008499999999999952,
@@ -3096,10 +3106,30 @@
         "pnl": -100.0
       },
       {
-        "market_id": "528977",
-        "question": "Israel x Hamas ceasefire before July?",
-        "longshot_entry_price": 0.010000000000000009,
-        "shares": 9999.99999999999,
+        "market_id": "543367",
+        "question": "Another India x Pakistan ceasefire announced by Friday?",
+        "longshot_entry_price": 0.009499999999999953,
+        "shares": 10526.315789473736,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "543359",
+        "question": "India air/missile strike on Pakistan soil by Friday?",
+        "longshot_entry_price": 0.007499999999999951,
+        "shares": 13333.33333333342,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "542190",
+        "question": "Pakistan military strike on India in May?",
+        "longshot_entry_price": 0.008000000000000007,
+        "shares": 12499.999999999989,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -3126,6 +3156,16 @@
         "pnl": -100.0
       },
       {
+        "market_id": "527883",
+        "question": "Russia x Ukraine Ceasefire in March?",
+        "longshot_entry_price": 0.010000000000000009,
+        "shares": 9999.99999999999,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
         "market_id": "537919",
         "question": "Will Black Sea ceasefire go into effect before July?",
         "longshot_entry_price": 0.007499999999999951,
@@ -3136,8 +3176,8 @@
         "pnl": -100.0
       },
       {
-        "market_id": "549321",
-        "question": "Israel x Hamas ceasefire by Friday?",
+        "market_id": "546305",
+        "question": "Israel strike on Iranian nuclear facility before July?",
         "longshot_entry_price": 0.008499999999999952,
         "shares": 11764.705882353008,
         "notional": 100.0,
@@ -3146,8 +3186,8 @@
         "pnl": -100.0
       },
       {
-        "market_id": "546305",
-        "question": "Israel strike on Iranian nuclear facility before July?",
+        "market_id": "549321",
+        "question": "Israel x Hamas ceasefire by Friday?",
         "longshot_entry_price": 0.008499999999999952,
         "shares": 11764.705882353008,
         "notional": 100.0,
@@ -3166,10 +3206,10 @@
         "pnl": -100.0
       },
       {
-        "market_id": "546899",
-        "question": "Another Houthi strike on Israel before July?",
-        "longshot_entry_price": 0.009000000000000008,
-        "shares": 11111.1111111111,
+        "market_id": "552084",
+        "question": "Iran strike on Israel by Friday?",
+        "longshot_entry_price": 0.007000000000000006,
+        "shares": 14285.714285714274,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -3186,30 +3226,20 @@
         "pnl": -100.0
       },
       {
-        "market_id": "551458",
-        "question": "Iran strike on Israel in June?",
-        "longshot_entry_price": 0.009499999999999953,
-        "shares": 10526.315789473736,
+        "market_id": "537194",
+        "question": "Russia x Ukraine ceasefire before October?",
+        "longshot_entry_price": 0.010000000000000009,
+        "shares": 9999.99999999999,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
         "pnl": -100.0
       },
       {
-        "market_id": "552084",
-        "question": "Iran strike on Israel by Friday?",
-        "longshot_entry_price": 0.007000000000000006,
-        "shares": 14285.714285714274,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "552085",
-        "question": "Iran strike on Israel by Monday?",
-        "longshot_entry_price": 0.007000000000000006,
-        "shares": 14285.714285714274,
+        "market_id": "546899",
+        "question": "Another Houthi strike on Israel before July?",
+        "longshot_entry_price": 0.009000000000000008,
+        "shares": 11111.1111111111,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -3236,10 +3266,50 @@
         "pnl": -100.0
       },
       {
+        "market_id": "552085",
+        "question": "Iran strike on Israel by Monday?",
+        "longshot_entry_price": 0.007000000000000006,
+        "shares": 14285.714285714274,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
         "market_id": "552110",
         "question": "Israel strike on Iran on June 15?",
         "longshot_entry_price": 0.009499999999999953,
         "shares": 10526.315789473736,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "551458",
+        "question": "Iran strike on Israel in June?",
+        "longshot_entry_price": 0.009499999999999953,
+        "shares": 10526.315789473736,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "552111",
+        "question": "Israel strike on Iran on June 16?",
+        "longshot_entry_price": 0.010000000000000009,
+        "shares": 9999.99999999999,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "541647",
+        "question": "Israel x Hamas ceasefire before 2026?",
+        "longshot_entry_price": 0.008499999999999952,
+        "shares": 11764.705882353008,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -3256,10 +3326,20 @@
         "pnl": -100.0
       },
       {
-        "market_id": "552111",
-        "question": "Israel strike on Iran on June 16?",
-        "longshot_entry_price": 0.010000000000000009,
-        "shares": 9999.99999999999,
+        "market_id": "516719",
+        "question": "Russia x Ukraine ceasefire in 2025?",
+        "longshot_entry_price": 0.009499999999999953,
+        "shares": 10526.315789473736,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "552122",
+        "question": "Iran ballistic missile strike on Israel by Friday? ",
+        "longshot_entry_price": 0.007499999999999951,
+        "shares": 13333.33333333342,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -3286,6 +3366,16 @@
         "pnl": -100.0
       },
       {
+        "market_id": "552648",
+        "question": "Israel x Iran ceasefire by Friday? ",
+        "longshot_entry_price": 0.010000000000000009,
+        "shares": 9999.99999999999,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
         "market_id": "552115",
         "question": "Israel strike on Iran on June 20?",
         "longshot_entry_price": 0.010000000000000009,
@@ -3296,8 +3386,38 @@
         "pnl": -100.0
       },
       {
-        "market_id": "537194",
-        "question": "Russia x Ukraine ceasefire before October?",
+        "market_id": "553681",
+        "question": "UK strike on Iran before July?",
+        "longshot_entry_price": 0.008499999999999952,
+        "shares": 11764.705882353008,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "553998",
+        "question": "Israel strike on Iran on June 22?",
+        "longshot_entry_price": 0.009499999999999953,
+        "shares": 10526.315789473736,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "552845",
+        "question": "Israel x Iran ceasefire before July 15?",
+        "longshot_entry_price": 0.007000000000000006,
+        "shares": 14285.714285714274,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "543928",
+        "question": "Will India invade Pakistan in 2025?",
         "longshot_entry_price": 0.010000000000000009,
         "shares": 9999.99999999999,
         "notional": 100.0,
@@ -3306,18 +3426,108 @@
         "pnl": -100.0
       },
       {
-        "market_id": "552122",
-        "question": "Iran ballistic missile strike on Israel by Friday? ",
-        "longshot_entry_price": 0.007499999999999951,
-        "shares": 13333.33333333342,
+        "market_id": "553568",
+        "question": "Will Israel invade Iran before July?",
+        "longshot_entry_price": 0.009000000000000008,
+        "shares": 11111.1111111111,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
         "pnl": -100.0
       },
       {
-        "market_id": "552648",
-        "question": "Israel x Iran ceasefire by Friday? ",
+        "market_id": "553966",
+        "question": "Israel strike on Iran on June 21?",
+        "longshot_entry_price": 0.010000000000000009,
+        "shares": 9999.99999999999,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "554000",
+        "question": "Israel strike on Iran on June 24?",
+        "longshot_entry_price": 0.010000000000000009,
+        "shares": 9999.99999999999,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "553999",
+        "question": "Israel strike on Iran on June 23?",
+        "longshot_entry_price": 0.0044999999999999485,
+        "shares": 22222.222222222477,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "554002",
+        "question": "Israel strike on Iran on June 26?",
+        "longshot_entry_price": 0.009000000000000008,
+        "shares": 11111.1111111111,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "554003",
+        "question": "Israel strike on Iran on June 27?",
+        "longshot_entry_price": 0.008499999999999952,
+        "shares": 11764.705882353008,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "554001",
+        "question": "Israel strike on Iran on June 25?",
+        "longshot_entry_price": 0.008499999999999952,
+        "shares": 11764.705882353008,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "554004",
+        "question": "Israel strike on Iran on June 28?",
+        "longshot_entry_price": 0.009499999999999953,
+        "shares": 10526.315789473736,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "554678",
+        "question": "US strike on Iran on June\u202f 22?",
+        "longshot_entry_price": 0.0050000000000000044,
+        "shares": 19999.99999999998,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "554005",
+        "question": "Israel strike on Iran on June 29?",
+        "longshot_entry_price": 0.008499999999999952,
+        "shares": 11764.705882353008,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "554679",
+        "question": "US strike on Iran on June\u202f 23?",
         "longshot_entry_price": 0.010000000000000009,
         "shares": 9999.99999999999,
         "notional": 100.0,
@@ -3336,30 +3546,10 @@
         "pnl": -100.0
       },
       {
-        "market_id": "552117",
-        "question": "Strike on Israel's Dimonah nuclear base in June?",
-        "longshot_entry_price": 0.009499999999999953,
-        "shares": 10526.315789473736,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "541647",
-        "question": "Israel x Hamas ceasefire before 2026?",
-        "longshot_entry_price": 0.008499999999999952,
-        "shares": 11764.705882353008,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "553568",
-        "question": "Will Israel invade Iran before July?",
-        "longshot_entry_price": 0.009000000000000008,
-        "shares": 11111.1111111111,
+        "market_id": "554680",
+        "question": "US strike on Iran on June \u202f24?",
+        "longshot_entry_price": 0.008000000000000007,
+        "shares": 12499.999999999989,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -3376,220 +3566,10 @@
         "pnl": -100.0
       },
       {
-        "market_id": "552845",
-        "question": "Israel x Iran ceasefire before July 15?",
-        "longshot_entry_price": 0.007000000000000006,
-        "shares": 14285.714285714274,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "553681",
-        "question": "UK strike on Iran before July?",
-        "longshot_entry_price": 0.008499999999999952,
-        "shares": 11764.705882353008,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "516719",
-        "question": "Russia x Ukraine ceasefire in 2025?",
-        "longshot_entry_price": 0.009499999999999953,
-        "shares": 10526.315789473736,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "553966",
-        "question": "Israel strike on Iran on June 21?",
-        "longshot_entry_price": 0.010000000000000009,
-        "shares": 9999.99999999999,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "553998",
-        "question": "Israel strike on Iran on June 22?",
-        "longshot_entry_price": 0.009499999999999953,
-        "shares": 10526.315789473736,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "554000",
-        "question": "Israel strike on Iran on June 24?",
-        "longshot_entry_price": 0.010000000000000009,
-        "shares": 9999.99999999999,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "554001",
-        "question": "Israel strike on Iran on June 25?",
-        "longshot_entry_price": 0.008499999999999952,
-        "shares": 11764.705882353008,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "552580",
-        "question": "Iranian coup attempt before July?",
-        "longshot_entry_price": 0.008499999999999952,
-        "shares": 11764.705882353008,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "554002",
-        "question": "Israel strike on Iran on June 26?",
-        "longshot_entry_price": 0.009000000000000008,
-        "shares": 11111.1111111111,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "553999",
-        "question": "Israel strike on Iran on June 23?",
-        "longshot_entry_price": 0.0044999999999999485,
-        "shares": 22222.222222222477,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "554003",
-        "question": "Israel strike on Iran on June 27?",
-        "longshot_entry_price": 0.008499999999999952,
-        "shares": 11764.705882353008,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "553539",
-        "question": "Will the U.S. invade Iran before July?",
-        "longshot_entry_price": 0.010000000000000009,
-        "shares": 9999.99999999999,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "554004",
-        "question": "Israel strike on Iran on June 28?",
-        "longshot_entry_price": 0.009499999999999953,
-        "shares": 10526.315789473736,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "554005",
-        "question": "Israel strike on Iran on June 29?",
-        "longshot_entry_price": 0.008499999999999952,
-        "shares": 11764.705882353008,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "554678",
-        "question": "US strike on Iran on June\u202f 22?",
-        "longshot_entry_price": 0.0050000000000000044,
-        "shares": 19999.99999999998,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
         "market_id": "554006",
         "question": "Israel strike on Iran on June 30?",
         "longshot_entry_price": 0.009499999999999953,
         "shares": 10526.315789473736,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "554680",
-        "question": "US strike on Iran on June \u202f24?",
-        "longshot_entry_price": 0.008000000000000007,
-        "shares": 12499.999999999989,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "554679",
-        "question": "US strike on Iran on June\u202f 23?",
-        "longshot_entry_price": 0.010000000000000009,
-        "shares": 9999.99999999999,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "554681",
-        "question": "US strike on Iran on June\u202f 25?",
-        "longshot_entry_price": 0.009499999999999953,
-        "shares": 10526.315789473736,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "543928",
-        "question": "Will India invade Pakistan in 2025?",
-        "longshot_entry_price": 0.010000000000000009,
-        "shares": 9999.99999999999,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "554682",
-        "question": "US strike on Iran on June \u202f26?",
-        "longshot_entry_price": 0.009000000000000008,
-        "shares": 11111.1111111111,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "554684",
-        "question": "US strike on Iran on June \u202f28? ",
-        "longshot_entry_price": 0.007499999999999951,
-        "shares": 13333.33333333342,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -3606,28 +3586,38 @@
         "pnl": -100.0
       },
       {
-        "market_id": "553569",
-        "question": "U.S. refuels Israeli jets for strikes on Iran before July?",
-        "longshot_entry_price": 0.007000000000000006,
-        "shares": 14285.714285714274,
+        "market_id": "552117",
+        "question": "Strike on Israel's Dimonah nuclear base in June?",
+        "longshot_entry_price": 0.009499999999999953,
+        "shares": 10526.315789473736,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
         "pnl": -100.0
       },
       {
-        "market_id": "554687",
-        "question": "Another U.S. strike on Fordow nuclear facility before July?",
-        "longshot_entry_price": 0.010000000000000009,
-        "shares": 9999.99999999999,
+        "market_id": "554684",
+        "question": "US strike on Iran on June \u202f28? ",
+        "longshot_entry_price": 0.007499999999999951,
+        "shares": 13333.33333333342,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
         "pnl": -100.0
       },
       {
-        "market_id": "554686",
-        "question": "US strike on Iran on June\u202f 30?",
+        "market_id": "554681",
+        "question": "US strike on Iran on June\u202f 25?",
+        "longshot_entry_price": 0.009499999999999953,
+        "shares": 10526.315789473736,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "554682",
+        "question": "US strike on Iran on June \u202f26?",
         "longshot_entry_price": 0.009000000000000008,
         "shares": 11111.1111111111,
         "notional": 100.0,
@@ -3636,10 +3626,10 @@
         "pnl": -100.0
       },
       {
-        "market_id": "554685",
-        "question": "US strike on Iran on June\u202f 29?",
-        "longshot_entry_price": 0.009499999999999953,
-        "shares": 10526.315789473736,
+        "market_id": "553569",
+        "question": "U.S. refuels Israeli jets for strikes on Iran before July?",
+        "longshot_entry_price": 0.007000000000000006,
+        "shares": 14285.714285714274,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -3656,8 +3646,48 @@
         "pnl": -100.0
       },
       {
+        "market_id": "554686",
+        "question": "US strike on Iran on June\u202f 30?",
+        "longshot_entry_price": 0.009000000000000008,
+        "shares": 11111.1111111111,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
         "market_id": "554712",
         "question": "US x Iran ceasefire before July? ",
+        "longshot_entry_price": 0.009499999999999953,
+        "shares": 10526.315789473736,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "554687",
+        "question": "Another U.S. strike on Fordow nuclear facility before July?",
+        "longshot_entry_price": 0.010000000000000009,
+        "shares": 9999.99999999999,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "553539",
+        "question": "Will the U.S. invade Iran before July?",
+        "longshot_entry_price": 0.010000000000000009,
+        "shares": 9999.99999999999,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "554685",
+        "question": "US strike on Iran on June\u202f 29?",
         "longshot_entry_price": 0.009499999999999953,
         "shares": 10526.315789473736,
         "notional": 100.0,
@@ -3676,50 +3706,10 @@
         "pnl": -100.0
       },
       {
-        "market_id": "555752",
-        "question": "Israel x Hamas ceasefire by July 15?",
-        "longshot_entry_price": 0.009499999999999953,
-        "shares": 10526.315789473736,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "555424",
-        "question": "Israel x Iran ceasefire broken by June 27? ",
-        "longshot_entry_price": 0.006000000000000005,
-        "shares": 16666.666666666653,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
         "market_id": "558663",
         "question": "Israel x Hamas ceasefire by Friday?",
         "longshot_entry_price": 0.00649999999999995,
         "shares": 15384.615384615503,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "555833",
-        "question": "Israel x Iran ceasefire broken by July 31?",
-        "longshot_entry_price": 0.009499999999999953,
-        "shares": 10526.315789473736,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "555425",
-        "question": "Israel x Iran ceasefire broken by July 11? ",
-        "longshot_entry_price": 0.009499999999999953,
-        "shares": 10526.315789473736,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -3736,6 +3726,36 @@
         "pnl": -100.0
       },
       {
+        "market_id": "560539",
+        "question": "Israel x Hamas ceasefire by Friday?",
+        "longshot_entry_price": 0.009499999999999953,
+        "shares": 10526.315789473736,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "555752",
+        "question": "Israel x Hamas ceasefire by July 15?",
+        "longshot_entry_price": 0.009499999999999953,
+        "shares": 10526.315789473736,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "552580",
+        "question": "Iranian coup attempt before July?",
+        "longshot_entry_price": 0.008499999999999952,
+        "shares": 11764.705882353008,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
         "market_id": "560831",
         "question": "Another Israel strike on Yemen by Friday?",
         "longshot_entry_price": 0.010000000000000009,
@@ -3746,20 +3766,20 @@
         "pnl": -100.0
       },
       {
-        "market_id": "563308",
-        "question": "Israel x Hamas ceasefire by August 15?",
-        "longshot_entry_price": 0.008499999999999952,
-        "shares": 11764.705882353008,
+        "market_id": "555424",
+        "question": "Israel x Iran ceasefire broken by June 27? ",
+        "longshot_entry_price": 0.006000000000000005,
+        "shares": 16666.666666666653,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
         "pnl": -100.0
       },
       {
-        "market_id": "560539",
-        "question": "Israel x Hamas ceasefire by Friday?",
-        "longshot_entry_price": 0.009499999999999953,
-        "shares": 10526.315789473736,
+        "market_id": "560832",
+        "question": "Another Israel strike on Yemen in July?",
+        "longshot_entry_price": 0.010000000000000009,
+        "shares": 9999.99999999999,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -3786,28 +3806,8 @@
         "pnl": -100.0
       },
       {
-        "market_id": "560832",
-        "question": "Another Israel strike on Yemen in July?",
-        "longshot_entry_price": 0.010000000000000009,
-        "shares": 9999.99999999999,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "554713",
-        "question": "US x Iran ceasefire before August? ",
-        "longshot_entry_price": 0.008499999999999952,
-        "shares": 11764.705882353008,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "555446",
-        "question": "Iranian coup attempt before August?",
+        "market_id": "555833",
+        "question": "Israel x Iran ceasefire broken by July 31?",
         "longshot_entry_price": 0.009499999999999953,
         "shares": 10526.315789473736,
         "notional": 100.0,
@@ -3816,10 +3816,20 @@
         "pnl": -100.0
       },
       {
-        "market_id": "566095",
-        "question": "Israel x Hamas ceasefire by Friday?",
-        "longshot_entry_price": 0.009000000000000008,
-        "shares": 11111.1111111111,
+        "market_id": "555425",
+        "question": "Israel x Iran ceasefire broken by July 11? ",
+        "longshot_entry_price": 0.009499999999999953,
+        "shares": 10526.315789473736,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "563308",
+        "question": "Israel x Hamas ceasefire by August 15?",
+        "longshot_entry_price": 0.008499999999999952,
+        "shares": 11764.705882353008,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -3836,18 +3846,8 @@
         "pnl": -100.0
       },
       {
-        "market_id": "566101",
-        "question": "Another Israel strike on Yemen by July 31?",
-        "longshot_entry_price": 0.009000000000000008,
-        "shares": 11111.1111111111,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "564105",
-        "question": "Another Israel strike on Damascus by July 31?",
+        "market_id": "563309",
+        "question": "Israel x Hamas ceasefire by August 31?",
         "longshot_entry_price": 0.010000000000000009,
         "shares": 9999.99999999999,
         "notional": 100.0,
@@ -3866,8 +3866,38 @@
         "pnl": -100.0
       },
       {
-        "market_id": "563309",
-        "question": "Israel x Hamas ceasefire by August 31?",
+        "market_id": "564105",
+        "question": "Another Israel strike on Damascus by July 31?",
+        "longshot_entry_price": 0.010000000000000009,
+        "shares": 9999.99999999999,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "566095",
+        "question": "Israel x Hamas ceasefire by Friday?",
+        "longshot_entry_price": 0.009000000000000008,
+        "shares": 11111.1111111111,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "566101",
+        "question": "Another Israel strike on Yemen by July 31?",
+        "longshot_entry_price": 0.009000000000000008,
+        "shares": 11111.1111111111,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "567472",
+        "question": "Thailand x Cambodia ceasefire by August 15?",
         "longshot_entry_price": 0.010000000000000009,
         "shares": 9999.99999999999,
         "notional": 100.0,
@@ -3896,10 +3926,50 @@
         "pnl": -100.0
       },
       {
-        "market_id": "567472",
-        "question": "Thailand x Cambodia ceasefire by August 15?",
-        "longshot_entry_price": 0.010000000000000009,
-        "shares": 9999.99999999999,
+        "market_id": "567030",
+        "question": "Houthi strike on Israel by August 31?",
+        "longshot_entry_price": 0.0050000000000000044,
+        "shares": 19999.99999999998,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "555446",
+        "question": "Iranian coup attempt before August?",
+        "longshot_entry_price": 0.009499999999999953,
+        "shares": 10526.315789473736,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "563414",
+        "question": "Azerbaijan x Armenia peace deal in 2025?",
+        "longshot_entry_price": 0.009000000000000008,
+        "shares": 11111.1111111111,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "554713",
+        "question": "US x Iran ceasefire before August? ",
+        "longshot_entry_price": 0.008499999999999952,
+        "shares": 11764.705882353008,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "564650",
+        "question": "Will Israeli troops enter Suwayda in 2025?",
+        "longshot_entry_price": 0.009499999999999953,
+        "shares": 10526.315789473736,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -3916,30 +3986,10 @@
         "pnl": -100.0
       },
       {
-        "market_id": "567030",
-        "question": "Houthi strike on Israel by August 31?",
-        "longshot_entry_price": 0.0050000000000000044,
-        "shares": 19999.99999999998,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "571995",
-        "question": "India strike on Pakistan by Friday?",
-        "longshot_entry_price": 0.009499999999999953,
-        "shares": 10526.315789473736,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "555834",
-        "question": "Israel x Iran ceasefire broken by August 31?",
-        "longshot_entry_price": 0.008000000000000007,
-        "shares": 12499.999999999989,
+        "market_id": "563675",
+        "question": "Israeli troops enter Damascus by October 31?",
+        "longshot_entry_price": 0.010000000000000009,
+        "shares": 9999.99999999999,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -3956,10 +4006,10 @@
         "pnl": -100.0
       },
       {
-        "market_id": "565934",
-        "question": "Israel strike on Damascus by August 31?",
-        "longshot_entry_price": 0.010000000000000009,
-        "shares": 9999.99999999999,
+        "market_id": "571995",
+        "question": "India strike on Pakistan by Friday?",
+        "longshot_entry_price": 0.009499999999999953,
+        "shares": 10526.315789473736,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -3986,10 +4036,10 @@
         "pnl": -100.0
       },
       {
-        "market_id": "563675",
-        "question": "Israeli troops enter Damascus by October 31?",
-        "longshot_entry_price": 0.010000000000000009,
-        "shares": 9999.99999999999,
+        "market_id": "555834",
+        "question": "Israel x Iran ceasefire broken by August 31?",
+        "longshot_entry_price": 0.008000000000000007,
+        "shares": 12499.999999999989,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -4006,20 +4056,10 @@
         "pnl": -100.0
       },
       {
-        "market_id": "569679",
-        "question": "Israel x Hamas ceasefire by September 15?",
+        "market_id": "565934",
+        "question": "Israel strike on Damascus by August 31?",
         "longshot_entry_price": 0.010000000000000009,
         "shares": 9999.99999999999,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "563414",
-        "question": "Azerbaijan x Armenia peace deal in 2025?",
-        "longshot_entry_price": 0.009000000000000008,
-        "shares": 11111.1111111111,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -4036,36 +4076,6 @@
         "pnl": -100.0
       },
       {
-        "market_id": "572000",
-        "question": "Pakistan strike on India by August 31?",
-        "longshot_entry_price": 0.007000000000000006,
-        "shares": 14285.714285714274,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "577006",
-        "question": "Will Trump say \"Ceasefire\" 3+ times during Zelensky events on August 18?",
-        "longshot_entry_price": 0.0050000000000000044,
-        "shares": 19999.99999999998,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "564650",
-        "question": "Will Israeli troops enter Suwayda in 2025?",
-        "longshot_entry_price": 0.009499999999999953,
-        "shares": 10526.315789473736,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
         "market_id": "574551",
         "question": "Will Israel carry out an airstrike on the West Bank by September 30?",
         "longshot_entry_price": 0.0044999999999999485,
@@ -4076,10 +4086,20 @@
         "pnl": -100.0
       },
       {
-        "market_id": "571996",
-        "question": "India strike on Pakistan by August 31?",
-        "longshot_entry_price": 0.007499999999999951,
-        "shares": 13333.33333333342,
+        "market_id": "569679",
+        "question": "Israel x Hamas ceasefire by September 15?",
+        "longshot_entry_price": 0.010000000000000009,
+        "shares": 9999.99999999999,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "577006",
+        "question": "Will Trump say \"Ceasefire\" 3+ times during Zelensky events on August 18?",
+        "longshot_entry_price": 0.0050000000000000044,
+        "shares": 19999.99999999998,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -4116,40 +4136,10 @@
         "pnl": -100.0
       },
       {
-        "market_id": "566908",
-        "question": "Israel x Iran ceasefire broken by October 31?",
-        "longshot_entry_price": 0.009499999999999953,
-        "shares": 10526.315789473736,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "583542",
-        "question": "Israel strike on Yemen by September 5?",
-        "longshot_entry_price": 0.009499999999999953,
-        "shares": 10526.315789473736,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "569680",
-        "question": "Israel x Hamas ceasefire by September 30?",
-        "longshot_entry_price": 0.010000000000000009,
-        "shares": 9999.99999999999,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "580526",
-        "question": "Another Houthi strike on Israel by September 15?",
-        "longshot_entry_price": 0.010000000000000009,
-        "shares": 9999.99999999999,
+        "market_id": "572000",
+        "question": "Pakistan strike on India by August 31?",
+        "longshot_entry_price": 0.007000000000000006,
+        "shares": 14285.714285714274,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -4166,10 +4156,20 @@
         "pnl": -100.0
       },
       {
-        "market_id": "582462",
-        "question": "Israel strike on Damascus by September 15?",
-        "longshot_entry_price": 0.00649999999999995,
-        "shares": 15384.615384615503,
+        "market_id": "580526",
+        "question": "Another Houthi strike on Israel by September 15?",
+        "longshot_entry_price": 0.010000000000000009,
+        "shares": 9999.99999999999,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "583542",
+        "question": "Israel strike on Yemen by September 5?",
+        "longshot_entry_price": 0.009499999999999953,
+        "shares": 10526.315789473736,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -4180,6 +4180,36 @@
         "question": "Israel x Hamas ceasefire by October 31?",
         "longshot_entry_price": 0.008499999999999952,
         "shares": 11764.705882353008,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "582462",
+        "question": "Israel strike on Damascus by September 15?",
+        "longshot_entry_price": 0.00649999999999995,
+        "shares": 15384.615384615503,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "566908",
+        "question": "Israel x Iran ceasefire broken by October 31?",
+        "longshot_entry_price": 0.009499999999999953,
+        "shares": 10526.315789473736,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "583543",
+        "question": "Israel strike on Yemen by September 30?",
+        "longshot_entry_price": 0.0020000000000000018,
+        "shares": 49999.999999999956,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -4216,10 +4246,10 @@
         "pnl": -100.0
       },
       {
-        "market_id": "583543",
-        "question": "Israel strike on Yemen by September 30?",
-        "longshot_entry_price": 0.0020000000000000018,
-        "shares": 49999.999999999956,
+        "market_id": "574531",
+        "question": "Lebanon coup attempt by December 31?",
+        "longshot_entry_price": 0.008000000000000007,
+        "shares": 12499.999999999989,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -4236,16 +4266,6 @@
         "pnl": -100.0
       },
       {
-        "market_id": "574531",
-        "question": "Lebanon coup attempt by December 31?",
-        "longshot_entry_price": 0.008000000000000007,
-        "shares": 12499.999999999989,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
         "market_id": "566910",
         "question": "Israel x Iran ceasefire broken by December 31?",
         "longshot_entry_price": 0.010000000000000009,
@@ -4256,40 +4276,20 @@
         "pnl": -100.0
       },
       {
-        "market_id": "578128",
-        "question": "Russia x Ukraine ceasefire by October 31?",
-        "longshot_entry_price": 0.009499999999999953,
-        "shares": 10526.315789473736,
+        "market_id": "571996",
+        "question": "India strike on Pakistan by August 31?",
+        "longshot_entry_price": 0.007499999999999951,
+        "shares": 13333.33333333342,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
         "pnl": -100.0
       },
       {
-        "market_id": "585583",
-        "question": "Israel strike on Damascus by September 30?",
+        "market_id": "569680",
+        "question": "Israel x Hamas ceasefire by September 30?",
         "longshot_entry_price": 0.010000000000000009,
         "shares": 9999.99999999999,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "592191",
-        "question": "Polish strike on Russia by September 30?",
-        "longshot_entry_price": 0.010000000000000009,
-        "shares": 9999.99999999999,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "592869",
-        "question": "Israel strike on Yemen by September 30?",
-        "longshot_entry_price": 0.006000000000000005,
-        "shares": 16666.666666666653,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -4306,50 +4306,10 @@
         "pnl": -100.0
       },
       {
-        "market_id": "600574",
-        "question": "Israel strike on Yemen by September 22?",
-        "longshot_entry_price": 0.009499999999999953,
-        "shares": 10526.315789473736,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "591763",
-        "question": "Qatar strike on Israel by September 30?",
+        "market_id": "592191",
+        "question": "Polish strike on Russia by September 30?",
         "longshot_entry_price": 0.010000000000000009,
         "shares": 9999.99999999999,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "592194",
-        "question": "Polish strike on Belarus by September 30?",
-        "longshot_entry_price": 0.008499999999999952,
-        "shares": 11764.705882353008,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "575008",
-        "question": "Ukraine signs peace deal with Russia in 2025?",
-        "longshot_entry_price": 0.009000000000000008,
-        "shares": 11111.1111111111,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "600850",
-        "question": "Will Trump say \"Ceasefire\" during events with UK Prime Minister on September 18?",
-        "longshot_entry_price": 0.0050000000000000044,
-        "shares": 19999.99999999998,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -4366,10 +4326,70 @@
         "pnl": -100.0
       },
       {
+        "market_id": "585583",
+        "question": "Israel strike on Damascus by September 30?",
+        "longshot_entry_price": 0.010000000000000009,
+        "shares": 9999.99999999999,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
         "market_id": "600573",
         "question": "Israel strike on Yemen by September 30?",
         "longshot_entry_price": 0.0050000000000000044,
         "shares": 19999.99999999998,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "592869",
+        "question": "Israel strike on Yemen by September 30?",
+        "longshot_entry_price": 0.006000000000000005,
+        "shares": 16666.666666666653,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "575008",
+        "question": "Ukraine signs peace deal with Russia in 2025?",
+        "longshot_entry_price": 0.009000000000000008,
+        "shares": 11111.1111111111,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "578128",
+        "question": "Russia x Ukraine ceasefire by October 31?",
+        "longshot_entry_price": 0.009499999999999953,
+        "shares": 10526.315789473736,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "600850",
+        "question": "Will Trump say \"Ceasefire\" during events with UK Prime Minister on September 18?",
+        "longshot_entry_price": 0.0050000000000000044,
+        "shares": 19999.99999999998,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "600574",
+        "question": "Israel strike on Yemen by September 22?",
+        "longshot_entry_price": 0.009499999999999953,
+        "shares": 10526.315789473736,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -4386,20 +4406,10 @@
         "pnl": -100.0
       },
       {
-        "market_id": "591764",
-        "question": "Israel strike on Gulf State by September 30?",
-        "longshot_entry_price": 0.010000000000000009,
-        "shares": 9999.99999999999,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "616561",
-        "question": "Israel x Hamas ceasefire by October 10?",
-        "longshot_entry_price": 0.009499999999999953,
-        "shares": 10526.315789473736,
+        "market_id": "592194",
+        "question": "Polish strike on Belarus by September 30?",
+        "longshot_entry_price": 0.008499999999999952,
+        "shares": 11764.705882353008,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -4436,20 +4446,20 @@
         "pnl": -100.0
       },
       {
-        "market_id": "623665",
-        "question": "Will Trump say \"Ceasefire\" 3+ times during events with PM of Canada on Oct 7?",
-        "longshot_entry_price": 0.0050000000000000044,
-        "shares": 19999.99999999998,
+        "market_id": "616561",
+        "question": "Israel x Hamas ceasefire by October 10?",
+        "longshot_entry_price": 0.009499999999999953,
+        "shares": 10526.315789473736,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
         "pnl": -100.0
       },
       {
-        "market_id": "620983",
-        "question": "Israel strike on Yemen by October 15?",
-        "longshot_entry_price": 0.007000000000000006,
-        "shares": 14285.714285714274,
+        "market_id": "623665",
+        "question": "Will Trump say \"Ceasefire\" 3+ times during events with PM of Canada on Oct 7?",
+        "longshot_entry_price": 0.0050000000000000044,
+        "shares": 19999.99999999998,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -4466,10 +4476,20 @@
         "pnl": -100.0
       },
       {
-        "market_id": "592190",
-        "question": "Russian strike on Poland by September 30?",
-        "longshot_entry_price": 0.009499999999999953,
-        "shares": 10526.315789473736,
+        "market_id": "620983",
+        "question": "Israel strike on Yemen by October 15?",
+        "longshot_entry_price": 0.007000000000000006,
+        "shares": 14285.714285714274,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "618021",
+        "question": "Successful Houthi attack on shipping by October 15?",
+        "longshot_entry_price": 0.010000000000000009,
+        "shares": 9999.99999999999,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -4486,8 +4506,28 @@
         "pnl": -100.0
       },
       {
-        "market_id": "618021",
-        "question": "Successful Houthi attack on shipping by October 15?",
+        "market_id": "591763",
+        "question": "Qatar strike on Israel by September 30?",
+        "longshot_entry_price": 0.010000000000000009,
+        "shares": 9999.99999999999,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "621174",
+        "question": "Will Trump invoke War Powers again by October 31?",
+        "longshot_entry_price": 0.005499999999999949,
+        "shares": 18181.818181818348,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "591764",
+        "question": "Israel strike on Gulf State by September 30?",
         "longshot_entry_price": 0.010000000000000009,
         "shares": 9999.99999999999,
         "notional": 100.0,
@@ -4506,60 +4546,10 @@
         "pnl": -100.0
       },
       {
-        "market_id": "621174",
-        "question": "Will Trump invoke War Powers again by October 31?",
-        "longshot_entry_price": 0.005499999999999949,
-        "shares": 18181.818181818348,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "645019",
-        "question": "North Korea missile launch by November 15?",
-        "longshot_entry_price": 0.006000000000000005,
-        "shares": 16666.666666666653,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "654677",
-        "question": "Israel x Hamas ceasefire cancelled by November 7?",
-        "longshot_entry_price": 0.008000000000000007,
-        "shares": 12499.999999999989,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "589648",
-        "question": "Will the U.S. invade Venezuela by December 31, 2025?",
-        "longshot_entry_price": 0.010000000000000009,
-        "shares": 9999.99999999999,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
         "market_id": "591855",
         "question": "Hezbollah strike on Israel by September 15?",
         "longshot_entry_price": 0.00649999999999995,
         "shares": 15384.615384615503,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "655699",
-        "question": "North Korea missile launch by November 15?",
-        "longshot_entry_price": 0.0050000000000000044,
-        "shares": 19999.99999999998,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -4576,8 +4566,8 @@
         "pnl": -100.0
       },
       {
-        "market_id": "628926",
-        "question": "Israel x Hamas Ceasefire Phase II by October 31?",
+        "market_id": "592190",
+        "question": "Russian strike on Poland by September 30?",
         "longshot_entry_price": 0.009499999999999953,
         "shares": 10526.315789473736,
         "notional": 100.0,
@@ -4586,20 +4576,30 @@
         "pnl": -100.0
       },
       {
-        "market_id": "610222",
-        "question": "Russian strike on a NATO member by October 31?",
-        "longshot_entry_price": 0.009000000000000008,
-        "shares": 11111.1111111111,
+        "market_id": "645019",
+        "question": "North Korea missile launch by November 15?",
+        "longshot_entry_price": 0.006000000000000005,
+        "shares": 16666.666666666653,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
         "pnl": -100.0
       },
       {
-        "market_id": "628889",
-        "question": "Israel x Hamas ceasefire cancelled by October 31?",
-        "longshot_entry_price": 0.0044999999999999485,
-        "shares": 22222.222222222477,
+        "market_id": "655699",
+        "question": "North Korea missile launch by November 15?",
+        "longshot_entry_price": 0.0050000000000000044,
+        "shares": 19999.99999999998,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "654677",
+        "question": "Israel x Hamas ceasefire cancelled by November 7?",
+        "longshot_entry_price": 0.008000000000000007,
+        "shares": 12499.999999999989,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -4616,10 +4616,40 @@
         "pnl": -100.0
       },
       {
+        "market_id": "658013",
+        "question": "Hezbollah strike on Israel by December 31?",
+        "longshot_entry_price": 0.007499999999999951,
+        "shares": 13333.33333333342,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "628889",
+        "question": "Israel x Hamas ceasefire cancelled by October 31?",
+        "longshot_entry_price": 0.0044999999999999485,
+        "shares": 22222.222222222477,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
         "market_id": "591856",
         "question": "Hezbollah strike on Israel by September 30?",
         "longshot_entry_price": 0.007499999999999951,
         "shares": 13333.33333333342,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "589648",
+        "question": "Will the U.S. invade Venezuela by December 31, 2025?",
+        "longshot_entry_price": 0.010000000000000009,
+        "shares": 9999.99999999999,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -4646,8 +4676,28 @@
         "pnl": -100.0
       },
       {
-        "market_id": "642524",
-        "question": "Russia x Ukraine ceasefire by November 30?",
+        "market_id": "628926",
+        "question": "Israel x Hamas Ceasefire Phase II by October 31?",
+        "longshot_entry_price": 0.009499999999999953,
+        "shares": 10526.315789473736,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "610222",
+        "question": "Russian strike on a NATO member by October 31?",
+        "longshot_entry_price": 0.009000000000000008,
+        "shares": 11111.1111111111,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "664715",
+        "question": "Israel strike on Yemen by December 31?",
         "longshot_entry_price": 0.010000000000000009,
         "shares": 9999.99999999999,
         "notional": 100.0,
@@ -4656,20 +4706,10 @@
         "pnl": -100.0
       },
       {
-        "market_id": "657427",
-        "question": "Israel x Hamas Ceasefire Phase II by November 30?",
-        "longshot_entry_price": 0.005499999999999949,
-        "shares": 18181.818181818348,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "658013",
-        "question": "Hezbollah strike on Israel by December 31?",
-        "longshot_entry_price": 0.007499999999999951,
-        "shares": 13333.33333333342,
+        "market_id": "642524",
+        "question": "Russia x Ukraine ceasefire by November 30?",
+        "longshot_entry_price": 0.010000000000000009,
+        "shares": 9999.99999999999,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -4696,20 +4736,10 @@
         "pnl": -100.0
       },
       {
-        "market_id": "664715",
-        "question": "Israel strike on Yemen by December 31?",
-        "longshot_entry_price": 0.010000000000000009,
-        "shares": 9999.99999999999,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "670252",
-        "question": "North Korea missile launch by November 30?",
-        "longshot_entry_price": 0.010000000000000009,
-        "shares": 9999.99999999999,
+        "market_id": "657427",
+        "question": "Israel x Hamas Ceasefire Phase II by November 30?",
+        "longshot_entry_price": 0.005499999999999949,
+        "shares": 18181.818181818348,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -4726,10 +4756,100 @@
         "pnl": -100.0
       },
       {
+        "market_id": "666696",
+        "question": "Israel x Iran ceasefire broken by March 31, 2026?",
+        "longshot_entry_price": 0.007000000000000006,
+        "shares": 14285.714285714274,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "670252",
+        "question": "North Korea missile launch by November 30?",
+        "longshot_entry_price": 0.010000000000000009,
+        "shares": 9999.99999999999,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
         "market_id": "654676",
         "question": "Israel x Hamas ceasefire cancelled by November 30?",
         "longshot_entry_price": 0.009499999999999953,
         "shares": 10526.315789473736,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "664748",
+        "question": "Israel x Hamas ceasefire cancelled by March 31, 2026?",
+        "longshot_entry_price": 0.0004999999999999449,
+        "shares": 200000.00000002203,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "695481",
+        "question": "Israel strike on the West Bank by December 31?",
+        "longshot_entry_price": 0.010000000000000009,
+        "shares": 9999.99999999999,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "704472",
+        "question": "Odds of Russia x Ukraine ceasefire on Friday at least 20%?",
+        "longshot_entry_price": 0.008499999999999952,
+        "shares": 11764.705882353008,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "704448",
+        "question": "Odds of Russia x Ukraine ceasefire on Friday at least 15%?",
+        "longshot_entry_price": 0.009499999999999953,
+        "shares": 10526.315789473736,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "704473",
+        "question": "Odds of Russia x Ukraine ceasefire on Friday at least 25%?",
+        "longshot_entry_price": 0.008499999999999952,
+        "shares": 11764.705882353008,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "677393",
+        "question": "Hezbollah strike on Israel by March 31?",
+        "longshot_entry_price": 0.008499999999999952,
+        "shares": 11764.705882353008,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "704498",
+        "question": "Odds of Russia x Ukraine ceasefire in 2025 Under 5% by December 5?",
+        "longshot_entry_price": 0.0004999999999999449,
+        "shares": 200000.00000002203,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -4756,100 +4876,10 @@
         "pnl": -100.0
       },
       {
-        "market_id": "704448",
-        "question": "Odds of Russia x Ukraine ceasefire on Friday at least 15%?",
-        "longshot_entry_price": 0.009499999999999953,
-        "shares": 10526.315789473736,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "704472",
-        "question": "Odds of Russia x Ukraine ceasefire on Friday at least 20%?",
-        "longshot_entry_price": 0.008499999999999952,
-        "shares": 11764.705882353008,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "704473",
-        "question": "Odds of Russia x Ukraine ceasefire on Friday at least 25%?",
-        "longshot_entry_price": 0.008499999999999952,
-        "shares": 11764.705882353008,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "695481",
-        "question": "Israel strike on the West Bank by December 31?",
-        "longshot_entry_price": 0.010000000000000009,
-        "shares": 9999.99999999999,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "704498",
-        "question": "Odds of Russia x Ukraine ceasefire in 2025 Under 5% by December 5?",
-        "longshot_entry_price": 0.0004999999999999449,
-        "shares": 200000.00000002203,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "657434",
-        "question": "Russian strike on a NATO member by December 31?",
-        "longshot_entry_price": 0.007499999999999951,
-        "shares": 13333.33333333342,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "676389",
-        "question": "Pakistan strike on India by November 30?",
-        "longshot_entry_price": 0.009000000000000008,
-        "shares": 11111.1111111111,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "682894",
-        "question": "Sudan civil war ceasefire in 2025?",
-        "longshot_entry_price": 0.009000000000000008,
-        "shares": 11111.1111111111,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
         "market_id": "705370",
         "question": "Russia strike on Kyiv municipality by December 12?",
         "longshot_entry_price": 0.00649999999999995,
         "shares": 15384.615384615503,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "666696",
-        "question": "Israel x Iran ceasefire broken by March 31, 2026?",
-        "longshot_entry_price": 0.007000000000000006,
-        "shares": 14285.714285714274,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -4866,30 +4896,20 @@
         "pnl": -100.0
       },
       {
+        "market_id": "682894",
+        "question": "Sudan civil war ceasefire in 2025?",
+        "longshot_entry_price": 0.009000000000000008,
+        "shares": 11111.1111111111,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
         "market_id": "711673",
         "question": "Odds of Russia x Ukraine ceasefire on Friday at least 10%?",
         "longshot_entry_price": 0.009499999999999953,
         "shares": 10526.315789473736,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "693508",
-        "question": "Ukraine strike on Moscow municipality by December 31?",
-        "longshot_entry_price": 0.008499999999999952,
-        "shares": 11764.705882353008,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "664748",
-        "question": "Israel x Hamas ceasefire cancelled by March 31, 2026?",
-        "longshot_entry_price": 0.0004999999999999449,
-        "shares": 200000.00000002203,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -4906,10 +4926,50 @@
         "pnl": -100.0
       },
       {
+        "market_id": "657434",
+        "question": "Russian strike on a NATO member by December 31?",
+        "longshot_entry_price": 0.007499999999999951,
+        "shares": 13333.33333333342,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
         "market_id": "705371",
         "question": "North Korea missile launch by December 31?",
         "longshot_entry_price": 0.008000000000000007,
         "shares": 12499.999999999989,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "663544",
+        "question": "Will the U.S. invade Venezuela by March 31, 2026?",
+        "longshot_entry_price": 0.007000000000000006,
+        "shares": 14285.714285714274,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "788948",
+        "question": "Russia strike on Kyiv municipality on December 2?",
+        "longshot_entry_price": 0.007499999999999951,
+        "shares": 13333.33333333342,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "693508",
+        "question": "Ukraine strike on Moscow municipality by December 31?",
+        "longshot_entry_price": 0.008499999999999952,
+        "shares": 11764.705882353008,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -4936,10 +4996,30 @@
         "pnl": -100.0
       },
       {
-        "market_id": "788948",
-        "question": "Russia strike on Kyiv municipality on December 2?",
-        "longshot_entry_price": 0.007499999999999951,
-        "shares": 13333.33333333342,
+        "market_id": "676389",
+        "question": "Pakistan strike on India by November 30?",
+        "longshot_entry_price": 0.009000000000000008,
+        "shares": 11111.1111111111,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "711244",
+        "question": "Ukraine officially agrees to a US backed ceasefire framework by December 31?",
+        "longshot_entry_price": 0.010000000000000009,
+        "shares": 9999.99999999999,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "788952",
+        "question": "Russia strike on Kyiv municipality on December 6?",
+        "longshot_entry_price": 0.010000000000000009,
+        "shares": 9999.99999999999,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -4966,50 +5046,20 @@
         "pnl": -100.0
       },
       {
-        "market_id": "788952",
-        "question": "Russia strike on Kyiv municipality on December 6?",
-        "longshot_entry_price": 0.010000000000000009,
-        "shares": 9999.99999999999,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "706280",
-        "question": "Israel strike on the West Bank by December 31?",
-        "longshot_entry_price": 0.010000000000000009,
-        "shares": 9999.99999999999,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "711244",
-        "question": "Ukraine officially agrees to a US backed ceasefire framework by December 31?",
-        "longshot_entry_price": 0.010000000000000009,
-        "shares": 9999.99999999999,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "705521",
-        "question": "Houthi strike on Israel by December 31?",
-        "longshot_entry_price": 0.010000000000000009,
-        "shares": 9999.99999999999,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
         "market_id": "838616",
         "question": "Russia strike on Kyiv municipality on December 8?",
         "longshot_entry_price": 0.0050000000000000044,
         "shares": 19999.99999999998,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "665223",
+        "question": "Ukraine signs peace deal with Russia by March 31?",
+        "longshot_entry_price": 0.009499999999999953,
+        "shares": 10526.315789473736,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -5036,16 +5086,6 @@
         "pnl": -100.0
       },
       {
-        "market_id": "677393",
-        "question": "Hezbollah strike on Israel by March 31?",
-        "longshot_entry_price": 0.008499999999999952,
-        "shares": 11764.705882353008,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
         "market_id": "840939",
         "question": "Odds of Russia x Ukraine ceasefire on Friday over 25%?",
         "longshot_entry_price": 0.008000000000000007,
@@ -5056,30 +5096,10 @@
         "pnl": -100.0
       },
       {
-        "market_id": "898220",
-        "question": "Thailand x Cambodia ceasefire by December 15?",
-        "longshot_entry_price": 0.007000000000000006,
-        "shares": 14285.714285714274,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "665223",
-        "question": "Ukraine signs peace deal with Russia by March 31?",
-        "longshot_entry_price": 0.009499999999999953,
-        "shares": 10526.315789473736,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "663544",
-        "question": "Will the U.S. invade Venezuela by March 31, 2026?",
-        "longshot_entry_price": 0.007000000000000006,
-        "shares": 14285.714285714274,
+        "market_id": "706280",
+        "question": "Israel strike on the West Bank by December 31?",
+        "longshot_entry_price": 0.010000000000000009,
+        "shares": 9999.99999999999,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -5096,10 +5116,20 @@
         "pnl": -100.0
       },
       {
-        "market_id": "704339",
-        "question": "Russia x Ukraine ceasefire by January 31, 2026?",
-        "longshot_entry_price": 0.009499999999999953,
-        "shares": 10526.315789473736,
+        "market_id": "898220",
+        "question": "Thailand x Cambodia ceasefire by December 15?",
+        "longshot_entry_price": 0.007000000000000006,
+        "shares": 14285.714285714274,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "705521",
+        "question": "Houthi strike on Israel by December 31?",
+        "longshot_entry_price": 0.010000000000000009,
+        "shares": 9999.99999999999,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -5110,16 +5140,6 @@
         "question": "North Korea missile launch by January 31?",
         "longshot_entry_price": 0.0024999999999999467,
         "shares": 40000.00000000085,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "956444",
-        "question": "Ukraine signs peace deal with Russia by January 31?",
-        "longshot_entry_price": 0.009499999999999953,
-        "shares": 10526.315789473736,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -5146,6 +5166,46 @@
         "pnl": -100.0
       },
       {
+        "market_id": "956444",
+        "question": "Ukraine signs peace deal with Russia by January 31?",
+        "longshot_entry_price": 0.009499999999999953,
+        "shares": 10526.315789473736,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "704339",
+        "question": "Russia x Ukraine ceasefire by January 31, 2026?",
+        "longshot_entry_price": 0.009499999999999953,
+        "shares": 10526.315789473736,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "3700194",
+        "question": "US ceasefire against Iran continues through August 31?",
+        "longshot_entry_price": 0.010000000000000009,
+        "shares": 9999.99999999999,
+        "notional": 100.0,
+        "won": true,
+        "payout": 9999.99999999999,
+        "pnl": 9899.99999999999
+      },
+      {
+        "market_id": "3700194",
+        "question": "US ceasefire against Iran continues through August 31?",
+        "longshot_entry_price": 0.00649999999999995,
+        "shares": 15384.615384615503,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
         "market_id": "957644",
         "question": "Israel x Hamas Ceasefire Phase II by January 31?",
         "longshot_entry_price": 0.008499999999999952,
@@ -5156,10 +5216,10 @@
         "pnl": -100.0
       },
       {
-        "market_id": "835893",
-        "question": "Ukraine officially agrees to a US backed ceasefire framework by March 31?",
-        "longshot_entry_price": 0.008499999999999952,
-        "shares": 11764.705882353008,
+        "market_id": "994858",
+        "question": "Sudan civil war ceasefire by June 30, 2026?",
+        "longshot_entry_price": 0.0050000000000000044,
+        "shares": 19999.99999999998,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -5186,20 +5246,10 @@
         "pnl": -100.0
       },
       {
-        "market_id": "994856",
-        "question": "Sudan civil war ceasefire by March 31, 2026?",
-        "longshot_entry_price": 0.0014999999999999458,
-        "shares": 66666.66666666907,
-        "notional": 100.0,
-        "won": false,
-        "payout": 0.0,
-        "pnl": -100.0
-      },
-      {
-        "market_id": "994858",
-        "question": "Sudan civil war ceasefire by June 30, 2026?",
-        "longshot_entry_price": 0.0050000000000000044,
-        "shares": 19999.99999999998,
+        "market_id": "835893",
+        "question": "Ukraine officially agrees to a US backed ceasefire framework by March 31?",
+        "longshot_entry_price": 0.008499999999999952,
+        "shares": 11764.705882353008,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
@@ -5210,6 +5260,16 @@
         "question": "Israel x Hamas Ceasefire Phase II by June 30?",
         "longshot_entry_price": 0.0034999999999999476,
         "shares": 28571.428571428998,
+        "notional": 100.0,
+        "won": false,
+        "payout": 0.0,
+        "pnl": -100.0
+      },
+      {
+        "market_id": "994856",
+        "question": "Sudan civil war ceasefire by March 31, 2026?",
+        "longshot_entry_price": 0.0014999999999999458,
+        "shares": 66666.66666666907,
         "notional": 100.0,
         "won": false,
         "payout": 0.0,
