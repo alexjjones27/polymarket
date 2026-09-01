@@ -67,6 +67,36 @@ def filter_conflict_markets(census: list[dict]) -> list[dict]:
     return df_filtered
 
 
+# Known census gap, not a methodology choice: the Gamma /markets bulk-pagination
+# endpoint reliably 500s for end_date in [2026-08-15, 2026-08-16), [2026-08-22,
+# 2026-08-23), [2026-08-29, 2026-08-31) at limit>=50 (confirmed live: limit<=20
+# succeeds for the first ~20 rows, then the SAME window still 500s from some
+# offset onward regardless of page size -- a server-side issue with a specific
+# record's serialization, not a transient/rate-limit problem, since isolated
+# single-page requests at small limits still fail past that point). This
+# silently drops any market whose resolution date falls in those windows from
+# the general population census -- including, confirmed directly via the
+# /public-search endpoint (which bypasses the broken bulk pagination entirely),
+# "US ceasefire against Iran continues through August 31?" (id 3700194): the
+# real-world event that motivated this backtest. Recovered here by explicit
+# market ID via direct lookup rather than a full re-crawl of the broken
+# windows (which would need per-record recovery at the same cost) -- documented
+# as a manual patch, not claimed as a complete recovery of everything the
+# broken windows contain.
+RECOVERED_MARKET_IDS = ["3700194"]
+
+
+def fetch_recovered_markets() -> list[dict]:
+    out = []
+    for mid in RECOVERED_MARKET_IDS:
+        try:
+            m = pmf._get(pmf.GAMMA_BASE, f"/markets/{mid}", {})
+            out.append(m)
+        except Exception as exc:
+            print(f"  [recovered] WARNING: failed to fetch market {mid}: {exc}")
+    return out
+
+
 def mirror_longshot_trade(trade: dict) -> dict:
     """Buying the complementary (longshot) side of this same crossing --
     same approximation run_longshot_buy_backtest.py uses and documents:
@@ -93,6 +123,16 @@ def main():
     conflict_markets = filter_conflict_markets(census)
     print(f"  {len(conflict_markets):,} markets match the conflict/shock keyword filter "
           f"(post CLOB-cutoff, with CLOB token ids)")
+
+    recovered = fetch_recovered_markets()
+    existing_ids = {str(m["id"]) for m in conflict_markets}
+    n_added = 0
+    for m in recovered:
+        if str(m["id"]) not in existing_ids and pmf._safe_json_list(m.get("clobTokenIds")):
+            conflict_markets.append(m)
+            n_added += 1
+    print(f"  +{n_added} markets recovered by explicit ID from known census gaps "
+          f"(see RECOVERED_MARKET_IDS) -> {len(conflict_markets):,} total")
 
     signal_cfg = pmf.SignalConfig(threshold=THRESHOLD, n_consecutive=N_CONSECUTIVE)
     cfg = pmf.BacktestConfig(signal=signal_cfg, position_notional=100.0,
