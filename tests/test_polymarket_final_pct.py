@@ -21,19 +21,24 @@ from polymarket_final_pct import (
     SignalConfig,
     _dedupe_by_id,
     categorize_flip,
+    category_breakdown,
     classify_fee_category,
     classify_report_bucket,
     clopper_pearson_interval,
     compute_metrics,
     compute_with_vs_without_flips,
+    days_to_resolution_distribution,
     detect_crossing,
     estimate_vwap_fill,
     maker_fee_frac_of_notional,
+    max_days_to_resolution_variant,
+    report_bucket_coverage,
     resolved_outcome_index,
     simulate_trade,
     stratified_sample_markets,
     taker_fee_frac_of_notional,
     wilson_interval,
+    write_report,
 )
 
 
@@ -137,6 +142,17 @@ def test_classify_report_bucket_crypto_price():
 def test_classify_fee_category_maps_to_official_taxonomy():
     m = {"question": "Will Bitcoin hit $100k?", "slug": "x", "events": []}
     assert classify_fee_category(m) == "crypto"
+
+
+def test_report_bucket_coverage_counts_every_bucket_including_zero():
+    markets = [
+        {"question": "Lakers vs Celtics: who wins Game 7?", "slug": "x", "events": []},
+        {"question": "Will Bitcoin hit $100k?", "slug": "x", "events": []},
+        {"question": "Will it rain in Boston tomorrow?", "slug": "x", "events": []},  # -> other
+    ]
+    coverage = report_bucket_coverage(markets)
+    assert coverage == {"politics": 0, "sports": 1, "crypto_price": 1, "other": 1}
+    assert sum(coverage.values()) == len(markets)
 
 
 # ---------------------------------------------------------------------------
@@ -427,3 +443,43 @@ def test_stratified_sample_is_subset_stable_as_census_grows():
     # census grows) but must never scramble into an unrelated random subset
     assert old_ids_after.issubset(before)
     assert len(old_ids_after) > 0
+
+
+# ---------------------------------------------------------------------------
+# Report generation -- pins write_report's call signature (a mismatch here
+# would only otherwise surface at the end of a full, hours-long live run)
+# ---------------------------------------------------------------------------
+
+def test_write_report_runs_and_surfaces_other_bucket_coverage(tmp_path):
+    cfg = BacktestConfig(signal=SignalConfig(), position_notional=100.0, gas=GasAssumptions(relayer_sponsored=True))
+    fill = FillAssumptions(fill_type="maker")
+    tdf = pd.DataFrame([
+        simulate_trade(_crossing(entry_price=0.99, outcome_index=1), _market(), fill, cfg, cap_shares=None),
+    ])
+    trades_by_fill = {"maker": tdf}
+    days_dist = days_to_resolution_distribution(tdf)
+    category_tables = {"maker fills, net of fees": category_breakdown(tdf, "pnl_net")}
+    max_days_tables = {"maker fills, net of fees": max_days_to_resolution_variant(tdf, 7.0, "pnl_net")}
+    bucket_coverage = report_bucket_coverage([
+        {"question": "Will it rain in Boston tomorrow?", "slug": "x", "events": []},  # -> other
+    ])
+
+    out_path = tmp_path / "report.md"
+    write_report(
+        out_path=out_path,
+        census_size=1,
+        sample_size=1,
+        trades_by_fill=trades_by_fill,
+        days_dist=days_dist,
+        category_tables=category_tables,
+        max_days_tables=max_days_tables,
+        sensitivity_tables={},
+        depth_cap_flags=pd.DataFrame(),
+        signal_cfg=SignalConfig(),
+        gas_estimate_usd=0.005,
+        bucket_coverage=bucket_coverage,
+    )
+
+    text = out_path.read_text()
+    assert "100.0% other" in text
+    assert "other=1" in text

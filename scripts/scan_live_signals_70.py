@@ -45,7 +45,9 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 import polymarket_final_pct as pmf
+from run_kelly_backtest import load as load_trades, flip_counts_by
 
 BANKROLL = float(sys.argv[1]) if len(sys.argv) > 1 else 5.0
 MAX_POS_PCT = 0.03
@@ -61,15 +63,12 @@ PRIOR_A, PRIOR_B = 1.0, 40.0
 # the real per-bucket rate quickly (all buckets below have n > 700 except
 # politics) but doesn't start out falsely confident.
 
-# Measured directly from trades_maker_thr07_v2.csv, post exact-score/weather
-# exclusion (see scripts/run_kelly_backtest.py for the same exclusion regexes).
+# Read directly from the committed backtest output (trades_maker_thr07_v2.csv,
+# post exact-score/weather exclusion -- same load()/exclusion regexes as
+# scripts/run_kelly_backtest.py) at run time, not a hand-copied snapshot, so
+# this can't silently drift from the file it's supposedly derived from.
 # (flips, total resolved trades), by report_bucket.
-CATEGORY_FLIPS = {
-    "crypto_price": (87, 715),
-    "sports": (233, 1893),
-    "other": (149, 1151),
-    "politics": (9, 61),
-}
+CATEGORY_FLIPS = flip_counts_by(load_trades("trades_maker_thr07_v2.csv"), "report_bucket")
 
 
 def qh(bucket: str) -> float:

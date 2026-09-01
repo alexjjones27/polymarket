@@ -468,6 +468,22 @@ def classify_report_bucket(market: dict) -> str:
     return "other"
 
 
+def report_bucket_coverage(markets: list[dict]) -> dict[str, int]:
+    """Count of sampled markets landing in each report_bucket. classify_report_bucket
+    is a keyword heuristic, not Polymarket's real taxonomy (see module docstring
+    limitations) -- "other" is its catch-all, and everything that lands there
+    also gets the "other" fee rate and, in the live scanners, the "other"
+    flip-rate prior. A large or growing "other" share is the concrete,
+    checkable signal that the heuristic is missing real structure rather than
+    a vague caveat; surfaced here so it's a number in the report, not just a
+    prose disclaimer."""
+    counts: dict[str, int] = {b: 0 for b in REPORT_BUCKETS}
+    for m in markets:
+        bucket = classify_report_bucket(m)
+        counts[bucket] = counts.get(bucket, 0) + 1
+    return counts
+
+
 # feeRate per official docs.polymarket.com/trading/fees + help.polymarket.com
 # (cross-checked against both sources' worked examples), confirmed live on
 # 2026-08-25. fee = shares * feeRate * price * (1 - price); makers pay 0.
@@ -1228,6 +1244,7 @@ def write_report(
     depth_cap_flags: pd.DataFrame,
     signal_cfg: SignalConfig,
     gas_estimate_usd: float,
+    bucket_coverage: dict[str, int],
 ) -> None:
     lines = []
     lines.append("# Polymarket \"Final 1%\" Spread-Capture Backtest\n")
@@ -1416,7 +1433,13 @@ def write_report(
         "depth cap).\n"
         "- Category classification is a keyword heuristic over question "
         "text and event metadata, not Polymarket's internal taxonomy -- "
-        "treat the category breakdown as indicative, not exact.\n"
+        "treat the category breakdown as indicative, not exact. "
+        "\"other\" is the catch-all this heuristic falls back to (both for "
+        "the report bucket and the fee rate); its share of this sample is "
+        + ", ".join(f"{b}={n}" for b, n in sorted(bucket_coverage.items())) +
+        f" ({bucket_coverage.get('other', 0) / max(sum(bucket_coverage.values()), 1) * 100:.1f}% "
+        "other) -- a large or growing \"other\" share is the concrete sign "
+        "this heuristic is missing real structure, not just a caveat.\n"
         "- The backtest samples from the population rather than covering "
         "it exhaustively; while the sampling is stratified and unbiased by "
         "construction, a different random seed or a larger sample could "
@@ -1509,6 +1532,9 @@ def main() -> None:
     sample = [m for m in sample if _safe_json_list(m.get("clobTokenIds"))]
     print(f"  sample size (with CLOB token ids): {len(sample):,}")
 
+    bucket_coverage = report_bucket_coverage(sample)
+    print(f"  report_bucket coverage: {bucket_coverage}")
+
     signal_cfg = SignalConfig(threshold=0.99, n_consecutive=3)
     gas_estimate = fetch_live_gas_estimate()
     gas_sponsored = GasAssumptions(relayer_sponsored=True)
@@ -1583,6 +1609,7 @@ def main() -> None:
         depth_cap_flags=depth_cap_flags,
         signal_cfg=signal_cfg,
         gas_estimate_usd=gas_estimate,
+        bucket_coverage=bucket_coverage,
     )
     print(f"Report written to {RESULTS_DIR / 'report.md'}")
 

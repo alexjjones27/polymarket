@@ -33,6 +33,23 @@ def load(fn):
     return rows
 
 
+def flip_counts_by(trades: list[dict], key_field: str) -> dict[str, tuple[int, int]]:
+    """(n_flips, n_trades) per distinct value of `key_field`, over tradeable
+    (non-excluded) rows only. Used by the live scanners (scan_live_signals.py,
+    scan_live_signals_70.py) to derive their Beta-prior flip counts directly
+    from a committed trades CSV at run time, instead of a hand-copied
+    snapshot that silently goes stale the next time this backtest is
+    re-run."""
+    out: dict[str, tuple[int, int]] = {}
+    for r in trades:
+        if r["excluded"]:
+            continue
+        k = r[key_field]
+        flips, n = out.get(k, (0, 0))
+        out[k] = (flips + (0 if r["won"] else 1), n + 1)
+    return out
+
+
 PRIOR_A, PRIOR_B = 1.0, 300.0
 MAX_POS_PCT = 0.03
 AGG_CAP_PCT = 0.50

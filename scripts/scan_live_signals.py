@@ -18,7 +18,9 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 import polymarket_final_pct as pmf
+from run_kelly_backtest import load as load_trades, flip_counts_by
 
 BANKROLL = 1000.0
 MAX_POS_PCT = 0.03
@@ -26,12 +28,13 @@ THRESHOLD = 0.99
 N_CONSECUTIVE = 3
 PRIOR_A, PRIOR_B = 1.0, 300.0
 
-# Walk-forward-final flip counts from the committed backtest (trades_maker.csv,
-# post-exclusion, recomputed directly from that file -- not estimated), used
-# as today's prior. This is a live decision made today, so using the full
+# Walk-forward-final flip counts, read directly from the committed backtest
+# output (trades_maker.csv, post-exclusion) at run time -- not a hand-copied
+# snapshot, so this can't silently go stale the next time trades_maker.csv
+# is regenerated. This is a live decision made today, so using the full
 # resolved history (rather than re-walking-forward within this scan) is
 # correct, not a lookahead violation.
-CATEGORY_FLIPS = {"crypto": (1, 535), "sports": (0, 1601), "politics": (0, 39), "other": (2, 920)}
+CATEGORY_FLIPS = flip_counts_by(load_trades("trades_maker.csv"), "category")
 # (flips, total resolved trades post-exclusion), by classify_fee_category bucket.
 
 
