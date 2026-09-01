@@ -1104,6 +1104,39 @@ def max_days_to_resolution_variant(trades_df: pd.DataFrame, max_days: float, pnl
     return pd.DataFrame([all_m, filt_m])
 
 
+def liquidity_variant(trades_df: pd.DataFrame, min_depth_notional: float, pnl_col: str = "pnl_net") -> pd.DataFrame:
+    """Compares the unrestricted trade set against the subset with CONFIRMED
+    real liquidity at the crossing -- cap_shares * entry_price (the realized-
+    trades depth proxy, converted to dollar notional) >= min_depth_notional.
+    This is a stricter, more honest cut than the depth CAP already applied to
+    every trade's position size: a trade can still show a "full" $100 fill
+    (position_notional is tiny relative to most depth readings) while sitting
+    on a market that could never have supported a meaningfully larger
+    position -- capping hides thinness, this variant surfaces it directly.
+
+    Trades with cap_shares=None have UNKNOWN depth (no realized trades found
+    near the crossing at all -- see estimate_available_shares), not unlimited
+    depth. Excluded from the "confirmed liquid" cohort by construction
+    (conservative -- unknown is not assumed to mean tradeable) and reported
+    as a third, separate row rather than folded into either side, since the
+    honest answer for those trades is "we don't know," not "yes" or "no.\""""
+    all_m = compute_metrics(trades_df, pnl_col)
+    all_m["variant"] = f"unrestricted (n={len(trades_df)})"
+
+    has_depth_data = trades_df["cap_shares"].notna()
+    depth_notional = trades_df["cap_shares"] * trades_df["entry_price"]
+
+    liquid = trades_df[has_depth_data & (depth_notional >= min_depth_notional)]
+    liq_m = compute_metrics(liquid, pnl_col)
+    liq_m["variant"] = f">=${min_depth_notional:.0f} confirmed depth (n={len(liquid)})"
+
+    unknown = trades_df[~has_depth_data]
+    unk_m = compute_metrics(unknown, pnl_col)
+    unk_m["variant"] = f"unknown depth -- no trades found near crossing (n={len(unknown)})"
+
+    return pd.DataFrame([all_m, liq_m, unk_m])
+
+
 def category_breakdown(trades_df: pd.DataFrame, pnl_col: str = "pnl_net") -> pd.DataFrame:
     rows = []
     for bucket, grp in trades_df.groupby("report_bucket"):
@@ -1279,6 +1312,7 @@ def write_report(
     days_dist: pd.DataFrame,
     category_tables: dict[str, pd.DataFrame],
     max_days_tables: dict[str, pd.DataFrame],
+    liquidity_tables: dict[str, pd.DataFrame],
     sensitivity_tables: dict[str, pd.DataFrame],
     depth_cap_flags: pd.DataFrame,
     signal_cfg: SignalConfig,
@@ -1428,6 +1462,25 @@ def write_report(
         lines.append(_df_to_markdown(mdf[["variant"] + [c for c in mdf.columns if c != "variant"]]))
         lines.append("\n")
 
+    lines.append(f"\n## Liquidity variant (unrestricted vs. >=${MIN_LIQUID_DEPTH_NOTIONAL:.0f} confirmed depth at entry)\n")
+    lines.append(
+        "The depth cap already applied to every trade above hides thinness "
+        "rather than surfacing it: position_notional ($100/trade) is small "
+        "enough that most trades still show a \"full\" fill even on a fairly "
+        "thin market, since the cap only binds when realized nearby volume is "
+        "less than $100 of the crossing price. This variant asks a different, "
+        "more honest question -- not \"was $100 achievable\" but \"was there "
+        f"real room to size this up,\" via a >=${MIN_LIQUID_DEPTH_NOTIONAL:.0f} "
+        "confirmed-depth bar. Markets with no realized trades found near the "
+        "crossing at all have UNKNOWN depth, not unlimited depth, and are "
+        "reported as a separate third row rather than assumed liquid or "
+        "illiquid.\n"
+    )
+    for label, ldf in liquidity_tables.items():
+        lines.append(f"\n**{label}**\n")
+        lines.append(_df_to_markdown(ldf[["variant"] + [c for c in ldf.columns if c != "variant"]]))
+        lines.append("\n")
+
     lines.append("\n## Threshold sensitivity ($0.98 / $0.99 / $0.995)\n")
     for label, sens_df in sensitivity_tables.items():
         lines.append(f"\n**{label}**\n")
@@ -1496,6 +1549,7 @@ def write_report(
 SAMPLE_SIZE = 4000
 CROSSING_WORKERS = 16
 MAX_DAYS_TO_RESOLUTION = 7.0  # entry-time filter variant, per the task's example
+MIN_LIQUID_DEPTH_NOTIONAL = 1_000.0  # 10x position_notional -- "real room to size up," not just "$100 fit"
 
 
 def find_all_crossings(
@@ -1616,6 +1670,11 @@ def main() -> None:
         for fill_type, tdf in trades_by_fill.items() if not tdf.empty
     }
 
+    liquidity_tables = {
+        f"{fill_type} fills, net of fees": liquidity_variant(tdf, MIN_LIQUID_DEPTH_NOTIONAL, "pnl_net")
+        for fill_type, tdf in trades_by_fill.items() if not tdf.empty
+    }
+
     print("Running threshold sensitivity (0.98 / 0.99 / 0.995) ...")
     sensitivity_tables = {}
     for fill_type in ("maker", "taker"):
@@ -1644,6 +1703,7 @@ def main() -> None:
         days_dist=days_dist,
         category_tables=category_tables,
         max_days_tables=max_days_tables,
+        liquidity_tables=liquidity_tables,
         sensitivity_tables=sensitivity_tables,
         depth_cap_flags=depth_cap_flags,
         signal_cfg=signal_cfg,

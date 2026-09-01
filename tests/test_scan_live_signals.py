@@ -81,3 +81,26 @@ def test_real_ask_depth_notional_converts_shares_to_dollars():
     ask_depth_shares = 150.0
     price = 0.74
     assert ask_depth_shares * price == 111.0
+
+
+# ---------------------------------------------------------------------------
+# Liquidity filter: dust-level depth should be dropped from the report
+# entirely, not just have its position size shrunk by allocate_portfolio's
+# cap. This is what "scan for more, with high depth" actually needs.
+# ---------------------------------------------------------------------------
+
+def test_filter_liquid_candidates_drops_thin_keeps_liquid():
+    for mod in (s99, s70):
+        rows = [
+            _row(real_ask_depth_notional=18.0),   # thin -- dust-level, should be dropped
+            _row(real_ask_depth_notional=249.99),  # just under the bar -- dropped
+            _row(real_ask_depth_notional=250.0),   # exactly at the bar -- kept
+            _row(real_ask_depth_notional=32629.0),  # clearly liquid -- kept
+        ]
+        liquid = mod.filter_liquid_candidates(rows, min_depth_notional=250.0)
+        assert [r["real_ask_depth_notional"] for r in liquid] == [250.0, 32629.0]
+
+
+def test_filter_liquid_candidates_empty_input():
+    for mod in (s99, s70):
+        assert mod.filter_liquid_candidates([], min_depth_notional=250.0) == []

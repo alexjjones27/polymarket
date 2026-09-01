@@ -153,6 +153,7 @@ def check_market(market: dict) -> dict | None:
 MAX_CROSSING_AGE_HOURS = 96
 VERIFY_LOOKBACK_DAYS = 15
 MAX_VERIFY_CANDIDATES = 80  # cap the expensive pass-2 fetch volume
+MIN_LIQUID_DEPTH_NOTIONAL = 250.0  # real dollar depth (shares * price) required to surface a candidate at all
 
 
 def verify_candidate(hit: dict) -> dict | None:
@@ -215,6 +216,18 @@ def kelly_size(bucket: str, price: float, bankroll: float, fraction: float = 0.2
     per_trade_capped = min(desired, MAX_POS_PCT * bankroll)
     return {"flip_belief_q": q, "kelly_fraction_raw": f_kelly, "desired_uncapped": desired,
             "per_trade_capped": per_trade_capped, "margin": p * b - q * L}
+
+
+def filter_liquid_candidates(rows: list[dict], min_depth_notional: float) -> list[dict]:
+    """Drops candidates too thin to act on at all -- real_ask_depth_notional
+    is the fresh, unit-correct (shares * price) dollar depth from pass 2's
+    real order book, not the stale/mislabeled pass-1 estimate. This is
+    separate from allocate_portfolio's depth CAP: capping still lets an
+    $18-deep market through at a token-sized position, which is exactly the
+    noise that made "some of this is quite illiquid" a real complaint --
+    this removes those candidates from the report entirely rather than just
+    shrinking their size."""
+    return [r for r in rows if r["real_ask_depth_notional"] >= min_depth_notional]
 
 
 def allocate_portfolio(rows: list[dict], bankroll: float) -> list[dict]:
@@ -312,9 +325,13 @@ def main():
             by_event[key] = r
     deduped = standalone + list(by_event.values())
 
-    allocated = allocate_portfolio(deduped, BANKROLL)
+    liquid = filter_liquid_candidates(deduped, MIN_LIQUID_DEPTH_NOTIONAL)
+    n_thin = len(deduped) - len(liquid)
 
-    print(f"\n{len(verified)} passed verification, {len(deduped)} after collapsing same-event duplicates. "
+    allocated = allocate_portfolio(liquid, BANKROLL)
+
+    print(f"\n{len(verified)} passed verification, {len(deduped)} after collapsing same-event duplicates, "
+          f"{n_thin} dropped for depth < ${MIN_LIQUID_DEPTH_NOTIONAL:.0f}. "
           f"Portfolio-allocated at ${BANKROLL:.2f} bankroll (50% aggregate cap, 25% per-category cap, "
           f"3% per-trade cap, capped further by real live ask depth):\n")
     total_deployed = 0.0

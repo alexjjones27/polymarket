@@ -31,6 +31,7 @@ from polymarket_final_pct import (
     detect_crossing,
     estimate_vwap_fill,
     maker_fee_frac_of_notional,
+    liquidity_variant,
     max_days_to_resolution_variant,
     report_bucket_coverage,
     resolved_outcome_index,
@@ -397,6 +398,49 @@ def test_empty_trades_df_handled_gracefully():
 
 
 # ---------------------------------------------------------------------------
+# Liquidity variant: depth cap hides thinness (fixed $100 notional almost
+# always "fits"), this variant surfaces it via confirmed depth in dollars
+# ---------------------------------------------------------------------------
+
+def test_liquidity_variant_splits_liquid_illiquid_and_unknown():
+    rows = [
+        # confirmed liquid: cap_shares * entry_price = 2000 * 0.99 = $1980 >= $1000
+        {"notional": 100.0, "pnl_net": 1.0, "pnl_gross": 1.0, "holding_days": 1.0, "won": True,
+         "cap_shares": 2000.0, "entry_price": 0.99},
+        # confirmed thin: cap_shares * entry_price = 50 * 0.99 = $49.50 < $1000
+        {"notional": 100.0, "pnl_net": 1.0, "pnl_gross": 1.0, "holding_days": 1.0, "won": True,
+         "cap_shares": 50.0, "entry_price": 0.99},
+        # unknown depth: no realized trades found near the crossing at all
+        {"notional": 100.0, "pnl_net": -100.0, "pnl_gross": -100.0, "holding_days": 1.0, "won": False,
+         "cap_shares": None, "entry_price": 0.99},
+    ]
+    result = liquidity_variant(_trades_df(rows), min_depth_notional=1000.0)
+    by_variant = {r["variant"]: r for r in result.to_dict("records")}
+
+    unrestricted = next(v for k, v in by_variant.items() if k.startswith("unrestricted"))
+    assert unrestricted["n_trades"] == 3
+
+    liquid = next(v for k, v in by_variant.items() if k.startswith(">=$1000"))
+    assert liquid["n_trades"] == 1  # only the 2000-share trade clears the bar
+
+    unknown = next(v for k, v in by_variant.items() if k.startswith("unknown depth"))
+    assert unknown["n_trades"] == 1  # only the cap_shares=None trade
+    assert unknown["total_pnl"] == pytest.approx(-100.0)  # the flip, isolated to its own row
+
+
+def test_liquidity_variant_unknown_depth_never_counted_as_liquid():
+    # A trade with no depth data must never be silently treated as "unlimited"
+    # liquidity -- it should show up in neither the unrestricted-minus-unknown
+    # count nor the liquid cohort's total.
+    rows = [{"notional": 100.0, "pnl_net": 1.0, "pnl_gross": 1.0, "holding_days": 1.0, "won": True,
+             "cap_shares": None, "entry_price": 0.99}]
+    result = liquidity_variant(_trades_df(rows), min_depth_notional=1000.0)
+    by_variant = {r["variant"]: r for r in result.to_dict("records")}
+    liquid = next(v for k, v in by_variant.items() if k.startswith(">=$1000"))
+    assert liquid["n_trades"] == 0
+
+
+# ---------------------------------------------------------------------------
 # Confidence intervals on the flip rate
 # ---------------------------------------------------------------------------
 
@@ -562,6 +606,7 @@ def test_write_report_runs_and_surfaces_other_bucket_coverage(tmp_path):
     days_dist = days_to_resolution_distribution(tdf)
     category_tables = {"maker fills, net of fees": category_breakdown(tdf, "pnl_net")}
     max_days_tables = {"maker fills, net of fees": max_days_to_resolution_variant(tdf, 7.0, "pnl_net")}
+    liquidity_tables = {"maker fills, net of fees": liquidity_variant(tdf, 1000.0, "pnl_net")}
     bucket_coverage = report_bucket_coverage([
         {"question": "Will it rain in Boston tomorrow?", "slug": "x", "events": []},  # -> other
     ])
@@ -575,6 +620,7 @@ def test_write_report_runs_and_surfaces_other_bucket_coverage(tmp_path):
         days_dist=days_dist,
         category_tables=category_tables,
         max_days_tables=max_days_tables,
+        liquidity_tables=liquidity_tables,
         sensitivity_tables={},
         depth_cap_flags=pd.DataFrame(),
         signal_cfg=SignalConfig(),
@@ -585,3 +631,5 @@ def test_write_report_runs_and_surfaces_other_bucket_coverage(tmp_path):
     text = out_path.read_text()
     assert "100.0% other" in text
     assert "other=1" in text
+    # cap_shares=None on this trade -> unknown depth, not liquid and not illiquid
+    assert "unknown depth -- no trades found near crossing (n=1)" in text
