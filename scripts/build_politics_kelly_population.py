@@ -2,14 +2,25 @@
 backtest (scripts/run_politics_kelly_backtest.py): one row per resolved
 Polymarket politics market, with an entry price and the resolved outcome.
 
-Population: every resolved market Polymarket itself tags "politics"
-(`tag_slug=politics`, confirmed live against Gamma's API -- see
-fetch_resolved_markets_census's `extra_params`), from the same CLOB-era
-cutoff (2022-09-01) used throughout this codebase, deduplicated, with a
-valid resolved_outcome_index. No probability/extremity filter of any kind
--- unlike the Final-1% strategy's own population, this one deliberately
-spans the WHOLE 0-100% range, since the strategy under test bets across the
-full price spectrum, not just the near-100% tail.
+Population: every resolved market classify_report_bucket calls "politics"
+(the same keyword classifier used throughout this codebase, applied
+client-side), from the full resolved-market census
+(scripts/_fetch_full_census_to_disk.py), from the same CLOB-era cutoff
+(2022-09-01) used everywhere else, with a valid resolved_outcome_index. No
+probability/extremity filter of any kind -- unlike the Final-1% strategy's
+own population, this one deliberately spans the WHOLE 0-100% range, since
+the strategy under test bets across the full price spectrum, not just the
+near-100% tail.
+
+An earlier version of this script filtered server-side via Gamma's
+`tag_slug=politics` query param. Confirmed live, and the hard way: that
+filter stops restricting results once pagination passes a low offset
+within a date bucket (a request for tag_slug=politics at offset>=2000
+returns MLB and IPL cricket markets) -- not safe for a bulk crawl, so
+population is now built by streaming the already-cached full census
+leaf files and classifying client-side instead, same memory-safe pattern
+build_mm_unbiased_population.py already established for exactly this
+"844k-market census, don't materialize it all at once" problem.
 
 Entry rule, stated plainly because it's a real modeling choice: the
 market's own FIRST real trade (chronologically -- fetch_market_trades does
@@ -38,23 +49,19 @@ import polymarket_final_pct as pmf
 
 REPO = Path(__file__).resolve().parents[1]
 RESULTS_DIR = REPO / "results" / "polymarket_final_pct"
-POLITICS_CENSUS_CACHE = pmf.DATA_DIR / "gamma_politics"
 
 FETCH_WORKERS = 24
 
 
-def fetch_politics_census() -> list[dict]:
-    print("[politics-kelly] fetching politics-tagged resolved market census ...")
-    markets = pmf.fetch_resolved_markets_census(cache_dir=POLITICS_CENSUS_CACHE, extra_params={"tag_slug": "politics"})
-    print(f"[politics-kelly] {len(markets)} politics-tagged markets in the census")
-    return markets
-
-
-def resolve_market_meta(m: dict) -> dict | None:
-    """condition_id, question, resolution_time, resolved_outcome_index for
-    one market -- None if any required field can't be determined (mirrors
-    the same defensive pattern stratified_sample_markets/_slim_market use
-    elsewhere in this codebase)."""
+def _slim_politics_meta(m: dict) -> dict | None:
+    """Reduces one full Gamma market dict to what this script needs, IF it's
+    a cleanly-resolved politics market -- called while the full dict (with
+    its `events`/`outcomes`/`outcomePrices` fields) is still in hand, same
+    discipline as build_mm_unbiased_population.py's own _slim_market. None
+    for anything not politics, not cleanly resolved, or missing a usable
+    field -- mirrors resolve_market_meta's old defensive checks."""
+    if pmf.classify_report_bucket(m) != "politics":
+        return None
     cid = m.get("conditionId")
     if not cid:
         return None
@@ -63,6 +70,9 @@ def resolve_market_meta(m: dict) -> dict | None:
         return None
     res_ts = pmf._resolution_timestamp(m)
     if res_ts is None:
+        return None
+    start_ts = pmf._to_epoch_s(m.get("startDate") or m.get("createdAt"))
+    if start_ts is None or start_ts < pmf._to_epoch_s(pmf.CLOB_LAUNCH_CUTOFF):
         return None
     outcomes = pmf._safe_json_list(m.get("outcomes"))
     if idx >= len(outcomes):
@@ -73,6 +83,29 @@ def resolve_market_meta(m: dict) -> dict | None:
         "resolution_time": res_ts.isoformat(),
         "resolved_outcome": outcomes[idx],
     }
+
+
+def stream_politics_population(cache_dir: Path = pmf.GAMMA_CACHE_DIR) -> list[dict]:
+    """Streams every cached leaf_*.json file one at a time, slimming and
+    classifying each market immediately and discarding the raw (heavy) list
+    before moving to the next file -- same memory-safe pattern as
+    build_mm_unbiased_population.py's stream_slim_census, applied here with
+    a politics filter instead of keeping every category."""
+    leaf_files = sorted(cache_dir.glob("leaf_*.json"))
+    print(f"[politics-kelly] streaming {len(leaf_files)} cached census leaf files "
+          f"(no new network calls for this step)...")
+    metas: dict[str, dict] = {}  # condition_id -> meta, de-duplicating across leaves as we go
+    for i, path in enumerate(leaf_files):
+        raw = json.loads(path.read_text())
+        for m in raw:
+            meta = _slim_politics_meta(m)
+            if meta is not None:
+                metas[meta["condition_id"]] = meta
+        del raw
+        if (i + 1) % 50 == 0:
+            print(f"  [politics-kelly] {i + 1}/{len(leaf_files)} leaf files processed, "
+                  f"{len(metas)} politics markets so far", flush=True)
+    return list(metas.values())
 
 
 def fetch_entry(meta: dict) -> dict | None:
@@ -109,23 +142,9 @@ def fetch_entry(meta: dict) -> dict | None:
 
 
 def main():
-    census = fetch_politics_census()
-
-    metas = []
-    n_no_condition_id = n_no_outcome_idx = n_no_res_time = 0
-    for m in census:
-        meta = resolve_market_meta(m)
-        if meta is None:
-            if not m.get("conditionId"):
-                n_no_condition_id += 1
-            elif pmf.resolved_outcome_index(m) is None:
-                n_no_outcome_idx += 1
-            else:
-                n_no_res_time += 1
-            continue
-        metas.append(meta)
-    print(f"[politics-kelly] {len(metas)} markets with a resolvable outcome "
-          f"(dropped: {n_no_condition_id} no condition_id, {n_no_outcome_idx} no resolved index, {n_no_res_time} no resolution time)")
+    metas = stream_politics_population()
+    print(f"[politics-kelly] {len(metas)} cleanly-resolved politics markets "
+          f"(post-CLOB-cutoff, classify_report_bucket=='politics', deduplicated)")
 
     print(f"[politics-kelly] fetching trade tapes for entry prices ({FETCH_WORKERS} workers) ...")
     entries = []
