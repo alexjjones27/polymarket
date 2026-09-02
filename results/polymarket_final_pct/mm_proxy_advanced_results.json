@@ -1,0 +1,34 @@
+{
+  "category_windows_seconds": {
+    "politics": 120.0,
+    "sports": 120.0,
+    "crypto_price": 5.0,
+    "other": 120.0
+  },
+  "results": {
+    "flat_baseline": {
+      "pnl_best_case": 49891.05817357125,
+      "pnl_with_markout_time": -112335.07440450853,
+      "n_markets_active": 1331
+    },
+    "category_window": {
+      "pnl_best_case": 49891.05817357125,
+      "pnl_with_markout_time": -195073.8461957849,
+      "n_markets_active": 1331
+    },
+    "advanced_flat": {
+      "pnl_best_case": 38613.406124177935,
+      "pnl_with_markout_time": -94667.064636738,
+      "n_markets_active": 1331
+    },
+    "advanced_category": {
+      "pnl_best_case": 38613.406124177935,
+      "pnl_with_markout_time": -163719.27565420175,
+      "n_markets_active": 1331
+    }
+  },
+  "advanced_diagnostics": {
+    "mean_avg_vpin": 0.879448051661213,
+    "n_inventory_capped_total": 429247
+  }
+}

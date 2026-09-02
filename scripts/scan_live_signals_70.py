@@ -45,7 +45,9 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 import polymarket_final_pct as pmf
+from run_kelly_backtest import load as load_trades, flip_counts_by
 
 BANKROLL = float(sys.argv[1]) if len(sys.argv) > 1 else 5.0
 MAX_POS_PCT = 0.03
@@ -61,15 +63,12 @@ PRIOR_A, PRIOR_B = 1.0, 40.0
 # the real per-bucket rate quickly (all buckets below have n > 700 except
 # politics) but doesn't start out falsely confident.
 
-# Measured directly from trades_maker_thr07_v2.csv, post exact-score/weather
-# exclusion (see scripts/run_kelly_backtest.py for the same exclusion regexes).
+# Read directly from the committed backtest output (trades_maker_thr07_v2.csv,
+# post exact-score/weather exclusion -- same load()/exclusion regexes as
+# scripts/run_kelly_backtest.py) at run time, not a hand-copied snapshot, so
+# this can't silently drift from the file it's supposedly derived from.
 # (flips, total resolved trades), by report_bucket.
-CATEGORY_FLIPS = {
-    "crypto_price": (87, 715),
-    "sports": (233, 1893),
-    "other": (149, 1151),
-    "politics": (9, 61),
-}
+CATEGORY_FLIPS = flip_counts_by(load_trades("trades_maker_thr07_v2.csv"), "report_bucket")
 
 
 def qh(bucket: str) -> float:
@@ -154,6 +153,7 @@ def check_market(market: dict) -> dict | None:
 MAX_CROSSING_AGE_HOURS = 96
 VERIFY_LOOKBACK_DAYS = 15
 MAX_VERIFY_CANDIDATES = 80  # cap the expensive pass-2 fetch volume
+MIN_LIQUID_DEPTH_NOTIONAL = 250.0  # real dollar depth (shares * price) required to surface a candidate at all
 
 
 def verify_candidate(hit: dict) -> dict | None:
@@ -191,7 +191,7 @@ def verify_candidate(hit: dict) -> dict | None:
     if not asks:
         return None
     best_ask = float(asks[0]["price"])
-    ask_depth = float(asks[0]["size"])
+    ask_depth = float(asks[0]["size"])  # order-book size is in SHARES, not dollars
     spread = best_ask - float(bids[0]["price"]) if bids else None
 
     sizing = kelly_size(hit["report_bucket"], best_ask, BANKROLL)
@@ -200,6 +200,7 @@ def verify_candidate(hit: dict) -> dict | None:
 
     return {
         **hit, **sizing, "token_id": tok, "real_best_ask": best_ask, "real_ask_depth": ask_depth,
+        "real_ask_depth_notional": ask_depth * best_ask,
         "real_spread": spread, "true_crossing_age_hours": round(age_hours, 1),
         "neg_risk_market_id": m.get("negRiskMarketID"),
     }
@@ -217,7 +218,28 @@ def kelly_size(bucket: str, price: float, bankroll: float, fraction: float = 0.2
             "per_trade_capped": per_trade_capped, "margin": p * b - q * L}
 
 
+def filter_liquid_candidates(rows: list[dict], min_depth_notional: float) -> list[dict]:
+    """Drops candidates too thin to act on at all -- real_ask_depth_notional
+    is the fresh, unit-correct (shares * price) dollar depth from pass 2's
+    real order book, not the stale/mislabeled pass-1 estimate. This is
+    separate from allocate_portfolio's depth CAP: capping still lets an
+    $18-deep market through at a token-sized position, which is exactly the
+    noise that made "some of this is quite illiquid" a real complaint --
+    this removes those candidates from the report entirely rather than just
+    shrinking their size."""
+    return [r for r in rows if r["real_ask_depth_notional"] >= min_depth_notional]
+
+
 def allocate_portfolio(rows: list[dict], bankroll: float) -> list[dict]:
+    """Caps the stake by real_ask_depth_notional (pass 2's freshly re-fetched
+    real order book, converted from shares to dollars) -- NOT the pass-1
+    live_ask_depth_notional field on `hit`, which is a stale estimate taken
+    near the ORIGINAL (possibly since-moved) crossing price and can
+    undercount or completely miss the real depth once price has moved
+    between pass 1 and pass 2 (observed live: a candidate whose price moved
+    $0.72 -> $0.85 between passes had a real $34 of depth at the new price,
+    but a stale pass-1 estimate of $0 -- which silently zeroed its position
+    under the old logic)."""
     ranked = sorted(rows, key=lambda r: r["margin"], reverse=True)
     agg_used = 0.0
     cat_used: dict[str, float] = {}
@@ -226,8 +248,8 @@ def allocate_portfolio(rows: list[dict], bankroll: float) -> list[dict]:
         room_agg = AGG_CAP_PCT * bankroll - agg_used
         room_cat = CAT_CAP_PCT * bankroll - cat_used.get(bucket, 0.0)
         stake = max(0.0, min(r["per_trade_capped"], room_agg, room_cat))
-        if r.get("live_ask_depth_notional") is not None:
-            stake = min(stake, r["live_ask_depth_notional"])
+        if r.get("real_ask_depth_notional") is not None:
+            stake = min(stake, r["real_ask_depth_notional"])
         r["portfolio_position_size"] = round(stake, 4)
         agg_used += stake
         cat_used[bucket] = cat_used.get(bucket, 0.0) + stake
@@ -237,11 +259,11 @@ def allocate_portfolio(rows: list[dict], bankroll: float) -> list[dict]:
 def main():
     print(f"Bankroll for this scan: ${BANKROLL:.2f}")
     print("Fetching currently active (open) Polymarket markets ...")
-    today = pmf.pd.Timestamp.utcnow().strftime("%Y-%m-%d")
+    today = pmf.pd.Timestamp.now("UTC").strftime("%Y-%m-%d")
     far_future = "2028-01-01"
     markets = fetch_active_markets(today, far_future)
     markets += fetch_active_markets(
-        (pmf.pd.Timestamp.utcnow() - pmf.pd.Timedelta(days=1)).strftime("%Y-%m-%d"), today
+        (pmf.pd.Timestamp.now("UTC") - pmf.pd.Timedelta(days=1)).strftime("%Y-%m-%d"), today
     )
     markets = pmf._dedupe_by_id(markets)
     markets = [m for m in markets if pmf._safe_json_list(m.get("clobTokenIds"))]
@@ -303,9 +325,13 @@ def main():
             by_event[key] = r
     deduped = standalone + list(by_event.values())
 
-    allocated = allocate_portfolio(deduped, BANKROLL)
+    liquid = filter_liquid_candidates(deduped, MIN_LIQUID_DEPTH_NOTIONAL)
+    n_thin = len(deduped) - len(liquid)
 
-    print(f"\n{len(verified)} passed verification, {len(deduped)} after collapsing same-event duplicates. "
+    allocated = allocate_portfolio(liquid, BANKROLL)
+
+    print(f"\n{len(verified)} passed verification, {len(deduped)} after collapsing same-event duplicates, "
+          f"{n_thin} dropped for depth < ${MIN_LIQUID_DEPTH_NOTIONAL:.0f}. "
           f"Portfolio-allocated at ${BANKROLL:.2f} bankroll (50% aggregate cap, 25% per-category cap, "
           f"3% per-trade cap, capped further by real live ask depth):\n")
     total_deployed = 0.0
@@ -319,7 +345,7 @@ def main():
         print(f"- {r['question'][:65]!r} [{r['outcome']}] real ask ${r['real_best_ask']:.3f}  "
               f"({r['report_bucket']}, crossed {r['true_crossing_age_hours']:.1f}h ago)\n"
               f"    position: ${r['portfolio_position_size']:.2f}  margin={r['margin']*100:.1f}%  "
-              f"spread={r['real_spread']*100:.1f}c  depth=${r['real_ask_depth']:.0f}{below_min}")
+              f"spread={r['real_spread']*100:.1f}c  depth=${r['real_ask_depth_notional']:.0f}{below_min}")
 
     print(f"\n{n_funded} positions funded, ${total_deployed:.2f} of ${BANKROLL:.2f} deployed "
           f"({total_deployed/BANKROLL*100:.1f}% of bankroll)")

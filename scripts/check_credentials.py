@@ -23,8 +23,8 @@ if not private_key or not proxy_address:
 print(f"Funder/proxy address (from .env): {proxy_address}")
 print(f"Private key: present, {len(private_key)} chars (not printed)")
 
-from py_clob_client_v2 import ClobClient
-from py_clob_client_v2.clob_types import AssetType, BalanceAllowanceParams
+from py_clob_client.client import ClobClient
+from py_clob_client.clob_types import AssetType, BalanceAllowanceParams
 
 client = ClobClient(
     host="https://clob.polymarket.com",
@@ -35,7 +35,7 @@ client = ClobClient(
 )
 
 try:
-    creds = client.create_or_derive_api_key()
+    creds = client.create_or_derive_api_creds()
     client.set_api_creds(creds)
     print("API credentials derived OK -- private key signs correctly.")
 except Exception as e:

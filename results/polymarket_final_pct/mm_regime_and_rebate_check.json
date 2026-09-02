@@ -1,0 +1,24 @@
+{
+  "regime_change_epoch": 1771372800.0,
+  "n_markets_with_pre_regime_trades": 733,
+  "n_markets_with_post_regime_trades": 634,
+  "n_markets_straddling": 36,
+  "all_trades": {
+    "pnl_best_case": 49891.05817357125,
+    "pnl_with_markout_time": -112335.07440450853,
+    "rebate_upper_bound": 8319.508945938505,
+    "n_markets_active": 1331
+  },
+  "pre_regime": {
+    "pnl_best_case": 34239.203546724406,
+    "pnl_with_markout_time": -76164.74136308602,
+    "rebate_upper_bound": 5811.33250099278,
+    "n_markets_active": 733
+  },
+  "post_regime": {
+    "pnl_best_case": 15651.854626846798,
+    "pnl_with_markout_time": -36170.33304142241,
+    "rebate_upper_bound": 2508.17644494572,
+    "n_markets_active": 634
+  }
+}

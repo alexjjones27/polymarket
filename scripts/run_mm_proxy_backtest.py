@@ -39,6 +39,7 @@ Reuses the SAME market population and (already disk-cached, no new network
 calls) trade tapes as the Final-1% backtest, via fetch_market_trades.
 """
 import csv
+import datetime as dt
 import json
 import os
 import sys
@@ -60,8 +61,11 @@ BASE_FILL_SHARE = 0.15
 
 
 def load_market_meta():
-    """cid -> {resolved_outcome_index, resolution_time}, from the existing
-    Final-1% trade sample (same population, zero extra fetches)."""
+    """cid -> {resolved_outcome_index, resolution_time, report_bucket}, from
+    the existing Final-1% trade sample (same population, zero extra fetches).
+    report_bucket (sports/crypto_price/politics/other) is the same keyword
+    heuristic used throughout the Final-1% project -- see its own module
+    docstring for why it's indicative, not exact."""
     meta = {}
     with open(RESULTS_DIR / "trades_maker.csv", newline="", encoding="utf-8") as f:
         for r in csv.DictReader(f):
@@ -72,22 +76,128 @@ def load_market_meta():
                 "resolved_outcome_index": int(r["resolved_outcome_index"]) if r["resolved_outcome_index"] not in ("", None) else None,
                 "resolution_time": r["resolution_time"],
                 "question": r["question"],
+                "report_bucket": r.get("report_bucket") or "other",
             }
     return meta
 
 
 MAX_RELATIVE_SPREAD = 0.3  # a quoted half-spread can't exceed 30% of the distance to 0 or 1
 
+# Liquidity constraint: cumulative captured notional in one market can't exceed
+# this fraction of that market's own total real trade volume, in addition to the
+# existing per-trade $25 cap. The per-trade cap alone only stops one whale print
+# from dominating -- it does nothing to stop the model from assuming it captured
+# a large share of EVERY print all market long, which no passive resting quote
+# realistically achieves. 20% is itself an assumption (no real depth data exists
+# to calibrate it against, same limitation as everywhere else in this model) but
+# it keeps the model from implicitly claiming to have been the dominant source
+# of liquidity in a market it never actually quoted in.
+MAX_MARKET_VOLUME_SHARE = 0.20
 
-def market_pnl(trades, resolved_idx, half_spread, fill_share):
-    """Pure spread capture: every captured unit earns the half_spread, full
-    stop. See the module docstring for why the two inventory-marking
-    variants tried before this were rejected (both leaked spurious
-    directional profit -- one from resolution windfalls on longshots, one
-    from double-counting real trade-print bid-ask bounce as a price move).
-    resolved_idx is accepted but unused -- kept in the signature so the
-    call site doesn't need to change if a sounder inventory model is added
-    later.
+# Adverse selection via markout: a standard technique in real market-making
+# performance analysis -- mark each assumed fill against the volume-weighted
+# average price of the trades that follow it, not the single next print. A
+# single next print is exactly what got the earlier "mark to next print"
+# version rejected (see module docstring): consecutive real prints naturally
+# alternate between hitting the bid and the ask even with a constant fair
+# value, so marking against just one is pure bid-ask bounce, not information.
+# Averaging over a window of many subsequent prints cancels that bounce out
+# (it alternates and roughly nets to zero over enough trades) while still
+# catching genuine directional drift (informed flow moving the market
+# persistently one way), which is the actual thing adverse selection is.
+#
+# Two different windows, reported side by side, because they answer different
+# questions:
+#   - MARKOUT_WINDOW_TRADES (a trade COUNT): how much does price drift over the
+#     next 20 real prints, whatever real time that happens to span. In a fast,
+#     liquid market that's seconds; in a slow one it can be hours -- the count
+#     doesn't hold real exposure time constant across markets, which is exactly
+#     why a real market maker's actual reaction speed isn't represented by it
+#     directly (see markout_trades_window_seconds_p50/p90 in the output for the
+#     actual, measured real-time span this implied per market -- not assumed).
+#   - MARKOUT_WINDOW_SECONDS (a TIME horizon): how much does price drift in the
+#     next N real seconds, regardless of how many trades that takes. This is
+#     the more realistic proxy for "how long does it take a market maker to
+#     notice adverse movement and pull/reprice a quote" -- a fixed reaction
+#     latency, not a fixed print count. 15s matches the same "near-immediate
+#     execution" assumption used for the Final-1% strategy's own taker-slippage
+#     model (VWAP_WINDOW_S in polymarket_final_pct.py).
+MARKOUT_WINDOW_TRADES = 20
+MARKOUT_WINDOW_SECONDS = 15
+MAX_TIME_WINDOW_SCAN = 500  # safety cap on how many trades the time-window scan will walk through
+
+# How does the adverse-selection picture change as the assumed MM reaction
+# speed changes? 15s is one point estimate, borrowed from elsewhere in this
+# codebase, not derived from anything MM-specific -- this grid stress-tests
+# it against faster (5s) and slower (60s, 300s) reactions, at the base
+# half_spread/fill_share only (crossing it with the full HALF_SPREADS x
+# FILL_SHARES grid too would be a lot of extra compute for a question this
+# script doesn't need to answer at every spread/fill combination).
+MARKOUT_TIME_GRID_SECONDS = [5, 15, 60, 300]
+
+# "Which markets are better for market making" (report_bucket) turned out to
+# really be a question of trading PACE -- politics survives markout because
+# it's slow, sports doesn't because it's fast. PACE_QUANTILES buckets markets
+# by their own median inter-trade gap (Q1 = fastest/most active .. Q5 =
+# slowest) using data-driven quantile edges rather than a hand-picked
+# threshold like "slow = 1+ hour between trades", so the cut reflects the
+# actual empirical distribution instead of a guess.
+PACE_QUANTILES = 5
+
+
+def _time_window_vwap(sorted_trades: list[dict], i: int, seconds: float):
+    """VWAP (and trade count) of real trades within `seconds` after
+    sorted_trades[i], scanning forward at most MAX_TIME_WINDOW_SCAN trades as
+    a safety valve for pathologically high-frequency markets."""
+    t0 = sorted_trades[i]["timestamp"]
+    w_notional = 0.0
+    w_shares = 0.0
+    n = 0
+    j = i + 1
+    limit = min(len(sorted_trades), i + 1 + MAX_TIME_WINDOW_SCAN)
+    while j < limit and sorted_trades[j]["timestamp"] - t0 <= seconds:
+        w = sorted_trades[j]
+        w_notional += w["size"] * w["price"]
+        w_shares += w["size"]
+        n += 1
+        j += 1
+    if w_shares <= 0:
+        return None, 0
+    return w_notional / w_shares, n
+
+
+# Maker Rebates program: confirmed directly against docs.polymarket.com
+# (fetched live 2026-09) -- makers pay 0% and the exchange redistributes a
+# category-specific share of TAKER fees back to makers whose resting orders
+# get filled, split proportionally among all makers active in that market
+# that day (rebate_pool = rebate_rate% of total taker fees generated in the
+# market; your cut = your_fee_equivalent / everyone's fee_equivalent). We
+# have no data on competing makers' activity, so REBATE_UPPER_BOUND below
+# assumes 100% of the pool (i.e. sole liquidity provider) -- a ceiling, not
+# a realistic expectation, and reported as such everywhere it's used.
+REBATE_RATE_BY_FEE_CATEGORY = {
+    "crypto": 0.20, "sports": 0.15, "politics": 0.25,
+    "geopolitics": 0.0, "other": 0.25,
+}
+
+
+def market_pnl(sorted_trades, total_market_volume, half_spread, fill_share,
+                markout_window_seconds: float = MARKOUT_WINDOW_SECONDS,
+                fee_category: str = None):
+    """Returns the existing best-case PnL (zero adverse selection, exactly as
+    before) alongside TWO markout-adjusted variants (trade-count window and
+    time window -- see the module-level comment above), never silently
+    replacing the original number, same as every other before/after
+    comparison in this codebase. `sorted_trades` must already be
+    chronologically sorted, each a dict with price/size/side/timestamp
+    (parsed once per market, not per config, for performance -- see caller).
+    `markout_window_seconds` overrides the module default so callers can
+    build a sensitivity grid over assumed MM reaction speed (see
+    MARKOUT_TIME_GRID_SECONDS) without touching the trade-count window.
+    `fee_category` (one of REBATE_RATE_BY_FEE_CATEGORY's keys) is optional
+    and additive-only: leaving it None (the default) skips rebate
+    computation entirely and returns rebate_upper_bound=None, so every
+    existing caller is unaffected.
 
     A flat, price-independent half_spread is itself unrealistic at the
     extremes this dataset is full of (it's built from markets that crossed
@@ -101,28 +211,481 @@ def market_pnl(trades, resolved_idx, half_spread, fill_share):
     boundary (0 or 1) is closer -- still an assumption, but one that keeps
     quoted spreads sane in dollar terms near the extremes instead of
     silently blowing up."""
-    total = 0.0
+    pnl_best_case = 0.0
+    pnl_with_markout_trades = 0.0
+    pnl_with_markout_time = 0.0
     n_captured = 0
     captured_notional = 0.0
-    for t in trades:
-        try:
-            price = float(t["price"])
-            size = float(t["size"])
-            side = t["side"]
-        except (KeyError, ValueError, TypeError):
-            continue
-        if price <= 0 or price >= 1 or size <= 0 or side not in ("BUY", "SELL"):
-            continue
+    window_span_seconds_sum = 0.0
+    n_windows_with_data = 0
+    rebate_upper_bound = 0.0 if fee_category is not None else None
+    rebate_rate = REBATE_RATE_BY_FEE_CATEGORY.get(fee_category, REBATE_RATE_BY_FEE_CATEGORY["other"]) if fee_category is not None else 0.0
+    volume_cap = MAX_MARKET_VOLUME_SHARE * total_market_volume
+
+    for i, t in enumerate(sorted_trades):
+        price, size, side = t["price"], t["size"], t["side"]
         eff_half_spread = min(half_spread, MAX_RELATIVE_SPREAD * price, MAX_RELATIVE_SPREAD * (1 - price))
         if eff_half_spread <= 0:
             continue
         shares = min(size * fill_share, MAX_NOTIONAL_PER_TRADE / price)
         if shares <= 0:
             continue
-        total += shares * eff_half_spread
+        notional = shares * price
+        if captured_notional + notional > volume_cap:
+            remaining = volume_cap - captured_notional
+            if remaining <= 1e-9:
+                break  # liquidity constraint: this market is fully capped, no more capacity at any price
+            shares = remaining / price
+            notional = remaining
+
+        pnl_best_case += shares * eff_half_spread
+        if fee_category is not None:
+            # Each captured fill is a taker's print landing on our resting
+            # maker order -> it generates a taker fee, a category-specific
+            # share of which funds the rebate pool. Uses the SAME confirmed
+            # fee formula as the Final-1% strategy (fee = notional *
+            # feeRate * (1-price)) -- pmf.taker_fee_frac_of_notional.
+            taker_fee = notional * pmf.taker_fee_frac_of_notional(price, fee_category)
+            rebate_upper_bound += taker_fee * rebate_rate
+
+        # Captured a SELL print -> we were the resting bid, so we're now long:
+        # adverse if the market drifted DOWN after we bought.
+        # Captured a BUY print -> we were the resting ask, so we're now short:
+        # adverse if the market drifted UP after we sold.
+        def _adverse(markout_price):
+            return (price - markout_price) * shares if side == "SELL" else (markout_price - price) * shares
+
+        window = sorted_trades[i + 1: i + 1 + MARKOUT_WINDOW_TRADES]
+        if window:
+            w_shares = sum(w["size"] for w in window)
+            markout_price = sum(w["size"] * w["price"] for w in window) / w_shares if w_shares > 0 else price
+            pnl_with_markout_trades += shares * eff_half_spread - _adverse(markout_price)
+            window_span_seconds_sum += window[-1]["timestamp"] - t["timestamp"]
+            n_windows_with_data += 1
+        else:
+            pnl_with_markout_trades += shares * eff_half_spread  # tail of the tape; spread-only
+
+        time_markout_price, _ = _time_window_vwap(sorted_trades, i, markout_window_seconds)
+        if time_markout_price is not None:
+            pnl_with_markout_time += shares * eff_half_spread - _adverse(time_markout_price)
+        else:
+            pnl_with_markout_time += shares * eff_half_spread  # no trades within the window; spread-only
+
         n_captured += 1
-        captured_notional += shares * price
-    return total, n_captured, captured_notional
+        captured_notional += notional
+        if captured_notional >= volume_cap:
+            break
+
+    return {
+        "pnl_best_case": pnl_best_case,
+        "pnl_with_markout_trades": pnl_with_markout_trades,
+        "pnl_with_markout_time": pnl_with_markout_time,
+        "n_captured": n_captured,
+        "captured_notional": captured_notional,
+        "volume_share_captured": captured_notional / total_market_volume if total_market_volume else None,
+        "avg_trades_window_span_s": window_span_seconds_sum / n_windows_with_data if n_windows_with_data else None,
+        "rebate_upper_bound": rebate_upper_bound,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Advanced risk controls: VPIN-driven dynamic spread + inventory-aware skew.
+# Both are CAUSAL (a fill's pricing depends only on trades strictly before
+# it) and layer on top of market_pnl's existing spread-capture/markout core
+# rather than replacing it -- market_pnl (flat spread, no inventory) stays
+# the baseline every comparison is made against.
+# ---------------------------------------------------------------------------
+
+# VPIN (Volume-Synchronized Probability of Informed Trading): buckets trade
+# flow by cumulative NOTIONAL rather than trade count, classifies each
+# trade's volume as buy- or sell-initiated using its own recorded `side` --
+# real VPIN research usually has to *infer* aggressor side via bulk volume
+# classification (a price-change-vs-volatility proxy) because raw trade data
+# often doesn't carry it; Polymarket's does, so no proxy is needed here. A
+# rolling average of |buy-sell|/bucket_notional over recent completed
+# buckets is the toxicity estimate: near 0 means balanced (uninformed) flow,
+# near 1 means one-sided (informed) flow.
+VPIN_BUCKET_NOTIONAL = 500.0
+VPIN_WINDOW_BUCKETS = 20
+VPIN_SPREAD_MULTIPLIER_MAX = 2.0  # effective spread widens up to 2x at VPIN=1 (maximum imbalance)
+
+# Inventory-aware skew: as running (mark-to-last-print) inventory moves away
+# from flat, fill_share on the side that would push it FURTHER away is
+# linearly derated toward zero at this notional -- approximates a real MM
+# pulling or shrinking the unwanted side of its quote as a position builds,
+# rather than passively absorbing unlimited one-sided flow. The side that
+# would FLATTEN inventory is never derated.
+INVENTORY_LIMIT_NOTIONAL = 100.0
+
+
+def compute_vpin_series(sorted_trades: list[dict], bucket_notional: float = VPIN_BUCKET_NOTIONAL,
+                         window_buckets: int = VPIN_WINDOW_BUCKETS) -> list:
+    """Causal per-trade VPIN estimate: vpin_series[i] uses only buckets fully
+    formed from trades STRICTLY BEFORE index i (trade i's own volume is
+    folded in afterward, for future trades' estimates) -- never a lookahead
+    signal. None until at least one bucket has completed. Simplification:
+    a trade whose notional alone exceeds `bucket_notional` completes exactly
+    one (oversized) bucket rather than being split across several -- a coarse
+    volume clock, adequate for a directional toxicity signal, not a precise
+    one."""
+    vpin_series = [None] * len(sorted_trades)
+    completed_bucket_imbalances = []
+    bucket_buy = 0.0
+    bucket_sell = 0.0
+    bucket_notional_accum = 0.0
+    for i, t in enumerate(sorted_trades):
+        if completed_bucket_imbalances:
+            recent = completed_bucket_imbalances[-window_buckets:]
+            vpin_series[i] = sum(recent) / len(recent)
+
+        notional = t["price"] * t["size"]
+        if t["side"] == "BUY":
+            bucket_buy += notional
+        else:
+            bucket_sell += notional
+        bucket_notional_accum += notional
+        if bucket_notional_accum >= bucket_notional:
+            imbalance = abs(bucket_buy - bucket_sell) / bucket_notional_accum
+            completed_bucket_imbalances.append(imbalance)
+            bucket_buy = bucket_sell = bucket_notional_accum = 0.0
+    return vpin_series
+
+
+def market_pnl_advanced(sorted_trades, total_market_volume, half_spread, fill_share,
+                         markout_window_seconds: float = MARKOUT_WINDOW_SECONDS,
+                         vpin_bucket_notional: float = VPIN_BUCKET_NOTIONAL,
+                         vpin_window_buckets: int = VPIN_WINDOW_BUCKETS,
+                         vpin_spread_multiplier_max: float = VPIN_SPREAD_MULTIPLIER_MAX,
+                         inventory_limit_notional: float = INVENTORY_LIMIT_NOTIONAL):
+    """market_pnl's spread-capture/15s-markout core, with two realistic risk
+    controls layered on top -- both causal, both able to be switched off
+    (vpin_spread_multiplier_max=1.0 and/or inventory_limit_notional=inf
+    reduce this to plain market_pnl behavior) so their effect can be
+    measured, not just assumed:
+
+    - VPIN-driven dynamic spread: the effective half-spread widens as recent
+      order flow looks more informed (see compute_vpin_series).
+    - Inventory-aware skew: fill_share on a print that would push our
+      running position further from flat is derated toward zero as that
+      position approaches inventory_limit_notional; the flattening side is
+      never derated. Inventory is marked at each print's own price (no
+      resting order-book valuation exists to mark against, same limitation
+      as everywhere else in this model).
+
+    Returns the same best-case/15s-markout fields as market_pnl, plus
+    avg_vpin, max_abs_inventory_notional, and n_inventory_capped so the
+    effect of these controls is visible, not hidden inside one number."""
+    vpin_series = compute_vpin_series(sorted_trades, vpin_bucket_notional, vpin_window_buckets)
+
+    pnl_best_case = 0.0
+    pnl_with_markout_time = 0.0
+    n_captured = 0
+    captured_notional = 0.0
+    inventory_shares = 0.0  # signed: + long, - short
+    max_abs_inventory_notional = 0.0
+    n_inventory_capped = 0
+    vpin_samples = []
+    volume_cap = MAX_MARKET_VOLUME_SHARE * total_market_volume
+
+    for i, t in enumerate(sorted_trades):
+        price, size, side = t["price"], t["size"], t["side"]
+        base_eff_half_spread = min(half_spread, MAX_RELATIVE_SPREAD * price, MAX_RELATIVE_SPREAD * (1 - price))
+        if base_eff_half_spread <= 0:
+            continue
+
+        vpin = vpin_series[i]
+        spread_multiplier = 1.0 + vpin * (vpin_spread_multiplier_max - 1.0) if vpin is not None else 1.0
+        if vpin is not None:
+            vpin_samples.append(vpin)
+        eff_half_spread = min(base_eff_half_spread * spread_multiplier,
+                               MAX_RELATIVE_SPREAD * price, MAX_RELATIVE_SPREAD * (1 - price))
+
+        # Capturing a SELL print -> we buy -> inventory increases (more long).
+        # Capturing a BUY print -> we sell -> inventory decreases (more short).
+        inventory_notional = inventory_shares * price
+        moving_away_from_flat = (side == "SELL" and inventory_notional >= 0) or (side == "BUY" and inventory_notional <= 0)
+        skewed_fill_share = fill_share
+        if moving_away_from_flat and inventory_limit_notional > 0:
+            headroom = max(0.0, 1.0 - abs(inventory_notional) / inventory_limit_notional)
+            skewed_fill_share = fill_share * headroom
+            if headroom < 1.0:
+                n_inventory_capped += 1
+
+        shares = min(size * skewed_fill_share, MAX_NOTIONAL_PER_TRADE / price)
+        if shares <= 0:
+            continue
+        notional = shares * price
+        if captured_notional + notional > volume_cap:
+            remaining = volume_cap - captured_notional
+            if remaining <= 1e-9:
+                break
+            shares = remaining / price
+            notional = remaining
+
+        pnl_best_case += shares * eff_half_spread
+
+        def _adverse(markout_price):
+            return (price - markout_price) * shares if side == "SELL" else (markout_price - price) * shares
+
+        time_markout_price, _ = _time_window_vwap(sorted_trades, i, markout_window_seconds)
+        if time_markout_price is not None:
+            pnl_with_markout_time += shares * eff_half_spread - _adverse(time_markout_price)
+        else:
+            pnl_with_markout_time += shares * eff_half_spread
+
+        inventory_shares += shares if side == "SELL" else -shares
+        max_abs_inventory_notional = max(max_abs_inventory_notional, abs(inventory_shares * price))
+
+        n_captured += 1
+        captured_notional += notional
+        if captured_notional >= volume_cap:
+            break
+
+    return {
+        "pnl_best_case": pnl_best_case,
+        "pnl_with_markout_time": pnl_with_markout_time,
+        "n_captured": n_captured,
+        "captured_notional": captured_notional,
+        "volume_share_captured": captured_notional / total_market_volume if total_market_volume else None,
+        "avg_vpin": sum(vpin_samples) / len(vpin_samples) if vpin_samples else None,
+        "max_abs_inventory_notional": max_abs_inventory_notional,
+        "n_inventory_capped": n_inventory_capped,
+    }
+
+
+def parse_and_sort_trades(trades: list[dict]) -> tuple[list[dict], float]:
+    """Once per market (not once per sensitivity-grid config): parse, filter,
+    and chronologically sort the raw trade tape, plus the market's total real
+    notional turnover (needed for the liquidity-share cap). Chronological order
+    is required for the markout lookahead to mean anything."""
+    valid = []
+    for t in trades:
+        try:
+            price = float(t["price"])
+            size = float(t["size"])
+            side = t["side"]
+            ts = float(t.get("timestamp", 0))
+        except (KeyError, ValueError, TypeError):
+            continue
+        if price <= 0 or price >= 1 or size <= 0 or side not in ("BUY", "SELL"):
+            continue
+        valid.append({"price": price, "size": size, "side": side, "timestamp": ts})
+    valid.sort(key=lambda t: t["timestamp"])
+    total_market_volume = sum(t["price"] * t["size"] for t in valid)
+    return valid, total_market_volume
+
+
+CONCENTRATION_TOP_NS = [1, 5, 10, 20]
+
+
+def concentration_by_top_n(per_market: list[dict], pnl_key: str = "pnl", worst: bool = False) -> dict:
+    """What fraction of total PnL (under `pnl_key`) comes from the top N
+    markets by PnL, for N in CONCENTRATION_TOP_NS -- or, with worst=True, the
+    bottom N by PnL (used for the markout-adjusted case, whose total is
+    typically negative and dominated by a handful of catastrophic losses, not
+    gains -- see module docstring's own worked example, "$133k of a $428k
+    total from one Florida-senator-appointment longshot," for why this shape
+    of concentration is expected in this model family). Previously only
+    discoverable by manually sorting per_market_base_case; surfaced here as a
+    first-class number instead."""
+    ranked = sorted(per_market, key=lambda r: r[pnl_key] if worst else -r[pnl_key])
+    total_pnl = sum(r[pnl_key] for r in ranked)
+    out = {"total_pnl": round(total_pnl, 2), "by_top_n": []}
+    for n in CONCENTRATION_TOP_NS:
+        top_pnl = sum(r[pnl_key] for r in ranked[:n])
+        out["by_top_n"].append({
+            "n": n,
+            "pnl": round(top_pnl, 2),
+            "pct_of_total": round(top_pnl / total_pnl * 100, 2) if total_pnl else None,
+            "top_markets": [
+                {"question": r["question"], "pnl": r[pnl_key], "n_captured_trades": r["n_captured_trades"]}
+                for r in ranked[:n]
+            ] if n <= 5 else None,  # only list markets by name for the smaller cuts
+        })
+    return out
+
+
+def _percentile(values: list[float], p: float):
+    """Sorted-index percentile, no numpy dependency (nothing else in this
+    script needs it). Returns None on an empty input."""
+    if not values:
+        return None
+    s = sorted(values)
+    idx = min(len(s) - 1, int(round(p / 100 * (len(s) - 1))))
+    return s[idx]
+
+
+def category_breakdown(per_market: list[dict]) -> dict:
+    """Best-case / trade-window-markout / time-window-markout PnL broken down
+    by report_bucket (sports/crypto_price/politics/other) -- this is the
+    "which markets are actually better for market making" answer: a bucket
+    whose PnL survives the realistic time-window markout is a real
+    candidate, one where markout wipes it out (or flips it negative) is not,
+    regardless of how good its best-case number looks in isolation."""
+    buckets = {}
+    for r in per_market:
+        b = buckets.setdefault(r["report_bucket"], {
+            "n_markets": 0, "pnl_best_case": 0.0,
+            "pnl_with_markout_trades": 0.0, "pnl_with_markout_time": 0.0,
+            "captured_notional": 0.0,
+        })
+        b["n_markets"] += 1
+        b["pnl_best_case"] += r["pnl"]
+        b["pnl_with_markout_trades"] += r["pnl_with_markout_trades"]
+        b["pnl_with_markout_time"] += r["pnl_with_markout_time"]
+        b["captured_notional"] += r["captured_notional"]
+    out = {}
+    for name, b in sorted(buckets.items(), key=lambda kv: -kv[1]["pnl_with_markout_time"]):
+        out[name] = {
+            "n_markets": b["n_markets"],
+            "pnl_best_case": round(b["pnl_best_case"], 2),
+            "pnl_with_markout_trades": round(b["pnl_with_markout_trades"], 2),
+            "pnl_with_markout_time": round(b["pnl_with_markout_time"], 2),
+            "captured_notional": round(b["captured_notional"], 2),
+            "markout_time_pct_of_best_case": (
+                round(b["pnl_with_markout_time"] / b["pnl_best_case"] * 100, 1)
+                if b["pnl_best_case"] else None
+            ),
+        }
+    return out
+
+
+def resolution_epoch_seconds(resolution_time: str):
+    """Parses the resolution_time string stored in trades_maker.csv (a
+    pandas Timestamp's own str() form, e.g. "2023-04-21 23:03:21+00:00")
+    into Unix epoch seconds, comparable directly against a trade's own
+    epoch-seconds timestamp. Returns None if it can't be parsed (shouldn't
+    happen for a market with a resolved_outcome_index, but never assume)."""
+    if not resolution_time:
+        return None
+    try:
+        return dt.datetime.fromisoformat(resolution_time).timestamp()
+    except (ValueError, TypeError):
+        return None
+
+
+def filter_trades_excluding_near_resolution(sorted_trades: list[dict], resolution_epoch, exclusion_seconds: float) -> list[dict]:
+    """Drops every trade within `exclusion_seconds` of resolution_epoch -- a
+    way to test whether a market's modeled PnL is being driven by endgame /
+    informational-cascade trading (the actual outcome becoming apparent)
+    rather than steady-state market-making conditions. Removed trades are
+    dropped from BOTH capture eligibility and markout context, not just
+    capture -- the simplest correct reading of "assume every resting quote
+    is pulled once the cutoff is crossed, and you've stopped watching this
+    market." If resolution_epoch is None (unparseable) or exclusion_seconds
+    is 0, no filtering is possible/requested -- returns sorted_trades
+    unchanged (not a copy)."""
+    if resolution_epoch is None or exclusion_seconds <= 0:
+        return sorted_trades
+    return [t for t in sorted_trades if resolution_epoch - t["timestamp"] > exclusion_seconds]
+
+
+def volume_fraction_near_resolution(sorted_trades: list[dict], resolution_epoch, window_seconds: float):
+    """What fraction of a market's TOTAL real trade volume (not our modeled
+    capture -- the market's own actual activity) happened within
+    `window_seconds` of resolution. Independent of any capture assumption,
+    so it's a clean diagnostic for "is this market's trading concentrated
+    right at the end" regardless of what fill_share/half_spread you'd model
+    with. Returns None if resolution_epoch is unparseable or there's no
+    volume to measure."""
+    if resolution_epoch is None or not sorted_trades:
+        return None
+    total = sum(t["price"] * t["size"] for t in sorted_trades)
+    if total <= 0:
+        return None
+    near = sum(t["price"] * t["size"] for t in sorted_trades if resolution_epoch - t["timestamp"] <= window_seconds)
+    return near / total
+
+
+def market_pace_seconds(sorted_trades: list[dict]):
+    """Median seconds between consecutive real trades on the FULL tape (not
+    just captured fills) -- an inherent property of how actively a market
+    trades, independent of any assumed MM participation in it. This is the
+    direct mechanism behind the category-level pattern (politics slow -> low
+    adverse selection, sports fast -> high): category is a proxy for pace,
+    pace is the actual thing driving it. Returns None for a market with
+    fewer than 2 trades (no gap to measure)."""
+    if len(sorted_trades) < 2:
+        return None
+    gaps = sorted(b["timestamp"] - a["timestamp"] for a, b in zip(sorted_trades, sorted_trades[1:]))
+    n = len(gaps)
+    mid = n // 2
+    return gaps[mid] if n % 2 else (gaps[mid - 1] + gaps[mid]) / 2
+
+
+def assign_quantile_buckets(per_market: list[dict], field: str, out_field: str,
+                             n_quantiles: int = PACE_QUANTILES, prefix: str = "Q") -> None:
+    """Generic equal-COUNT quantile bucketing (bucket 1 = lowest `field`,
+    bucket n_quantiles = highest) -- data-driven edges over the actual
+    population, not a fixed threshold picked by hand. Mutates `per_market` in
+    place, writing `out_field`. Rows where `field` is None get "n/a" and are
+    excluded from the split itself. Used for pace (assign_pace_buckets below)
+    and, identically, for any other per-market numeric characteristic worth
+    segmenting by -- e.g. trade volume."""
+    eligible = [r for r in per_market if r[field] is not None]
+    eligible.sort(key=lambda r: r[field])
+    n = len(eligible)
+    for idx, r in enumerate(eligible):
+        r[out_field] = f"{prefix}{min(n_quantiles - 1, idx * n_quantiles // n) + 1}" if n else "n/a"
+    for r in per_market:
+        r.setdefault(out_field, "n/a")
+
+
+def assign_pace_buckets(per_market: list[dict]) -> None:
+    """Mutates `per_market` in place, adding a `pace_bucket` field (Q1..Q5,
+    Q1 = fastest/most active market, Q5 = slowest) via data-driven quantile
+    edges over median_inter_trade_s. Markets with no measurable pace
+    (median_inter_trade_s is None, i.e. <2 real trades) get pace_bucket
+    "n/a" and are excluded from the quantile split itself."""
+    assign_quantile_buckets(per_market, "median_inter_trade_s", "pace_bucket", PACE_QUANTILES, "Q")
+
+
+def quantile_breakdown(per_market: list[dict], bucket_field: str, range_field: str) -> dict:
+    """Same shape as category_breakdown, keyed by whatever quantile bucket
+    was assigned to `bucket_field` (by assign_quantile_buckets) instead of
+    report_bucket, plus the actual range of `range_field` each bucket spans
+    (for interpretability -- "Q5" alone doesn't say anything, "median gap
+    38-420 minutes" does). Sorted best-to-worst by pnl_with_markout_time,
+    same convention as category_breakdown, so callers can just take the
+    first entry as "the best bucket" without assuming the bucketed
+    characteristic and profitability are monotonic -- they're expected to
+    correlate, not required to."""
+    buckets = {}
+    for r in per_market:
+        if r[bucket_field] == "n/a":
+            continue
+        b = buckets.setdefault(r[bucket_field], {
+            "n_markets": 0, "pnl_best_case": 0.0,
+            "pnl_with_markout_trades": 0.0, "pnl_with_markout_time": 0.0,
+            "captured_notional": 0.0, "range_samples": [],
+        })
+        b["n_markets"] += 1
+        b["pnl_best_case"] += r["pnl"]
+        b["pnl_with_markout_trades"] += r["pnl_with_markout_trades"]
+        b["pnl_with_markout_time"] += r["pnl_with_markout_time"]
+        b["captured_notional"] += r["captured_notional"]
+        b["range_samples"].append(r[range_field])
+    out = {}
+    for name, b in sorted(buckets.items(), key=lambda kv: -kv[1]["pnl_with_markout_time"]):
+        out[name] = {
+            "n_markets": b["n_markets"],
+            "pnl_best_case": round(b["pnl_best_case"], 2),
+            "pnl_with_markout_trades": round(b["pnl_with_markout_trades"], 2),
+            "pnl_with_markout_time": round(b["pnl_with_markout_time"], 2),
+            "captured_notional": round(b["captured_notional"], 2),
+            "markout_time_pct_of_best_case": (
+                round(b["pnl_with_markout_time"] / b["pnl_best_case"] * 100, 1)
+                if b["pnl_best_case"] else None
+            ),
+            f"{range_field}_range": [round(min(b["range_samples"]), 1), round(max(b["range_samples"]), 1)],
+        }
+    return out
+
+
+def pace_breakdown(per_market: list[dict]) -> dict:
+    """quantile_breakdown specialized to pace_bucket / median_inter_trade_s
+    -- kept as a named function since it's the one used throughout main()."""
+    return quantile_breakdown(per_market, "pace_bucket", "median_inter_trade_s")
 
 
 def main():
@@ -133,70 +696,249 @@ def main():
     sensitivity = {}
     for hs in HALF_SPREADS:
         for fs in FILL_SHARES:
-            sensitivity[f"hs{hs}_fs{fs}"] = {"half_spread": hs, "fill_share": fs, "total_pnl": 0.0, "n_markets_active": 0}
+            sensitivity[f"hs{hs}_fs{fs}"] = {
+                "half_spread": hs, "fill_share": fs,
+                "total_pnl_best_case": 0.0,
+                "total_pnl_with_markout_trades": 0.0,
+                "total_pnl_with_markout_time": 0.0,
+                "n_markets_active": 0,
+            }
 
     per_market_base = []  # for the base-case equity curve
     n_no_resolved_idx = 0
     n_no_trades = 0
+    n_volume_capped = 0        # markets where the liquidity constraint actually bound
+    volume_capped_notional = 0.0  # total notional trimmed off by the liquidity constraint (base case)
+    window_span_samples = []  # per-market avg real-time span of the MARKOUT_WINDOW_TRADES window, base case
+    window_grid_by_market = {}  # cid -> {window_seconds: pnl_with_markout_time}, base half_spread/fill_share only
     for i, (cid, m) in enumerate(meta.items()):
         if m["resolved_outcome_index"] is None:
             n_no_resolved_idx += 1
             continue
-        trades = pmf.fetch_market_trades(cid)
-        if not trades:
+        raw_trades = pmf.fetch_market_trades(cid)
+        if not raw_trades:
+            n_no_trades += 1
+            continue
+        sorted_trades, total_market_volume = parse_and_sort_trades(raw_trades)
+        if not sorted_trades:
             n_no_trades += 1
             continue
 
         for key, cfg in sensitivity.items():
-            pnl, n_cap, notional = market_pnl(trades, m["resolved_outcome_index"], cfg["half_spread"], cfg["fill_share"])
-            cfg["total_pnl"] += pnl
-            if n_cap > 0:
+            r = market_pnl(sorted_trades, total_market_volume, cfg["half_spread"], cfg["fill_share"])
+            cfg["total_pnl_best_case"] += r["pnl_best_case"]
+            cfg["total_pnl_with_markout_trades"] += r["pnl_with_markout_trades"]
+            cfg["total_pnl_with_markout_time"] += r["pnl_with_markout_time"]
+            if r["n_captured"] > 0:
                 cfg["n_markets_active"] += 1
 
-        pnl_base, n_cap_base, notional_base = market_pnl(trades, m["resolved_outcome_index"], BASE_HALF_SPREAD, BASE_FILL_SHARE)
-        if n_cap_base > 0:
+        base = market_pnl(sorted_trades, total_market_volume, BASE_HALF_SPREAD, BASE_FILL_SHARE)
+        if base["n_captured"] > 0:
+            uncapped_desired = sum(
+                min(t["size"] * BASE_FILL_SHARE, MAX_NOTIONAL_PER_TRADE / t["price"]) * t["price"]
+                for t in sorted_trades
+            )
+            if base["captured_notional"] < uncapped_desired - 1e-6:
+                n_volume_capped += 1
+                volume_capped_notional += uncapped_desired - base["captured_notional"]
+            if base["avg_trades_window_span_s"] is not None:
+                window_span_samples.append(base["avg_trades_window_span_s"])
             per_market_base.append({
                 "condition_id": cid, "question": m["question"][:80],
-                "resolution_time": m["resolution_time"], "pnl": round(pnl_base, 4),
-                "n_captured_trades": n_cap_base, "captured_notional": round(notional_base, 2),
+                "resolution_time": m["resolution_time"],
+                "report_bucket": m["report_bucket"],
+                "pnl": round(base["pnl_best_case"], 4),
+                "pnl_with_markout_trades": round(base["pnl_with_markout_trades"], 4),
+                "pnl_with_markout_time": round(base["pnl_with_markout_time"], 4),
+                "n_captured_trades": base["n_captured"],
+                "captured_notional": round(base["captured_notional"], 2),
+                "total_market_volume": round(total_market_volume, 2),
+                "volume_share_captured": round(base["volume_share_captured"], 4) if base["volume_share_captured"] is not None else None,
+                "avg_trades_window_span_s": round(base["avg_trades_window_span_s"], 2) if base["avg_trades_window_span_s"] is not None else None,
+                "median_inter_trade_s": market_pace_seconds(sorted_trades),
             })
+            window_grid_by_market[cid] = {
+                w: market_pnl(sorted_trades, total_market_volume, BASE_HALF_SPREAD, BASE_FILL_SHARE,
+                               markout_window_seconds=w)["pnl_with_markout_time"]
+                for w in MARKOUT_TIME_GRID_SECONDS
+            }
         if (i + 1) % 500 == 0:
             print(f"  [mm-proxy] {i+1}/{len(meta)} markets processed ...", flush=True)
 
+    concentration_report = concentration_by_top_n(per_market_base, "pnl")
+    concentration_report_markout_trades = concentration_by_top_n(per_market_base, "pnl_with_markout_trades", worst=True)
+    concentration_report_markout_time = concentration_by_top_n(per_market_base, "pnl_with_markout_time", worst=True)
+    n_markets_markout_trades_negative = sum(1 for r in per_market_base if r["pnl_with_markout_trades"] < 0)
+    n_markets_markout_time_negative = sum(1 for r in per_market_base if r["pnl_with_markout_time"] < 0)
+    category_report = category_breakdown(per_market_base)
+
+    window_span_median = _percentile(window_span_samples, 50)
+    window_span_p90 = _percentile(window_span_samples, 90)
+    window_span_mean = sum(window_span_samples) / len(window_span_samples) if window_span_samples else None
+
+    # "Focus on the best markets": bucket by trading pace and find the bucket
+    # that actually survives adverse selection best (empirically, not by
+    # assuming "slow = best" up front), then check whether restricting to it
+    # holds up across the whole reaction-speed grid, not just at 15s.
+    assign_pace_buckets(per_market_base)
+    pace_report = pace_breakdown(per_market_base)
+    best_pace_bucket = next(iter(pace_report), None)
+    best_bucket_cids = {r["condition_id"] for r in per_market_base if r["pace_bucket"] == best_pace_bucket}
+    best_bucket_categories = {}
+    for r in per_market_base:
+        if r["pace_bucket"] == best_pace_bucket:
+            best_bucket_categories[r["report_bucket"]] = best_bucket_categories.get(r["report_bucket"], 0) + 1
+
+    time_window_sensitivity = []
+    for w in MARKOUT_TIME_GRID_SECONDS:
+        total_all = sum(window_grid_by_market[r["condition_id"]][w] for r in per_market_base)
+        total_best = sum(
+            window_grid_by_market[cid][w] for cid in best_bucket_cids
+        )
+        time_window_sensitivity.append({
+            "window_seconds": w,
+            "total_pnl_all_markets": round(total_all, 2),
+            "total_pnl_best_pace_bucket": round(total_best, 2),
+            "n_markets_best_pace_bucket": len(best_bucket_cids),
+        })
+
     per_market_base.sort(key=lambda r: r["resolution_time"])
     equity = START_BANKROLL
-    curve = [(per_market_base[0]["resolution_time"][:10] if per_market_base else None, equity)]
+    equity_markout_trades = START_BANKROLL
+    equity_markout_time = START_BANKROLL
+    curve = [(
+        per_market_base[0]["resolution_time"][:10] if per_market_base else None,
+        equity, equity_markout_trades, equity_markout_time,
+    )]
     for r in per_market_base:
         equity += r["pnl"]
-        curve.append((r["resolution_time"][:10], round(equity, 2)))
+        equity_markout_trades += r["pnl_with_markout_trades"]
+        equity_markout_time += r["pnl_with_markout_time"]
+        curve.append((
+            r["resolution_time"][:10], round(equity, 2),
+            round(equity_markout_trades, 2), round(equity_markout_time, 2),
+        ))
 
     base_key = f"hs{BASE_HALF_SPREAD}_fs{BASE_FILL_SHARE}"
-    base = sensitivity[base_key]
+    base_cfg = sensitivity[base_key]
 
     summary = {
         "n_markets_total": len(meta),
         "n_markets_no_resolution": n_no_resolved_idx,
         "n_markets_no_trades": n_no_trades,
-        "n_markets_with_captured_flow_base_case": base["n_markets_active"],
+        "n_markets_with_captured_flow_base_case": base_cfg["n_markets_active"],
         "start_bankroll": START_BANKROLL,
         "max_notional_per_trade": MAX_NOTIONAL_PER_TRADE,
+        "max_market_volume_share": MAX_MARKET_VOLUME_SHARE,
+        "markout_window_trades": MARKOUT_WINDOW_TRADES,
+        "markout_window_seconds": MARKOUT_WINDOW_SECONDS,
+        "markout_trades_window_actual_span_seconds": {
+            "median": round(window_span_median, 2) if window_span_median is not None else None,
+            "p90": round(window_span_p90, 2) if window_span_p90 is not None else None,
+            "mean": round(window_span_mean, 2) if window_span_mean is not None else None,
+            "n_samples": len(window_span_samples),
+        },
         "base_case": {"half_spread": BASE_HALF_SPREAD, "fill_share": BASE_FILL_SHARE},
         "final_equity_base_case": round(equity, 2),
-        "total_pnl_base_case": round(base["total_pnl"], 2),
-        "total_return_pct_base_case": round(base["total_pnl"] / START_BANKROLL * 100, 2),
+        "final_equity_with_markout_trades": round(equity_markout_trades, 2),
+        "final_equity_with_markout_time": round(equity_markout_time, 2),
+        "total_pnl_base_case": round(base_cfg["total_pnl_best_case"], 2),
+        "total_pnl_with_markout_trades": round(base_cfg["total_pnl_with_markout_trades"], 2),
+        "total_pnl_with_markout_time": round(base_cfg["total_pnl_with_markout_time"], 2),
+        "total_return_pct_base_case": round(base_cfg["total_pnl_best_case"] / START_BANKROLL * 100, 2),
+        "total_return_pct_with_markout_trades": round(base_cfg["total_pnl_with_markout_trades"] / START_BANKROLL * 100, 2),
+        "total_return_pct_with_markout_time": round(base_cfg["total_pnl_with_markout_time"] / START_BANKROLL * 100, 2),
+        "liquidity_constraint": {
+            "n_markets_volume_capped": n_volume_capped,
+            "notional_trimmed_by_cap": round(volume_capped_notional, 2),
+        },
         "sensitivity_grid": list(sensitivity.values()),
+        "concentration_base_case": concentration_report,
+        "concentration_with_markout_trades_worst": concentration_report_markout_trades,
+        "concentration_with_markout_time_worst": concentration_report_markout_time,
+        "n_markets_markout_trades_negative": n_markets_markout_trades_negative,
+        "n_markets_markout_time_negative": n_markets_markout_time_negative,
+        "pct_markets_markout_trades_negative": round(n_markets_markout_trades_negative / len(per_market_base) * 100, 1) if per_market_base else None,
+        "pct_markets_markout_time_negative": round(n_markets_markout_time_negative / len(per_market_base) * 100, 1) if per_market_base else None,
+        "category_breakdown": category_report,
+        "pace_breakdown": pace_report,
+        "best_pace_bucket": best_pace_bucket,
+        "best_pace_bucket_category_composition": best_bucket_categories,
+        "markout_time_grid_seconds": MARKOUT_TIME_GRID_SECONDS,
+        "time_window_sensitivity": time_window_sensitivity,
         "equity_curve_base_case": curve,
         "per_market_base_case": per_market_base,
     }
 
     print(f"\n=== Stylized MM proxy, base case (half_spread=${BASE_HALF_SPREAD}, fill_share={BASE_FILL_SHARE:.0%}) ===")
-    print(f"{base['n_markets_active']} of {len(meta)} markets had any captured flow")
-    print(f"Cumulative additive PnL: ${base['total_pnl']:,.2f}  ->  ${START_BANKROLL:,.0f} + PnL = ${equity:,.2f} "
-          f"({summary['total_return_pct_base_case']:+.2f}%, NOT compounded)")
-    print("\nSensitivity grid (total PnL, $):")
+    print(f"{base_cfg['n_markets_active']} of {len(meta)} markets had any captured flow")
+    print(f"Best case (zero adverse selection):                    "
+          f"${base_cfg['total_pnl_best_case']:>12,.2f}  ->  ${equity:,.2f} ({summary['total_return_pct_base_case']:+.2f}%, NOT compounded)")
+    print(f"Markout, {MARKOUT_WINDOW_TRADES}-trade window:                          "
+          f"${base_cfg['total_pnl_with_markout_trades']:>12,.2f}  ->  ${equity_markout_trades:,.2f} ({summary['total_return_pct_with_markout_trades']:+.2f}%, NOT compounded)")
+    print(f"Markout, {MARKOUT_WINDOW_SECONDS}s time window (fast MM reaction, new):       "
+          f"${base_cfg['total_pnl_with_markout_time']:>12,.2f}  ->  ${equity_markout_time:,.2f} ({summary['total_return_pct_with_markout_time']:+.2f}%, NOT compounded)")
+
+    if window_span_samples:
+        print(f"\nHow long does a {MARKOUT_WINDOW_TRADES}-trade window actually span in real time? "
+              f"(measured per market, not assumed)")
+        print(f"  median {window_span_median:,.1f}s   mean {window_span_mean:,.1f}s   p90 {window_span_p90:,.1f}s   "
+              f"(n={len(window_span_samples)} markets with captured flow)")
+
+    if base_cfg['total_pnl_best_case']:
+        print(f"\nAdverse selection cost, {MARKOUT_WINDOW_SECONDS}s time window (the realistic fast-MM number): "
+              f"${base_cfg['total_pnl_best_case'] - base_cfg['total_pnl_with_markout_time']:,.2f} "
+              f"({(1 - base_cfg['total_pnl_with_markout_time']/base_cfg['total_pnl_best_case'])*100:.1f}% of the best-case number)")
+    print(f"\nLiquidity constraint (cap captured notional at {MAX_MARKET_VOLUME_SHARE:.0%} of each market's own real volume): "
+          f"bound in {n_volume_capped} market(s), trimming ${volume_capped_notional:,.2f} of assumed captured notional "
+          f"that the per-trade cap alone would have allowed.")
+    print("\nSensitivity grid (total PnL, $ -- best case | markout trades | markout time):")
     for key, cfg in sensitivity.items():
         print(f"  half_spread=${cfg['half_spread']:<6} fill_share={cfg['fill_share']:<6.0%}  "
-              f"total_pnl=${cfg['total_pnl']:>10,.2f}  active_markets={cfg['n_markets_active']}")
+              f"best_case=${cfg['total_pnl_best_case']:>10,.2f}  "
+              f"markout_trades=${cfg['total_pnl_with_markout_trades']:>10,.2f}  "
+              f"markout_time=${cfg['total_pnl_with_markout_time']:>10,.2f}  "
+              f"active_markets={cfg['n_markets_active']}")
+    print("\nPnL concentration, best case (this model is NOT diversified spread capture -- check before trusting the headline number):")
+    for row in concentration_report["by_top_n"]:
+        print(f"  top {row['n']:<3} market(s): ${row['pnl']:>10,.2f}  ({row['pct_of_total']}% of total)")
+    if concentration_report["by_top_n"][0]["top_markets"]:
+        top1 = concentration_report["by_top_n"][0]["top_markets"][0]
+        print(f"  #1 contributor: {top1['question']!r} (${top1['pnl']:,.2f}, {top1['n_captured_trades']} captured trades)")
+
+    print(f"\nBy market category, {MARKOUT_WINDOW_SECONDS}s markout PnL (sorted best to worst -- which markets are actually good for MM):")
+    for name, b in category_report.items():
+        pct = f"{b['markout_time_pct_of_best_case']}%" if b['markout_time_pct_of_best_case'] is not None else "n/a"
+        print(f"  {name:<15} n_markets={b['n_markets']:<5} best_case=${b['pnl_best_case']:>10,.2f}  "
+              f"markout_time=${b['pnl_with_markout_time']:>10,.2f}  ({pct} of best case)")
+
+    print(f"\nBy trading PACE (median seconds between real trades, Q1=fastest .. Q5=slowest, "
+          f"{MARKOUT_WINDOW_SECONDS}s markout PnL, sorted best to worst):")
+    for name, b in pace_report.items():
+        pct = f"{b['markout_time_pct_of_best_case']}%" if b['markout_time_pct_of_best_case'] is not None else "n/a"
+        lo, hi = b["median_inter_trade_s_range"]
+        print(f"  {name}  n_markets={b['n_markets']:<5} gap={lo:>8,.1f}s-{hi:>9,.1f}s  "
+              f"best_case=${b['pnl_best_case']:>10,.2f}  markout_time=${b['pnl_with_markout_time']:>10,.2f}  ({pct} of best case)")
+    if best_pace_bucket:
+        cat_str = ", ".join(f"{k}={v}" for k, v in sorted(best_bucket_categories.items(), key=lambda kv: -kv[1]))
+        print(f"  Best bucket: {best_pace_bucket} ({len(best_bucket_cids)} markets) -- category mix: {cat_str}")
+
+    print(f"\nFocus on the best markets: total PnL, all markets vs. restricted to {best_pace_bucket} only, "
+          f"across reaction-speed assumptions (this is the actual answer to 'does selecting better markets help, "
+          f"and does that hold up regardless of how fast you assume you can react'):")
+    for row in time_window_sensitivity:
+        print(f"  window={row['window_seconds']:>4}s   all_markets=${row['total_pnl_all_markets']:>12,.2f}   "
+              f"{best_pace_bucket}_only=${row['total_pnl_best_pace_bucket']:>12,.2f}  "
+              f"(n={row['n_markets_best_pace_bucket']} markets)")
+
+    print(f"\n{n_markets_markout_time_negative} of {len(per_market_base)} markets ({summary['pct_markets_markout_time_negative']}%) "
+          f"have NEGATIVE {MARKOUT_WINDOW_SECONDS}s-markout PnL -- this is not just a few outliers, adverse selection hurts broadly:")
+    print("PnL concentration, worst markout losses, time window (bottom N markets' share of the total markout loss):")
+    for row in concentration_report_markout_time["by_top_n"]:
+        print(f"  worst {row['n']:<3} market(s): ${row['pnl']:>12,.2f}  ({row['pct_of_total']}% of total loss)")
+    if concentration_report_markout_time["by_top_n"][0]["top_markets"]:
+        w1 = concentration_report_markout_time["by_top_n"][0]["top_markets"][0]
+        print(f"  #1 worst: {w1['question']!r} (${w1['pnl']:,.2f}, {w1['n_captured_trades']} captured trades)")
 
     out_path = RESULTS_DIR / "mm_proxy_results.json"
     with open(out_path, "w") as f:

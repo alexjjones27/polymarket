@@ -21,19 +21,25 @@ from polymarket_final_pct import (
     SignalConfig,
     _dedupe_by_id,
     categorize_flip,
+    category_breakdown,
     classify_fee_category,
     classify_report_bucket,
     clopper_pearson_interval,
     compute_metrics,
     compute_with_vs_without_flips,
+    days_to_resolution_distribution,
     detect_crossing,
     estimate_vwap_fill,
     maker_fee_frac_of_notional,
+    liquidity_variant,
+    max_days_to_resolution_variant,
+    report_bucket_coverage,
     resolved_outcome_index,
     simulate_trade,
     stratified_sample_markets,
     taker_fee_frac_of_notional,
     wilson_interval,
+    write_report,
 )
 
 
@@ -81,6 +87,108 @@ def test_n_consecutive_is_configurable():
 
 def test_empty_series_returns_none():
     assert detect_crossing(price_df([]), threshold=0.99, n_consecutive=3) is None
+
+
+# ---------------------------------------------------------------------------
+# Multi-episode coarse-to-fine zoom (fetch_token_lifetime_prices)
+# ---------------------------------------------------------------------------
+
+def test_approach_episode_starts_finds_every_contiguous_run():
+    import polymarket_final_pct as pmf
+    coarse = pd.DataFrame({
+        "t": [0, 3600, 7200, 10800, 14400, 18000],
+        "p": [0.98, 0.99, 0.50, 0.30, 0.97, 0.98],
+    })
+    # two contiguous runs >= 0.97: [t=0,3600] and [t=14400,18000]
+    assert pmf._approach_episode_starts(coarse, 0.97) == [0, 14400]
+
+
+def test_approach_episode_starts_empty_when_never_approaches():
+    import polymarket_final_pct as pmf
+    coarse = pd.DataFrame({"t": [0, 3600], "p": [0.5, 0.6]})
+    assert pmf._approach_episode_starts(coarse, 0.97) == []
+
+
+def test_fetch_token_lifetime_prices_short_lifetime_uses_fine_direct(monkeypatch):
+    import polymarket_final_pct as pmf
+    fine = price_df([0.5, 0.99])
+    monkeypatch.setattr(pmf, "fetch_price_series", lambda token_id, s, e, fidelity: fine)
+    df, source = pmf.fetch_token_lifetime_prices("tok", 0, 5 * 86400)  # <= 15-day window
+    assert source == "fine_direct"
+    assert df.equals(fine)
+
+
+def test_fetch_token_lifetime_prices_never_approaching_stays_coarse_only(monkeypatch):
+    # No fine-grained call should be made at all when the coarse series never
+    # gets close to the threshold -- verified by making any such call raise.
+    import polymarket_final_pct as pmf
+    coarse = pd.DataFrame({"t": [0, 86400, 2 * 86400], "p": [0.3, 0.4, 0.5]})
+
+    def fake(token_id, s, e, fidelity):
+        if fidelity == pmf.COARSE_FIDELITY_MIN:
+            return coarse
+        raise AssertionError("should never zoom in when coarse never approaches the threshold")
+
+    monkeypatch.setattr(pmf, "fetch_price_series", fake)
+    df, source = pmf.fetch_token_lifetime_prices("tok", 0, 40 * 86400)
+    assert source == "coarse_only"
+    assert df.equals(coarse)
+
+
+def test_fetch_token_lifetime_prices_finds_crossing_in_a_later_approach_episode(monkeypatch):
+    """Regression test: a market that approaches the threshold early, retreats,
+    and only truly crosses much later in its life used to be silently missed,
+    because the old zoom logic only ever looked at the FIRST approach episode's
+    15-day window. Real, plausible shape: a long-running market that flirts
+    with favorite status, cools off, then becomes the real favorite months
+    later."""
+    import polymarket_final_pct as pmf
+
+    early_center = 1 * 86400
+    late_center = 30 * 86400
+    coarse = pd.DataFrame({
+        "t": [early_center, 2 * 86400, late_center, late_center + 3600],
+        "p": [0.98, 0.50, 0.98, 0.98],
+    })
+    early_zoom = price_df([0.98, 0.985, 0.97], start_t=early_center, step=60)  # approaches, never crosses
+    late_zoom = price_df([0.991, 0.992, 0.993], start_t=late_center, step=60)  # the real crossing
+
+    def fake(token_id, s, e, fidelity):
+        if fidelity == pmf.COARSE_FIDELITY_MIN:
+            return coarse
+        if s <= early_center <= e:
+            return early_zoom
+        if s <= late_center <= e:
+            return late_zoom
+        raise AssertionError(f"unexpected fine-grained window [{s}, {e}]")
+
+    monkeypatch.setattr(pmf, "fetch_price_series", fake)
+    df, source = pmf.fetch_token_lifetime_prices("tok", 0, 40 * 86400)
+    assert source == "fine_zoom"
+
+    hit = detect_crossing(df, threshold=0.99, n_consecutive=3)
+    assert hit is not None
+    assert hit["entry_time_s"] == late_center + 2 * 60  # 3rd confirming snapshot of the LATE episode
+
+
+def test_fetch_token_lifetime_prices_truncates_beyond_max_zoom_episodes(monkeypatch):
+    import polymarket_final_pct as pmf
+    n_episodes = pmf.MAX_ZOOM_EPISODES + 3
+    coarse_rows = []
+    for i in range(n_episodes):
+        center = i * 5 * 86400
+        coarse_rows.append({"t": center, "p": 0.98})
+        coarse_rows.append({"t": center + 3600, "p": 0.30})  # retreat, so each is its own episode
+    coarse = pd.DataFrame(coarse_rows)
+
+    def fake(token_id, s, e, fidelity):
+        if fidelity == pmf.COARSE_FIDELITY_MIN:
+            return coarse
+        return price_df([0.98], start_t=s)  # never actually crosses; only episode count matters here
+
+    monkeypatch.setattr(pmf, "fetch_price_series", fake)
+    df, source = pmf.fetch_token_lifetime_prices("tok", 0, n_episodes * 5 * 86400)
+    assert source == "fine_zoom_truncated"
 
 
 # ---------------------------------------------------------------------------
@@ -137,6 +245,17 @@ def test_classify_report_bucket_crypto_price():
 def test_classify_fee_category_maps_to_official_taxonomy():
     m = {"question": "Will Bitcoin hit $100k?", "slug": "x", "events": []}
     assert classify_fee_category(m) == "crypto"
+
+
+def test_report_bucket_coverage_counts_every_bucket_including_zero():
+    markets = [
+        {"question": "Lakers vs Celtics: who wins Game 7?", "slug": "x", "events": []},
+        {"question": "Will Bitcoin hit $100k?", "slug": "x", "events": []},
+        {"question": "Will it rain in Boston tomorrow?", "slug": "x", "events": []},  # -> other
+    ]
+    coverage = report_bucket_coverage(markets)
+    assert coverage == {"politics": 0, "sports": 1, "crypto_price": 1, "other": 1}
+    assert sum(coverage.values()) == len(markets)
 
 
 # ---------------------------------------------------------------------------
@@ -276,6 +395,49 @@ def test_empty_trades_df_handled_gracefully():
     m = compute_metrics(pd.DataFrame())
     assert m["n_trades"] == 0
     assert math.isnan(m["win_rate"])
+
+
+# ---------------------------------------------------------------------------
+# Liquidity variant: depth cap hides thinness (fixed $100 notional almost
+# always "fits"), this variant surfaces it via confirmed depth in dollars
+# ---------------------------------------------------------------------------
+
+def test_liquidity_variant_splits_liquid_illiquid_and_unknown():
+    rows = [
+        # confirmed liquid: cap_shares * entry_price = 2000 * 0.99 = $1980 >= $1000
+        {"notional": 100.0, "pnl_net": 1.0, "pnl_gross": 1.0, "holding_days": 1.0, "won": True,
+         "cap_shares": 2000.0, "entry_price": 0.99},
+        # confirmed thin: cap_shares * entry_price = 50 * 0.99 = $49.50 < $1000
+        {"notional": 100.0, "pnl_net": 1.0, "pnl_gross": 1.0, "holding_days": 1.0, "won": True,
+         "cap_shares": 50.0, "entry_price": 0.99},
+        # unknown depth: no realized trades found near the crossing at all
+        {"notional": 100.0, "pnl_net": -100.0, "pnl_gross": -100.0, "holding_days": 1.0, "won": False,
+         "cap_shares": None, "entry_price": 0.99},
+    ]
+    result = liquidity_variant(_trades_df(rows), min_depth_notional=1000.0)
+    by_variant = {r["variant"]: r for r in result.to_dict("records")}
+
+    unrestricted = next(v for k, v in by_variant.items() if k.startswith("unrestricted"))
+    assert unrestricted["n_trades"] == 3
+
+    liquid = next(v for k, v in by_variant.items() if k.startswith(">=$1000"))
+    assert liquid["n_trades"] == 1  # only the 2000-share trade clears the bar
+
+    unknown = next(v for k, v in by_variant.items() if k.startswith("unknown depth"))
+    assert unknown["n_trades"] == 1  # only the cap_shares=None trade
+    assert unknown["total_pnl"] == pytest.approx(-100.0)  # the flip, isolated to its own row
+
+
+def test_liquidity_variant_unknown_depth_never_counted_as_liquid():
+    # A trade with no depth data must never be silently treated as "unlimited"
+    # liquidity -- it should show up in neither the unrestricted-minus-unknown
+    # count nor the liquid cohort's total.
+    rows = [{"notional": 100.0, "pnl_net": 1.0, "pnl_gross": 1.0, "holding_days": 1.0, "won": True,
+             "cap_shares": None, "entry_price": 0.99}]
+    result = liquidity_variant(_trades_df(rows), min_depth_notional=1000.0)
+    by_variant = {r["variant"]: r for r in result.to_dict("records")}
+    liquid = next(v for k, v in by_variant.items() if k.startswith(">=$1000"))
+    assert liquid["n_trades"] == 0
 
 
 # ---------------------------------------------------------------------------
@@ -427,3 +589,47 @@ def test_stratified_sample_is_subset_stable_as_census_grows():
     # census grows) but must never scramble into an unrelated random subset
     assert old_ids_after.issubset(before)
     assert len(old_ids_after) > 0
+
+
+# ---------------------------------------------------------------------------
+# Report generation -- pins write_report's call signature (a mismatch here
+# would only otherwise surface at the end of a full, hours-long live run)
+# ---------------------------------------------------------------------------
+
+def test_write_report_runs_and_surfaces_other_bucket_coverage(tmp_path):
+    cfg = BacktestConfig(signal=SignalConfig(), position_notional=100.0, gas=GasAssumptions(relayer_sponsored=True))
+    fill = FillAssumptions(fill_type="maker")
+    tdf = pd.DataFrame([
+        simulate_trade(_crossing(entry_price=0.99, outcome_index=1), _market(), fill, cfg, cap_shares=None),
+    ])
+    trades_by_fill = {"maker": tdf}
+    days_dist = days_to_resolution_distribution(tdf)
+    category_tables = {"maker fills, net of fees": category_breakdown(tdf, "pnl_net")}
+    max_days_tables = {"maker fills, net of fees": max_days_to_resolution_variant(tdf, 7.0, "pnl_net")}
+    liquidity_tables = {"maker fills, net of fees": liquidity_variant(tdf, 1000.0, "pnl_net")}
+    bucket_coverage = report_bucket_coverage([
+        {"question": "Will it rain in Boston tomorrow?", "slug": "x", "events": []},  # -> other
+    ])
+
+    out_path = tmp_path / "report.md"
+    write_report(
+        out_path=out_path,
+        census_size=1,
+        sample_size=1,
+        trades_by_fill=trades_by_fill,
+        days_dist=days_dist,
+        category_tables=category_tables,
+        max_days_tables=max_days_tables,
+        liquidity_tables=liquidity_tables,
+        sensitivity_tables={},
+        depth_cap_flags=pd.DataFrame(),
+        signal_cfg=SignalConfig(),
+        gas_estimate_usd=0.005,
+        bucket_coverage=bucket_coverage,
+    )
+
+    text = out_path.read_text()
+    assert "100.0% other" in text
+    assert "other=1" in text
+    # cap_shares=None on this trade -> unknown depth, not liquid and not illiquid
+    assert "unknown depth -- no trades found near crossing (n=1)" in text

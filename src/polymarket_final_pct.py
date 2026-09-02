@@ -304,7 +304,7 @@ def fetch_resolved_markets_census(
     failure -- that bucket is skipped (uncached, so retried next run) rather
     than crashing the entire census."""
     if date_max is None:
-        date_max = pd.Timestamp.utcnow().strftime("%Y-%m-%d")
+        date_max = pd.Timestamp.now("UTC").strftime("%Y-%m-%d")
 
     leaves = _plan_leaf_buckets(date_min, date_max, cache_dir)
     all_markets: list[dict] = []
@@ -468,6 +468,22 @@ def classify_report_bucket(market: dict) -> str:
     return "other"
 
 
+def report_bucket_coverage(markets: list[dict]) -> dict[str, int]:
+    """Count of sampled markets landing in each report_bucket. classify_report_bucket
+    is a keyword heuristic, not Polymarket's real taxonomy (see module docstring
+    limitations) -- "other" is its catch-all, and everything that lands there
+    also gets the "other" fee rate and, in the live scanners, the "other"
+    flip-rate prior. A large or growing "other" share is the concrete,
+    checkable signal that the heuristic is missing real structure rather than
+    a vague caveat; surfaced here so it's a number in the report, not just a
+    prose disclaimer."""
+    counts: dict[str, int] = {b: 0 for b in REPORT_BUCKETS}
+    for m in markets:
+        bucket = classify_report_bucket(m)
+        counts[bucket] = counts.get(bucket, 0) + 1
+    return counts
+
+
 # feeRate per official docs.polymarket.com/trading/fees + help.polymarket.com
 # (cross-checked against both sources' worked examples), confirmed live on
 # 2026-08-25. fee = shares * feeRate * price * (1 - price); makers pay 0.
@@ -569,7 +585,27 @@ def fetch_live_gas_estimate(assumed_gas_units: int = 150_000) -> float:
 
 COARSE_FIDELITY_MIN = 60       # 1h bars for the full-lifetime overview pass
 COARSE_APPROACH_THRESHOLD = 0.97  # trigger a fine-grained zoom once coarse data gets this close
-ZOOM_LOOKBACK_S = 2 * 86400    # look back this far before the first coarse approach point
+ZOOM_LOOKBACK_S = 2 * 86400    # look back this far before each coarse approach episode
+MAX_ZOOM_EPISODES = 10  # safety valve on fine-grained fetches per market (see docstring)
+
+
+def _approach_episode_starts(coarse: pd.DataFrame, threshold: float) -> list[int]:
+    """Start timestamp of every maximal contiguous run of coarse closes
+    >= threshold, in chronological order -- not just the first. A market can
+    approach the threshold, retreat, and re-approach again much later in its
+    lifetime (a long-running market oscillating near-favorite status before
+    finally settling); zooming only into the first such episode would
+    silently miss a genuine later crossing that falls outside that one
+    window."""
+    mask = (coarse["p"] >= threshold).to_numpy()
+    ts = coarse["t"].to_numpy()
+    starts = []
+    prev = False
+    for t, m in zip(ts, mask):
+        if m and not prev:
+            starts.append(int(t))
+        prev = m
+    return starts
 
 
 def fetch_token_lifetime_prices(token_id: str, start_s: int, end_s: int) -> tuple[pd.DataFrame, str]:
@@ -579,10 +615,22 @@ def fetch_token_lifetime_prices(token_id: str, start_s: int, end_s: int) -> tupl
     Longer-lived markets get a coarse (1h) overview first; if that overview
     never approaches the threshold, no further calls are made (the token
     never seriously threatened a crossing); otherwise a fine-grained (1-min)
-    zoom is fetched around the first approach point. Returns (df, source)
-    where source is one of "fine_direct", "fine_zoom", "coarse_only" (never
-    approached threshold -- coarse resolution is sufficient to know that),
-    or "no_data"."""
+    zoom is fetched around EVERY coarse approach episode (not just the
+    first -- see _approach_episode_starts), and the zoomed chunks are
+    concatenated into one combined series so a later caller's detect_crossing
+    still finds the true first qualifying run, chronologically, across the
+    market's whole lifetime. Capped at MAX_ZOOM_EPISODES episodes as a
+    safety valve against a market that oscillates near the threshold
+    pathologically often; that edge case is labeled distinctly
+    ("fine_zoom_truncated") rather than silently dropping the remainder.
+    Returns (df, source) where source is one of "fine_direct", "fine_zoom",
+    "fine_zoom_truncated", "coarse_only" (never approached threshold --
+    coarse resolution is sufficient to know that), or "no_data".
+
+    This function does not take a threshold parameter -- COARSE_APPROACH_THRESHOLD
+    is a fixed, generous margin below every entry threshold this project tests
+    (0.98/0.99/0.995), so the same fetched data is reusable across all of them
+    (see threshold_sensitivity's caching note)."""
     if end_s - start_s <= PRICES_MAX_WINDOW_S:
         df = fetch_price_series(token_id, start_s, end_s, fidelity=1)
         return df, ("fine_direct" if not df.empty else "no_data")
@@ -591,17 +639,24 @@ def fetch_token_lifetime_prices(token_id: str, start_s: int, end_s: int) -> tupl
     if coarse.empty:
         return coarse, "no_data"
 
-    approach = coarse[coarse["p"] >= COARSE_APPROACH_THRESHOLD]
-    if approach.empty:
+    episode_starts = _approach_episode_starts(coarse, COARSE_APPROACH_THRESHOLD)
+    if not episode_starts:
         return coarse, "coarse_only"
 
-    zoom_center = int(approach["t"].iloc[0])
-    zoom_start = max(start_s, zoom_center - ZOOM_LOOKBACK_S)
-    zoom_end = min(end_s, zoom_start + PRICES_MAX_WINDOW_S)
-    fine = fetch_price_series(token_id, zoom_start, zoom_end, fidelity=1)
-    if fine.empty:
+    fine_chunks = []
+    for zoom_center in episode_starts[:MAX_ZOOM_EPISODES]:
+        zoom_start = max(start_s, zoom_center - ZOOM_LOOKBACK_S)
+        zoom_end = min(end_s, zoom_start + PRICES_MAX_WINDOW_S)
+        fine = fetch_price_series(token_id, zoom_start, zoom_end, fidelity=1)
+        if not fine.empty:
+            fine_chunks.append(fine)
+
+    if not fine_chunks:
         return coarse, "coarse_only"
-    return fine, "fine_zoom"
+
+    combined = pd.concat(fine_chunks).drop_duplicates(subset="t").sort_values("t").reset_index(drop=True)
+    source = "fine_zoom" if len(episode_starts) <= MAX_ZOOM_EPISODES else "fine_zoom_truncated"
+    return combined, source
 
 
 def detect_crossing(df: pd.DataFrame, threshold: float = 0.99, n_consecutive: int = 3) -> Optional[dict]:
@@ -1049,6 +1104,39 @@ def max_days_to_resolution_variant(trades_df: pd.DataFrame, max_days: float, pnl
     return pd.DataFrame([all_m, filt_m])
 
 
+def liquidity_variant(trades_df: pd.DataFrame, min_depth_notional: float, pnl_col: str = "pnl_net") -> pd.DataFrame:
+    """Compares the unrestricted trade set against the subset with CONFIRMED
+    real liquidity at the crossing -- cap_shares * entry_price (the realized-
+    trades depth proxy, converted to dollar notional) >= min_depth_notional.
+    This is a stricter, more honest cut than the depth CAP already applied to
+    every trade's position size: a trade can still show a "full" $100 fill
+    (position_notional is tiny relative to most depth readings) while sitting
+    on a market that could never have supported a meaningfully larger
+    position -- capping hides thinness, this variant surfaces it directly.
+
+    Trades with cap_shares=None have UNKNOWN depth (no realized trades found
+    near the crossing at all -- see estimate_available_shares), not unlimited
+    depth. Excluded from the "confirmed liquid" cohort by construction
+    (conservative -- unknown is not assumed to mean tradeable) and reported
+    as a third, separate row rather than folded into either side, since the
+    honest answer for those trades is "we don't know," not "yes" or "no.\""""
+    all_m = compute_metrics(trades_df, pnl_col)
+    all_m["variant"] = f"unrestricted (n={len(trades_df)})"
+
+    has_depth_data = trades_df["cap_shares"].notna()
+    depth_notional = trades_df["cap_shares"] * trades_df["entry_price"]
+
+    liquid = trades_df[has_depth_data & (depth_notional >= min_depth_notional)]
+    liq_m = compute_metrics(liquid, pnl_col)
+    liq_m["variant"] = f">=${min_depth_notional:.0f} confirmed depth (n={len(liquid)})"
+
+    unknown = trades_df[~has_depth_data]
+    unk_m = compute_metrics(unknown, pnl_col)
+    unk_m["variant"] = f"unknown depth -- no trades found near crossing (n={len(unknown)})"
+
+    return pd.DataFrame([all_m, liq_m, unk_m])
+
+
 def category_breakdown(trades_df: pd.DataFrame, pnl_col: str = "pnl_net") -> pd.DataFrame:
     rows = []
     for bucket, grp in trades_df.groupby("report_bucket"):
@@ -1224,10 +1312,12 @@ def write_report(
     days_dist: pd.DataFrame,
     category_tables: dict[str, pd.DataFrame],
     max_days_tables: dict[str, pd.DataFrame],
+    liquidity_tables: dict[str, pd.DataFrame],
     sensitivity_tables: dict[str, pd.DataFrame],
     depth_cap_flags: pd.DataFrame,
     signal_cfg: SignalConfig,
     gas_estimate_usd: float,
+    bucket_coverage: dict[str, int],
 ) -> None:
     lines = []
     lines.append("# Polymarket \"Final 1%\" Spread-Capture Backtest\n")
@@ -1372,6 +1462,25 @@ def write_report(
         lines.append(_df_to_markdown(mdf[["variant"] + [c for c in mdf.columns if c != "variant"]]))
         lines.append("\n")
 
+    lines.append(f"\n## Liquidity variant (unrestricted vs. >=${MIN_LIQUID_DEPTH_NOTIONAL:.0f} confirmed depth at entry)\n")
+    lines.append(
+        "The depth cap already applied to every trade above hides thinness "
+        "rather than surfacing it: position_notional ($100/trade) is small "
+        "enough that most trades still show a \"full\" fill even on a fairly "
+        "thin market, since the cap only binds when realized nearby volume is "
+        "less than $100 of the crossing price. This variant asks a different, "
+        "more honest question -- not \"was $100 achievable\" but \"was there "
+        f"real room to size this up,\" via a >=${MIN_LIQUID_DEPTH_NOTIONAL:.0f} "
+        "confirmed-depth bar. Markets with no realized trades found near the "
+        "crossing at all have UNKNOWN depth, not unlimited depth, and are "
+        "reported as a separate third row rather than assumed liquid or "
+        "illiquid.\n"
+    )
+    for label, ldf in liquidity_tables.items():
+        lines.append(f"\n**{label}**\n")
+        lines.append(_df_to_markdown(ldf[["variant"] + [c for c in ldf.columns if c != "variant"]]))
+        lines.append("\n")
+
     lines.append("\n## Threshold sensitivity ($0.98 / $0.99 / $0.995)\n")
     for label, sens_df in sensitivity_tables.items():
         lines.append(f"\n**{label}**\n")
@@ -1416,7 +1525,13 @@ def write_report(
         "depth cap).\n"
         "- Category classification is a keyword heuristic over question "
         "text and event metadata, not Polymarket's internal taxonomy -- "
-        "treat the category breakdown as indicative, not exact.\n"
+        "treat the category breakdown as indicative, not exact. "
+        "\"other\" is the catch-all this heuristic falls back to (both for "
+        "the report bucket and the fee rate); its share of this sample is "
+        + ", ".join(f"{b}={n}" for b, n in sorted(bucket_coverage.items())) +
+        f" ({bucket_coverage.get('other', 0) / max(sum(bucket_coverage.values()), 1) * 100:.1f}% "
+        "other) -- a large or growing \"other\" share is the concrete sign "
+        "this heuristic is missing real structure, not just a caveat.\n"
         "- The backtest samples from the population rather than covering "
         "it exhaustively; while the sampling is stratified and unbiased by "
         "construction, a different random seed or a larger sample could "
@@ -1434,6 +1549,7 @@ def write_report(
 SAMPLE_SIZE = 4000
 CROSSING_WORKERS = 16
 MAX_DAYS_TO_RESOLUTION = 7.0  # entry-time filter variant, per the task's example
+MIN_LIQUID_DEPTH_NOTIONAL = 1_000.0  # 10x position_notional -- "real room to size up," not just "$100 fit"
 
 
 def find_all_crossings(
@@ -1509,6 +1625,9 @@ def main() -> None:
     sample = [m for m in sample if _safe_json_list(m.get("clobTokenIds"))]
     print(f"  sample size (with CLOB token ids): {len(sample):,}")
 
+    bucket_coverage = report_bucket_coverage(sample)
+    print(f"  report_bucket coverage: {bucket_coverage}")
+
     signal_cfg = SignalConfig(threshold=0.99, n_consecutive=3)
     gas_estimate = fetch_live_gas_estimate()
     gas_sponsored = GasAssumptions(relayer_sponsored=True)
@@ -1551,6 +1670,11 @@ def main() -> None:
         for fill_type, tdf in trades_by_fill.items() if not tdf.empty
     }
 
+    liquidity_tables = {
+        f"{fill_type} fills, net of fees": liquidity_variant(tdf, MIN_LIQUID_DEPTH_NOTIONAL, "pnl_net")
+        for fill_type, tdf in trades_by_fill.items() if not tdf.empty
+    }
+
     print("Running threshold sensitivity (0.98 / 0.99 / 0.995) ...")
     sensitivity_tables = {}
     for fill_type in ("maker", "taker"):
@@ -1579,10 +1703,12 @@ def main() -> None:
         days_dist=days_dist,
         category_tables=category_tables,
         max_days_tables=max_days_tables,
+        liquidity_tables=liquidity_tables,
         sensitivity_tables=sensitivity_tables,
         depth_cap_flags=depth_cap_flags,
         signal_cfg=signal_cfg,
         gas_estimate_usd=gas_estimate,
+        bucket_coverage=bucket_coverage,
     )
     print(f"Report written to {RESULTS_DIR / 'report.md'}")
 

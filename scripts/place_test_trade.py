@@ -47,9 +47,9 @@ def main():
         print("Missing POLYMARKET_PRIVATE_KEY and/or POLYMARKET_PROXY_ADDRESS in .env")
         sys.exit(1)
 
-    from py_clob_client_v2 import ClobClient
-    from py_clob_client_v2.clob_types import OrderArgsV2
-    from py_clob_client_v2.order_builder.constants import BUY
+    from py_clob_client.client import ClobClient
+    from py_clob_client.clob_types import OrderArgs
+    from py_clob_client.order_builder.constants import BUY
 
     client = ClobClient(
         host="https://clob.polymarket.com",
@@ -58,17 +58,17 @@ def main():
         signature_type=2,  # browser-wallet (Gnosis Safe proxy) account
         funder=proxy_address,
     )
-    client.set_api_creds(client.create_or_derive_api_key())
+    client.set_api_creds(client.create_or_derive_api_creds())
     print("API credentials derived OK (no funds moved by this step).")
 
     book = client.get_order_book(args.token_id)
-    asks = sorted(book["asks"], key=lambda a: float(a["price"]))
+    asks = sorted(book.asks or [], key=lambda a: float(a.price))
     if not asks:
         print("No live asks on this book -- cannot buy right now.")
         sys.exit(1)
     best_ask = asks[0]
-    price = float(best_ask["price"])
-    available = float(best_ask["size"])
+    price = float(best_ask.price)
+    available = float(best_ask.size)
 
     size = round(args.usd / price, 2)
     if size > available:
@@ -91,7 +91,7 @@ def main():
         print("Not confirmed -- aborting, nothing submitted.")
         return
 
-    order_args = OrderArgsV2(token_id=args.token_id, price=price, size=size, side=BUY)
+    order_args = OrderArgs(token_id=args.token_id, price=price, size=size, side=BUY)
     signed_order = client.create_order(order_args)
     resp = client.post_order(signed_order)
     print("\nOrder response:")
