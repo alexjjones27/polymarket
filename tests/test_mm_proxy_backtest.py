@@ -13,8 +13,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 from run_mm_proxy_backtest import (
     MAX_MARKET_VOLUME_SHARE,
     MAX_NOTIONAL_PER_TRADE,
+    assign_pace_buckets,
     concentration_by_top_n,
+    market_pace_seconds,
     market_pnl,
+    pace_breakdown,
     parse_and_sort_trades,
 )
 
@@ -163,6 +166,70 @@ def test_market_pnl_reports_actual_window_span_not_assumed():
     total_volume = sum(t["price"] * t["size"] for t in trades)
     r = market_pnl(trades, total_volume, half_spread=0.01, fill_share=1.0)
     assert r["avg_trades_window_span_s"] == pytest.approx(8.0)
+
+
+def test_market_pnl_markout_window_seconds_is_a_real_parameter():
+    # A big adverse move happens 50s after the captured fill. A large fake
+    # total_market_volume keeps the liquidity cap from interfering, so this
+    # isolates the effect of the markout_window_seconds parameter itself.
+    trades = [_mk(0.50, 10.0, "SELL", 0), _mk(0.20, 10.0, "SELL", 50)]
+    r_narrow = market_pnl(trades, 100_000.0, half_spread=0.01, fill_share=1.0, markout_window_seconds=10)
+    r_wide = market_pnl(trades, 100_000.0, half_spread=0.01, fill_share=1.0, markout_window_seconds=100)
+    # narrow window: the move at t=50 is outside a 10s window -> no penalty
+    assert r_narrow["pnl_with_markout_time"] == pytest.approx(r_narrow["pnl_best_case"])
+    # wide window: the same move at t=50 IS inside a 100s window -> penalized
+    assert r_wide["pnl_with_markout_time"] < r_wide["pnl_best_case"]
+
+
+# ---------------------------------------------------------------------------
+# market_pace_seconds / assign_pace_buckets / pace_breakdown
+# ---------------------------------------------------------------------------
+
+def test_market_pace_seconds_computes_median_gap():
+    trades = [_mk(0.5, 1.0, "BUY", 0), _mk(0.5, 1.0, "BUY", 10),
+              _mk(0.5, 1.0, "BUY", 30), _mk(0.5, 1.0, "BUY", 70)]
+    # gaps: 10, 20, 40 -> median 20
+    assert market_pace_seconds(trades) == pytest.approx(20.0)
+
+
+def test_market_pace_seconds_none_below_two_trades():
+    assert market_pace_seconds([]) is None
+    assert market_pace_seconds([_mk(0.5, 1.0, "BUY", 0)]) is None
+
+
+def _pace_row(cid, pace, pnl, pnl_trades, pnl_time, bucket="sports"):
+    return {
+        "condition_id": cid, "median_inter_trade_s": pace,
+        "pnl": pnl, "pnl_with_markout_trades": pnl_trades, "pnl_with_markout_time": pnl_time,
+        "captured_notional": 100.0, "report_bucket": bucket,
+    }
+
+
+def test_assign_pace_buckets_splits_into_equal_count_quantiles():
+    rows = [_pace_row(c, p, 10.0, 5.0, 1.0) for c, p in zip("abcde", [1.0, 2.0, 3.0, 4.0, 5.0])]
+    assign_pace_buckets(rows)
+    assert [r["pace_bucket"] for r in rows] == ["Q1", "Q2", "Q3", "Q4", "Q5"]
+
+
+def test_assign_pace_buckets_marks_unmeasurable_pace_as_na():
+    rows = [_pace_row("a", None, 10.0, 5.0, 1.0)] + [_pace_row(c, p, 10.0, 5.0, 1.0) for c, p in zip("bcde", [1.0, 2.0, 3.0, 4.0])]
+    assign_pace_buckets(rows)
+    assert rows[0]["pace_bucket"] == "n/a"
+    assert "Q1" in [r["pace_bucket"] for r in rows[1:]]
+
+
+def test_pace_breakdown_ranks_best_bucket_by_markout_time_not_by_pace():
+    # Q5 (slowest) is deliberately given the best markout PnL here -- checks
+    # that pace_breakdown ranks by actual profitability, not by assuming
+    # "slowest always wins".
+    rows = [_pace_row(c, p, 10.0, 5.0, pnl_time) for c, p, pnl_time in
+            zip("abcde", [1.0, 2.0, 3.0, 4.0, 5.0], [1.0, 2.0, 3.0, 4.0, 9.0])]
+    assign_pace_buckets(rows)
+    report = pace_breakdown(rows)
+    assert set(report.keys()) == {"Q1", "Q2", "Q3", "Q4", "Q5"}
+    assert next(iter(report)) == "Q5"  # highest pnl_with_markout_time (9.0) ranks first
+    assert report["Q5"]["n_markets"] == 1
+    assert report["Q5"]["median_inter_trade_s_range"] == [5.0, 5.0]
 
 
 # ---------------------------------------------------------------------------

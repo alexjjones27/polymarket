@@ -125,6 +125,24 @@ MARKOUT_WINDOW_TRADES = 20
 MARKOUT_WINDOW_SECONDS = 15
 MAX_TIME_WINDOW_SCAN = 500  # safety cap on how many trades the time-window scan will walk through
 
+# How does the adverse-selection picture change as the assumed MM reaction
+# speed changes? 15s is one point estimate, borrowed from elsewhere in this
+# codebase, not derived from anything MM-specific -- this grid stress-tests
+# it against faster (5s) and slower (60s, 300s) reactions, at the base
+# half_spread/fill_share only (crossing it with the full HALF_SPREADS x
+# FILL_SHARES grid too would be a lot of extra compute for a question this
+# script doesn't need to answer at every spread/fill combination).
+MARKOUT_TIME_GRID_SECONDS = [5, 15, 60, 300]
+
+# "Which markets are better for market making" (report_bucket) turned out to
+# really be a question of trading PACE -- politics survives markout because
+# it's slow, sports doesn't because it's fast. PACE_QUANTILES buckets markets
+# by their own median inter-trade gap (Q1 = fastest/most active .. Q5 =
+# slowest) using data-driven quantile edges rather than a hand-picked
+# threshold like "slow = 1+ hour between trades", so the cut reflects the
+# actual empirical distribution instead of a guess.
+PACE_QUANTILES = 5
+
 
 def _time_window_vwap(sorted_trades: list[dict], i: int, seconds: float):
     """VWAP (and trade count) of real trades within `seconds` after
@@ -147,7 +165,8 @@ def _time_window_vwap(sorted_trades: list[dict], i: int, seconds: float):
     return w_notional / w_shares, n
 
 
-def market_pnl(sorted_trades, total_market_volume, half_spread, fill_share):
+def market_pnl(sorted_trades, total_market_volume, half_spread, fill_share,
+                markout_window_seconds: float = MARKOUT_WINDOW_SECONDS):
     """Returns the existing best-case PnL (zero adverse selection, exactly as
     before) alongside TWO markout-adjusted variants (trade-count window and
     time window -- see the module-level comment above), never silently
@@ -155,6 +174,9 @@ def market_pnl(sorted_trades, total_market_volume, half_spread, fill_share):
     comparison in this codebase. `sorted_trades` must already be
     chronologically sorted, each a dict with price/size/side/timestamp
     (parsed once per market, not per config, for performance -- see caller).
+    `markout_window_seconds` overrides the module default so callers can
+    build a sensitivity grid over assumed MM reaction speed (see
+    MARKOUT_TIME_GRID_SECONDS) without touching the trade-count window.
 
     A flat, price-independent half_spread is itself unrealistic at the
     extremes this dataset is full of (it's built from markets that crossed
@@ -212,7 +234,7 @@ def market_pnl(sorted_trades, total_market_volume, half_spread, fill_share):
         else:
             pnl_with_markout_trades += shares * eff_half_spread  # tail of the tape; spread-only
 
-        time_markout_price, _ = _time_window_vwap(sorted_trades, i, MARKOUT_WINDOW_SECONDS)
+        time_markout_price, _ = _time_window_vwap(sorted_trades, i, markout_window_seconds)
         if time_markout_price is not None:
             pnl_with_markout_time += shares * eff_half_spread - _adverse(time_markout_price)
         else:
@@ -331,6 +353,78 @@ def category_breakdown(per_market: list[dict]) -> dict:
     return out
 
 
+def market_pace_seconds(sorted_trades: list[dict]):
+    """Median seconds between consecutive real trades on the FULL tape (not
+    just captured fills) -- an inherent property of how actively a market
+    trades, independent of any assumed MM participation in it. This is the
+    direct mechanism behind the category-level pattern (politics slow -> low
+    adverse selection, sports fast -> high): category is a proxy for pace,
+    pace is the actual thing driving it. Returns None for a market with
+    fewer than 2 trades (no gap to measure)."""
+    if len(sorted_trades) < 2:
+        return None
+    gaps = sorted(b["timestamp"] - a["timestamp"] for a, b in zip(sorted_trades, sorted_trades[1:]))
+    n = len(gaps)
+    mid = n // 2
+    return gaps[mid] if n % 2 else (gaps[mid - 1] + gaps[mid]) / 2
+
+
+def assign_pace_buckets(per_market: list[dict]) -> None:
+    """Mutates `per_market` in place, adding a `pace_bucket` field (Q1..Q5,
+    Q1 = fastest/most active market, Q5 = slowest) via data-driven quantile
+    edges over median_inter_trade_s -- an equal-COUNT split of the actual
+    population, not a fixed threshold picked by hand. Markets with no
+    measurable pace (median_inter_trade_s is None, i.e. <2 real trades) get
+    pace_bucket "n/a" and are excluded from the quantile split itself."""
+    paced = [r for r in per_market if r["median_inter_trade_s"] is not None]
+    paced.sort(key=lambda r: r["median_inter_trade_s"])
+    n = len(paced)
+    for idx, r in enumerate(paced):
+        r["pace_bucket"] = f"Q{min(PACE_QUANTILES - 1, idx * PACE_QUANTILES // n) + 1}" if n else "n/a"
+    for r in per_market:
+        r.setdefault("pace_bucket", "n/a")
+
+
+def pace_breakdown(per_market: list[dict]) -> dict:
+    """Same shape as category_breakdown, keyed by pace_bucket (Q1..Q5)
+    instead of report_bucket, plus the actual pace range each bucket spans
+    (for interpretability -- "Q5" alone doesn't say anything, "median gap
+    38-420 minutes" does). Sorted best-to-worst by pnl_with_markout_time,
+    same convention as category_breakdown, so callers can just take the
+    first entry as "the best bucket" without assuming pace and profitability
+    are monotonic -- they're expected to correlate, not required to."""
+    buckets = {}
+    for r in per_market:
+        if r["pace_bucket"] == "n/a":
+            continue
+        b = buckets.setdefault(r["pace_bucket"], {
+            "n_markets": 0, "pnl_best_case": 0.0,
+            "pnl_with_markout_trades": 0.0, "pnl_with_markout_time": 0.0,
+            "captured_notional": 0.0, "pace_samples": [],
+        })
+        b["n_markets"] += 1
+        b["pnl_best_case"] += r["pnl"]
+        b["pnl_with_markout_trades"] += r["pnl_with_markout_trades"]
+        b["pnl_with_markout_time"] += r["pnl_with_markout_time"]
+        b["captured_notional"] += r["captured_notional"]
+        b["pace_samples"].append(r["median_inter_trade_s"])
+    out = {}
+    for name, b in sorted(buckets.items(), key=lambda kv: -kv[1]["pnl_with_markout_time"]):
+        out[name] = {
+            "n_markets": b["n_markets"],
+            "pnl_best_case": round(b["pnl_best_case"], 2),
+            "pnl_with_markout_trades": round(b["pnl_with_markout_trades"], 2),
+            "pnl_with_markout_time": round(b["pnl_with_markout_time"], 2),
+            "captured_notional": round(b["captured_notional"], 2),
+            "markout_time_pct_of_best_case": (
+                round(b["pnl_with_markout_time"] / b["pnl_best_case"] * 100, 1)
+                if b["pnl_best_case"] else None
+            ),
+            "median_inter_trade_s_range": [round(min(b["pace_samples"]), 1), round(max(b["pace_samples"]), 1)],
+        }
+    return out
+
+
 def main():
     meta = load_market_meta()
     print(f"[mm-proxy] {len(meta)} markets in the reused Final-1% population, "
@@ -353,6 +447,7 @@ def main():
     n_volume_capped = 0        # markets where the liquidity constraint actually bound
     volume_capped_notional = 0.0  # total notional trimmed off by the liquidity constraint (base case)
     window_span_samples = []  # per-market avg real-time span of the MARKOUT_WINDOW_TRADES window, base case
+    window_grid_by_market = {}  # cid -> {window_seconds: pnl_with_markout_time}, base half_spread/fill_share only
     for i, (cid, m) in enumerate(meta.items()):
         if m["resolved_outcome_index"] is None:
             n_no_resolved_idx += 1
@@ -397,7 +492,13 @@ def main():
                 "total_market_volume": round(total_market_volume, 2),
                 "volume_share_captured": round(base["volume_share_captured"], 4) if base["volume_share_captured"] is not None else None,
                 "avg_trades_window_span_s": round(base["avg_trades_window_span_s"], 2) if base["avg_trades_window_span_s"] is not None else None,
+                "median_inter_trade_s": market_pace_seconds(sorted_trades),
             })
+            window_grid_by_market[cid] = {
+                w: market_pnl(sorted_trades, total_market_volume, BASE_HALF_SPREAD, BASE_FILL_SHARE,
+                               markout_window_seconds=w)["pnl_with_markout_time"]
+                for w in MARKOUT_TIME_GRID_SECONDS
+            }
         if (i + 1) % 500 == 0:
             print(f"  [mm-proxy] {i+1}/{len(meta)} markets processed ...", flush=True)
 
@@ -411,6 +512,32 @@ def main():
     window_span_median = _percentile(window_span_samples, 50)
     window_span_p90 = _percentile(window_span_samples, 90)
     window_span_mean = sum(window_span_samples) / len(window_span_samples) if window_span_samples else None
+
+    # "Focus on the best markets": bucket by trading pace and find the bucket
+    # that actually survives adverse selection best (empirically, not by
+    # assuming "slow = best" up front), then check whether restricting to it
+    # holds up across the whole reaction-speed grid, not just at 15s.
+    assign_pace_buckets(per_market_base)
+    pace_report = pace_breakdown(per_market_base)
+    best_pace_bucket = next(iter(pace_report), None)
+    best_bucket_cids = {r["condition_id"] for r in per_market_base if r["pace_bucket"] == best_pace_bucket}
+    best_bucket_categories = {}
+    for r in per_market_base:
+        if r["pace_bucket"] == best_pace_bucket:
+            best_bucket_categories[r["report_bucket"]] = best_bucket_categories.get(r["report_bucket"], 0) + 1
+
+    time_window_sensitivity = []
+    for w in MARKOUT_TIME_GRID_SECONDS:
+        total_all = sum(window_grid_by_market[r["condition_id"]][w] for r in per_market_base)
+        total_best = sum(
+            window_grid_by_market[cid][w] for cid in best_bucket_cids
+        )
+        time_window_sensitivity.append({
+            "window_seconds": w,
+            "total_pnl_all_markets": round(total_all, 2),
+            "total_pnl_best_pace_bucket": round(total_best, 2),
+            "n_markets_best_pace_bucket": len(best_bucket_cids),
+        })
 
     per_market_base.sort(key=lambda r: r["resolution_time"])
     equity = START_BANKROLL
@@ -471,6 +598,11 @@ def main():
         "pct_markets_markout_trades_negative": round(n_markets_markout_trades_negative / len(per_market_base) * 100, 1) if per_market_base else None,
         "pct_markets_markout_time_negative": round(n_markets_markout_time_negative / len(per_market_base) * 100, 1) if per_market_base else None,
         "category_breakdown": category_report,
+        "pace_breakdown": pace_report,
+        "best_pace_bucket": best_pace_bucket,
+        "best_pace_bucket_category_composition": best_bucket_categories,
+        "markout_time_grid_seconds": MARKOUT_TIME_GRID_SECONDS,
+        "time_window_sensitivity": time_window_sensitivity,
         "equity_curve_base_case": curve,
         "per_market_base_case": per_market_base,
     }
@@ -516,6 +648,25 @@ def main():
         pct = f"{b['markout_time_pct_of_best_case']}%" if b['markout_time_pct_of_best_case'] is not None else "n/a"
         print(f"  {name:<15} n_markets={b['n_markets']:<5} best_case=${b['pnl_best_case']:>10,.2f}  "
               f"markout_time=${b['pnl_with_markout_time']:>10,.2f}  ({pct} of best case)")
+
+    print(f"\nBy trading PACE (median seconds between real trades, Q1=fastest .. Q5=slowest, "
+          f"{MARKOUT_WINDOW_SECONDS}s markout PnL, sorted best to worst):")
+    for name, b in pace_report.items():
+        pct = f"{b['markout_time_pct_of_best_case']}%" if b['markout_time_pct_of_best_case'] is not None else "n/a"
+        lo, hi = b["median_inter_trade_s_range"]
+        print(f"  {name}  n_markets={b['n_markets']:<5} gap={lo:>8,.1f}s-{hi:>9,.1f}s  "
+              f"best_case=${b['pnl_best_case']:>10,.2f}  markout_time=${b['pnl_with_markout_time']:>10,.2f}  ({pct} of best case)")
+    if best_pace_bucket:
+        cat_str = ", ".join(f"{k}={v}" for k, v in sorted(best_bucket_categories.items(), key=lambda kv: -kv[1]))
+        print(f"  Best bucket: {best_pace_bucket} ({len(best_bucket_cids)} markets) -- category mix: {cat_str}")
+
+    print(f"\nFocus on the best markets: total PnL, all markets vs. restricted to {best_pace_bucket} only, "
+          f"across reaction-speed assumptions (this is the actual answer to 'does selecting better markets help, "
+          f"and does that hold up regardless of how fast you assume you can react'):")
+    for row in time_window_sensitivity:
+        print(f"  window={row['window_seconds']:>4}s   all_markets=${row['total_pnl_all_markets']:>12,.2f}   "
+              f"{best_pace_bucket}_only=${row['total_pnl_best_pace_bucket']:>12,.2f}  "
+              f"(n={row['n_markets_best_pace_bucket']} markets)")
 
     print(f"\n{n_markets_markout_time_negative} of {len(per_market_base)} markets ({summary['pct_markets_markout_time_negative']}%) "
           f"have NEGATIVE {MARKOUT_WINDOW_SECONDS}s-markout PnL -- this is not just a few outliers, adverse selection hurts broadly:")
