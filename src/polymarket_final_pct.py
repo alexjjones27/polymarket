@@ -190,23 +190,24 @@ def _safe_json_list(value) -> list:
 _CENSUS_WORKERS = 16
 
 
-def _gamma_page(date_min: str, date_max: str, offset: int, limit: int = GAMMA_PAGE_LIMIT) -> list[dict]:
-    return _get(
-        GAMMA_BASE, "/markets",
-        {
-            "closed": "true",
-            "limit": limit,
-            "offset": offset,
-            "end_date_min": date_min,
-            "end_date_max": date_max,
-        },
-    )
+def _gamma_page(date_min: str, date_max: str, offset: int, limit: int = GAMMA_PAGE_LIMIT,
+                 extra_params: Optional[dict] = None) -> list[dict]:
+    params = {
+        "closed": "true",
+        "limit": limit,
+        "offset": offset,
+        "end_date_min": date_min,
+        "end_date_max": date_max,
+    }
+    if extra_params:
+        params.update(extra_params)
+    return _get(GAMMA_BASE, "/markets", params)
 
 
-def _bucket_exceeds_cap(date_min: str, date_max: str) -> bool:
+def _bucket_exceeds_cap(date_min: str, date_max: str, extra_params: Optional[dict] = None) -> bool:
     """One cheap request: does this bucket have more than GAMMA_OFFSET_CAP
     markets? (probe at the offset cap rather than paginating up to it)."""
-    probe = _gamma_page(date_min, date_max, offset=GAMMA_OFFSET_CAP, limit=1)
+    probe = _gamma_page(date_min, date_max, offset=GAMMA_OFFSET_CAP, limit=1, extra_params=extra_params)
     return len(probe) > 0
 
 
@@ -221,7 +222,8 @@ def _plan_cache_path(date_min: str, date_max: str, cache_dir: Path) -> Path:
     return cache_dir / f"plan_{date_min}_{date_max}.json"
 
 
-def _plan_leaf_buckets(date_min: str, date_max: str, cache_dir: Path = GAMMA_CACHE_DIR) -> list[tuple[str, str]]:
+def _plan_leaf_buckets(date_min: str, date_max: str, cache_dir: Path = GAMMA_CACHE_DIR,
+                        extra_params: Optional[dict] = None) -> list[tuple[str, str]]:
     """Parallel BFS: repeatedly probe the frontier of not-yet-classified
     buckets, splitting anything over the offset cap, until every bucket is
     confirmed fetchable. Returns the final list of leaf (min, max) ranges.
@@ -232,7 +234,14 @@ def _plan_leaf_buckets(date_min: str, date_max: str, cache_dir: Path = GAMMA_CAC
     hundreds of them for the full multi-year population) before it could
     even start reading from the leaf cache. Only the newest partial day
     (today's date_max) is excluded from caching, since more of it can
-    resolve between runs."""
+    resolve between runs.
+
+    `extra_params` (e.g. {"tag_slug": "politics"}) narrows the underlying
+    Gamma query -- confirmed live to be respected server-side. Callers using
+    a non-default extra_params MUST also pass a distinct `cache_dir`: the
+    plan/leaf cache keys are only date-range-qualified, so a filtered and an
+    unfiltered fetch sharing a cache_dir would silently read each other's
+    (wrong) cached results."""
     plan_path = _plan_cache_path(date_min, date_max, cache_dir)
     if plan_path.exists():
         return [tuple(pair) for pair in json.loads(plan_path.read_text())]
@@ -241,7 +250,7 @@ def _plan_leaf_buckets(date_min: str, date_max: str, cache_dir: Path = GAMMA_CAC
     frontier: list[tuple[str, str]] = [(date_min, date_max)]
     with ThreadPoolExecutor(max_workers=_CENSUS_WORKERS) as pool:
         while frontier:
-            futures = {pool.submit(_bucket_exceeds_cap, lo, hi): (lo, hi) for lo, hi in frontier}
+            futures = {pool.submit(_bucket_exceeds_cap, lo, hi, extra_params): (lo, hi) for lo, hi in frontier}
             next_frontier: list[tuple[str, str]] = []
             for fut in as_completed(futures):
                 lo, hi = futures[fut]
@@ -264,7 +273,8 @@ def _plan_leaf_buckets(date_min: str, date_max: str, cache_dir: Path = GAMMA_CAC
     return leaves
 
 
-def _fetch_leaf_bucket(date_min: str, date_max: str, cache_dir: Path) -> list[dict]:
+def _fetch_leaf_bucket(date_min: str, date_max: str, cache_dir: Path,
+                        extra_params: Optional[dict] = None) -> list[dict]:
     """Fetch+cache one leaf bucket. On a persistent API failure (retries
     exhausted), returns an empty list WITHOUT writing the cache file, so a
     later re-run retries this bucket rather than permanently baking in a
@@ -277,7 +287,7 @@ def _fetch_leaf_bucket(date_min: str, date_max: str, cache_dir: Path) -> list[di
     offset = 0
     try:
         while True:
-            page = _gamma_page(date_min, date_max, offset)
+            page = _gamma_page(date_min, date_max, offset, extra_params=extra_params)
             if not page:
                 break
             out.extend(page)
@@ -297,20 +307,25 @@ def fetch_resolved_markets_census(
     date_min: str = CLOB_LAUNCH_CUTOFF,
     date_max: Optional[str] = None,
     cache_dir: Path = GAMMA_CACHE_DIR,
+    extra_params: Optional[dict] = None,
 ) -> list[dict]:
     """Complete, uncurated census of resolved markets in [date_min, date_max)
     via the two-phase plan-then-fetch approach above. Deduplicated union
     across all leaf buckets. Resilient to a single bucket's persistent API
     failure -- that bucket is skipped (uncached, so retried next run) rather
-    than crashing the entire census."""
+    than crashing the entire census.
+
+    `extra_params` narrows the query server-side (e.g. {"tag_slug": "politics"}
+    -- confirmed live against Gamma's API). Pass a dedicated `cache_dir` when
+    using it (see _plan_leaf_buckets)."""
     if date_max is None:
         date_max = pd.Timestamp.now("UTC").strftime("%Y-%m-%d")
 
-    leaves = _plan_leaf_buckets(date_min, date_max, cache_dir)
+    leaves = _plan_leaf_buckets(date_min, date_max, cache_dir, extra_params=extra_params)
     all_markets: list[dict] = []
     failed = []
     with ThreadPoolExecutor(max_workers=_CENSUS_WORKERS) as pool:
-        futures = {pool.submit(_fetch_leaf_bucket, lo, hi, cache_dir): (lo, hi) for lo, hi in leaves}
+        futures = {pool.submit(_fetch_leaf_bucket, lo, hi, cache_dir, extra_params): (lo, hi) for lo, hi in leaves}
         for fut in as_completed(futures):
             try:
                 all_markets.extend(fut.result())
