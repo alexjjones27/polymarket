@@ -125,6 +125,37 @@ def market_pnl(trades, resolved_idx, half_spread, fill_share):
     return total, n_captured, captured_notional
 
 
+CONCENTRATION_TOP_NS = [1, 5, 10, 20]
+
+
+def concentration_by_top_n(per_market: list[dict]) -> dict:
+    """What fraction of total base-case PnL comes from the top N markets by
+    PnL, for N in CONCENTRATION_TOP_NS. This model's PnL is not diversified
+    spread capture spread evenly across thousands of markets -- a handful of
+    high-trade-count, near-extreme-price markets can dominate the total (see
+    module docstring's own worked example, "$133k of a $428k total from one
+    Florida-senator-appointment longshot," for the earlier rejected version
+    of this model -- the current version's own top contributor is smaller in
+    relative terms but the same shape of concentration). Previously only
+    discoverable by manually sorting per_market_base_case; surfaced here as
+    a first-class number instead."""
+    ranked = sorted(per_market, key=lambda r: -r["pnl"])
+    total_pnl = sum(r["pnl"] for r in ranked)
+    out = {"total_pnl": round(total_pnl, 2), "by_top_n": []}
+    for n in CONCENTRATION_TOP_NS:
+        top_pnl = sum(r["pnl"] for r in ranked[:n])
+        out["by_top_n"].append({
+            "n": n,
+            "pnl": round(top_pnl, 2),
+            "pct_of_total": round(top_pnl / total_pnl * 100, 2) if total_pnl else None,
+            "top_markets": [
+                {"question": r["question"], "pnl": r["pnl"], "n_captured_trades": r["n_captured_trades"]}
+                for r in ranked[:n]
+            ] if n <= 5 else None,  # only list markets by name for the smaller cuts
+        })
+    return out
+
+
 def main():
     meta = load_market_meta()
     print(f"[mm-proxy] {len(meta)} markets in the reused Final-1% population, "
@@ -163,6 +194,8 @@ def main():
         if (i + 1) % 500 == 0:
             print(f"  [mm-proxy] {i+1}/{len(meta)} markets processed ...", flush=True)
 
+    concentration_report = concentration_by_top_n(per_market_base)
+
     per_market_base.sort(key=lambda r: r["resolution_time"])
     equity = START_BANKROLL
     curve = [(per_market_base[0]["resolution_time"][:10] if per_market_base else None, equity)]
@@ -185,6 +218,7 @@ def main():
         "total_pnl_base_case": round(base["total_pnl"], 2),
         "total_return_pct_base_case": round(base["total_pnl"] / START_BANKROLL * 100, 2),
         "sensitivity_grid": list(sensitivity.values()),
+        "concentration_base_case": concentration_report,
         "equity_curve_base_case": curve,
         "per_market_base_case": per_market_base,
     }
@@ -197,6 +231,12 @@ def main():
     for key, cfg in sensitivity.items():
         print(f"  half_spread=${cfg['half_spread']:<6} fill_share={cfg['fill_share']:<6.0%}  "
               f"total_pnl=${cfg['total_pnl']:>10,.2f}  active_markets={cfg['n_markets_active']}")
+    print("\nPnL concentration (this model is NOT diversified spread capture -- check before trusting the headline number):")
+    for row in concentration_report["by_top_n"]:
+        print(f"  top {row['n']:<3} market(s): ${row['pnl']:>10,.2f}  ({row['pct_of_total']}% of total)")
+    if concentration_report["by_top_n"][0]["top_markets"]:
+        top1 = concentration_report["by_top_n"][0]["top_markets"][0]
+        print(f"  #1 contributor: {top1['question']!r} (${top1['pnl']:,.2f}, {top1['n_captured_trades']} captured trades)")
 
     out_path = RESULTS_DIR / "mm_proxy_results.json"
     with open(out_path, "w") as f:
