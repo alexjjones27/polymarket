@@ -10,7 +10,12 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 
-from run_mm_proxy_q3_deep_dive import build_volume_threshold_sweep, find_crossover, load_bucket_condition_ids
+from run_mm_proxy_q3_deep_dive import (
+    build_resolution_exclusion_sweep,
+    build_volume_threshold_sweep,
+    find_crossover,
+    load_bucket_condition_ids,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -122,3 +127,39 @@ def test_build_volume_threshold_sweep_handles_empty_input():
     sweep = build_volume_threshold_sweep([], percentiles=[0, 50])
     assert all(row["n_markets"] == 0 for row in sweep)
     assert all(row["median_pnl_with_markout_time"] is None for row in sweep)
+
+
+# ---------------------------------------------------------------------------
+# build_resolution_exclusion_sweep
+# ---------------------------------------------------------------------------
+
+def _mk(price, size, side, ts):
+    return {"price": price, "size": size, "side": side, "timestamp": ts}
+
+
+def test_build_resolution_exclusion_sweep_drops_trades_near_resolution():
+    trades = [_mk(0.5, 10.0, "BUY", ts) for ts in [0, 100, 200, 900]]
+    total_volume = sum(t["price"] * t["size"] for t in trades)
+    markets = [(trades, total_volume, 1000.0)]  # resolution_epoch = 1000
+
+    sweep = build_resolution_exclusion_sweep(markets, windows=[0, 150])
+    by_w = {row["exclusion_seconds"]: row for row in sweep}
+
+    assert by_w[0]["pct_trades_remaining"] == pytest.approx(100.0)
+    # window=150 drops only the ts=900 trade (1000-900=100 <= 150)
+    assert by_w[150]["pct_trades_remaining"] == pytest.approx(75.0)
+    assert by_w[150]["total_pnl_best_case"] < by_w[0]["total_pnl_best_case"]
+
+
+def test_build_resolution_exclusion_sweep_noop_when_resolution_unparseable():
+    trades = [_mk(0.5, 10.0, "BUY", ts) for ts in [0, 100, 200]]
+    total_volume = sum(t["price"] * t["size"] for t in trades)
+    markets = [(trades, total_volume, None)]
+    sweep = build_resolution_exclusion_sweep(markets, windows=[0, 100, 99999])
+    assert all(row["pct_trades_remaining"] == pytest.approx(100.0) for row in sweep)
+
+
+def test_build_resolution_exclusion_sweep_handles_no_markets():
+    sweep = build_resolution_exclusion_sweep([], windows=[0, 100])
+    assert all(row["pct_trades_remaining"] is None for row in sweep)
+    assert all(row["n_markets_active"] == 0 for row in sweep)

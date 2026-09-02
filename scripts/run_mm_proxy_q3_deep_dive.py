@@ -14,7 +14,7 @@ run_mm_proxy_backtest.py first and this script picks up the new membership
 automatically. Everything below re-slices the SAME reused, disk-cached trade
 tapes (via fetch_market_trades) -- no new network calls.
 
-Four questions this asks that the whole-population report doesn't answer:
+Questions this asks that the whole-population report doesn't answer:
   1. Does Q3's positive result survive the full half_spread x fill_share
      sensitivity grid, or was it only positive at the one base config?
   2. At exactly what reaction speed does Q3 stop being profitable? (The
@@ -25,6 +25,14 @@ Four questions this asks that the whole-population report doesn't answer:
      population)?
   4. Which specific markets are the best and worst performers within Q3, and
      what do they have in common?
+  5. Is the result actually being driven by trading right up against
+     resolution -- the moment the true outcome becomes apparent and prices
+     move on real information rather than noise a resting quote could have
+     profited from? A market-making PnL number built on endgame prints isn't
+     testing market-making at all; it's testing whether you'd have traded on
+     the outcome once it was already known. This excises an increasingly
+     large window before each market's resolution_time entirely (both as
+     captures AND as markout context) and re-measures.
 """
 import json
 import sys
@@ -46,6 +54,12 @@ TIME_WINDOW_FINE_GRID = [5, 10, 15, 20, 30, 45, 60, 90, 120, 180, 240, 300]
 # top of the pace filter turn a few-winners-carry-it bucket into something
 # broad-based" sweep.
 VOLUME_PERCENTILE_THRESHOLDS = [0, 10, 25, 50, 75, 90]
+# Seconds before resolution to excise entirely (both as captures and as
+# markout context): 0 / 5min / 15min / 30min / 1h / 3h / 6h / 24h.
+RESOLUTION_EXCLUSION_WINDOWS_SECONDS = [0, 300, 900, 1800, 3600, 10800, 21600, 86400]
+# Windows used for the per-market "how much of THIS market's real volume
+# happened right at the end" diagnostic on the top/bottom performers.
+RESOLUTION_PROXIMITY_DIAGNOSTIC_WINDOWS = [3600, 86400]
 
 
 def load_bucket_condition_ids(results_path: Path = RESULTS_PATH, bucket: str = TARGET_BUCKET) -> list[str]:
@@ -105,6 +119,44 @@ def build_volume_threshold_sweep(per_market: list[dict], percentiles: list[float
     return out
 
 
+def build_resolution_exclusion_sweep(markets: list[tuple], windows: list[float] = RESOLUTION_EXCLUSION_WINDOWS_SECONDS) -> list[dict]:
+    """`markets`: a list of (sorted_trades, total_market_volume,
+    resolution_epoch) tuples. For each exclusion window, drops every trade
+    within that many seconds of each market's OWN resolution_epoch (via
+    filter_trades_excluding_near_resolution), re-runs market_pnl on what's
+    left, and reports the resulting totals plus how much of the raw tape
+    survived. Still caps against the market's REAL total volume (not the
+    trimmed remainder) -- the excluded volume genuinely happened; we're only
+    choosing not to have quoted into it, not pretending the market was
+    smaller than it was."""
+    out = []
+    for window in windows:
+        total_best = 0.0
+        total_markout = 0.0
+        n_trades_kept = 0
+        n_trades_total = 0
+        n_markets_active = 0
+        for sorted_trades, total_market_volume, resolution_epoch in markets:
+            n_trades_total += len(sorted_trades)
+            filtered = base.filter_trades_excluding_near_resolution(sorted_trades, resolution_epoch, window)
+            n_trades_kept += len(filtered)
+            if not filtered:
+                continue
+            r = base.market_pnl(filtered, total_market_volume, base.BASE_HALF_SPREAD, base.BASE_FILL_SHARE)
+            total_best += r["pnl_best_case"]
+            total_markout += r["pnl_with_markout_time"]
+            if r["n_captured"] > 0:
+                n_markets_active += 1
+        out.append({
+            "exclusion_seconds": window,
+            "total_pnl_best_case": round(total_best, 2),
+            "total_pnl_with_markout_time": round(total_markout, 2),
+            "n_markets_active": n_markets_active,
+            "pct_trades_remaining": round(n_trades_kept / n_trades_total * 100, 1) if n_trades_total else None,
+        })
+    return out
+
+
 def main():
     cids = load_bucket_condition_ids()
     meta = base.load_market_meta()
@@ -150,11 +202,16 @@ def main():
     # (3)/(4) Per-market detail at the base config -- concentration, category mix,
     # equity curve, and the actual best/worst performers.
     per_market = []
+    resolution_epochs = {}  # cid -> epoch seconds or None, reused by the exclusion sweep below
     for cid, (sorted_trades, total_market_volume) in market_data.items():
         m = meta[cid]
+        resolution_epoch = base.resolution_epoch_seconds(m["resolution_time"])
+        resolution_epochs[cid] = resolution_epoch
         r = base.market_pnl(sorted_trades, total_market_volume, base.BASE_HALF_SPREAD, base.BASE_FILL_SHARE)
         if r["n_captured"] == 0:
             continue
+        vol_frac_1h = base.volume_fraction_near_resolution(sorted_trades, resolution_epoch, 3600)
+        vol_frac_24h = base.volume_fraction_near_resolution(sorted_trades, resolution_epoch, 86400)
         per_market.append({
             "condition_id": cid, "question": m["question"][:80],
             "resolution_time": m["resolution_time"], "report_bucket": m["report_bucket"],
@@ -166,6 +223,8 @@ def main():
             "total_market_volume": round(total_market_volume, 2),
             "volume_share_captured": round(r["volume_share_captured"], 4) if r["volume_share_captured"] is not None else None,
             "median_inter_trade_s": base.market_pace_seconds(sorted_trades),
+            "volume_frac_last_1h": round(vol_frac_1h, 4) if vol_frac_1h is not None else None,
+            "volume_frac_last_24h": round(vol_frac_24h, 4) if vol_frac_24h is not None else None,
         })
 
     concentration_best = base.concentration_by_top_n(per_market, "pnl")
@@ -185,6 +244,18 @@ def main():
     top_volume_subset = [r for r in per_market if r["volume_bucket"] == best_volume_bucket]
     concentration_top_volume = base.concentration_by_top_n(top_volume_subset, "pnl_with_markout_time")
     volume_threshold_sweep = build_volume_threshold_sweep(per_market)
+
+    # (5) Is the result actually endgame trading -- prints after the real
+    # outcome was already apparent, not genuine market-making conditions?
+    # Excise an increasingly large window before each market's own
+    # resolution_time and re-measure.
+    resolution_sweep = build_resolution_exclusion_sweep([
+        (sorted_trades, total_market_volume, resolution_epochs[cid])
+        for cid, (sorted_trades, total_market_volume) in market_data.items()
+    ])
+    n_unparseable_resolution = sum(1 for v in resolution_epochs.values() if v is None)
+    vol_frac_1h_samples = [r["volume_frac_last_1h"] for r in per_market if r["volume_frac_last_1h"] is not None]
+    vol_frac_24h_samples = [r["volume_frac_last_24h"] for r in per_market if r["volume_frac_last_24h"] is not None]
 
     per_market.sort(key=lambda r: r["resolution_time"])
     equity = base.START_BANKROLL
@@ -221,6 +292,14 @@ def main():
         "best_volume_bucket": best_volume_bucket,
         "concentration_within_best_volume_bucket": concentration_top_volume,
         "volume_threshold_sweep": volume_threshold_sweep,
+        "resolution_exclusion_sweep": resolution_sweep,
+        "n_markets_unparseable_resolution_time": n_unparseable_resolution,
+        "volume_fraction_near_resolution": {
+            "last_1h_mean": round(sum(vol_frac_1h_samples) / len(vol_frac_1h_samples), 4) if vol_frac_1h_samples else None,
+            "last_1h_median": round(base._percentile(sorted(vol_frac_1h_samples), 50), 4) if vol_frac_1h_samples else None,
+            "last_24h_mean": round(sum(vol_frac_24h_samples) / len(vol_frac_24h_samples), 4) if vol_frac_24h_samples else None,
+            "last_24h_median": round(base._percentile(sorted(vol_frac_24h_samples), 50), 4) if vol_frac_24h_samples else None,
+        },
         "volume_share_captured": {
             "mean": round(sum(vol_shares) / len(vol_shares), 4) if vol_shares else None,
             "max": round(max(vol_shares), 4) if vol_shares else None,
@@ -285,14 +364,32 @@ def main():
               f"median=${row['median_pnl_with_markout_time']:>8,.2f}  mean=${row['mean_pnl_with_markout_time']:>8,.2f}  "
               f"%positive={row['pct_markets_positive_markout']}%")
 
+    print(f"\n(6) Resolution proximity -- is this actually endgame trading, not market making?")
+    print(f"  ({n_unparseable_resolution} of {len(cids)} markets had an unparseable resolution_time, skipped from this check)")
+    vf = summary["volume_fraction_near_resolution"]
+    if vf["last_1h_median"] is not None:
+        print(f"  Across Q3: median {vf['last_1h_median']:.1%} / mean {vf['last_1h_mean']:.1%} of a market's REAL volume "
+              f"happens in its last 1h; median {vf['last_24h_median']:.1%} / mean {vf['last_24h_mean']:.1%} in its last 24h.")
+    else:
+        print("  No markets had a parseable resolution_time -- this check couldn't run.")
+    print("  Excising an increasing window before each market's resolution_time entirely, then re-measuring:")
+    for row in resolution_sweep:
+        w = row["exclusion_seconds"]
+        label = f"{w}s" if w < 3600 else f"{w // 3600}h"
+        print(f"    exclude last {label:>4}  n_active={row['n_markets_active']:<4}  "
+              f"trades_remaining={row['pct_trades_remaining']}%  "
+              f"best_case=${row['total_pnl_best_case']:>9,.2f}  markout_time=${row['total_pnl_with_markout_time']:>9,.2f}")
+
     print("\n(4) Top 5 markets by 15s markout PnL:")
     for r in top10[:5]:
         print(f"  ${r['pnl_with_markout_time']:>9,.2f}  [{r['report_bucket']:<12}]  {r['question']!r} "
-              f"({r['n_captured_trades']} trades, gap={r['median_inter_trade_s']}s)")
+              f"({r['n_captured_trades']} trades, gap={r['median_inter_trade_s']}s, "
+              f"{r['volume_frac_last_1h']}=frac of volume in last 1h)")
     print("Bottom 5 markets by 15s markout PnL:")
     for r in bottom10[:5]:
         print(f"  ${r['pnl_with_markout_time']:>9,.2f}  [{r['report_bucket']:<12}]  {r['question']!r} "
-              f"({r['n_captured_trades']} trades, gap={r['median_inter_trade_s']}s)")
+              f"({r['n_captured_trades']} trades, gap={r['median_inter_trade_s']}s, "
+              f"{r['volume_frac_last_1h']}=frac of volume in last 1h)")
 
     out_path = RESULTS_DIR / "mm_proxy_q3_deep_dive.json"
     with open(out_path, "w") as f:

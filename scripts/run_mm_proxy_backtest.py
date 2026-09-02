@@ -39,6 +39,7 @@ Reuses the SAME market population and (already disk-cached, no new network
 calls) trade tapes as the Final-1% backtest, via fetch_market_trades.
 """
 import csv
+import datetime as dt
 import json
 import os
 import sys
@@ -351,6 +352,53 @@ def category_breakdown(per_market: list[dict]) -> dict:
             ),
         }
     return out
+
+
+def resolution_epoch_seconds(resolution_time: str):
+    """Parses the resolution_time string stored in trades_maker.csv (a
+    pandas Timestamp's own str() form, e.g. "2023-04-21 23:03:21+00:00")
+    into Unix epoch seconds, comparable directly against a trade's own
+    epoch-seconds timestamp. Returns None if it can't be parsed (shouldn't
+    happen for a market with a resolved_outcome_index, but never assume)."""
+    if not resolution_time:
+        return None
+    try:
+        return dt.datetime.fromisoformat(resolution_time).timestamp()
+    except (ValueError, TypeError):
+        return None
+
+
+def filter_trades_excluding_near_resolution(sorted_trades: list[dict], resolution_epoch, exclusion_seconds: float) -> list[dict]:
+    """Drops every trade within `exclusion_seconds` of resolution_epoch -- a
+    way to test whether a market's modeled PnL is being driven by endgame /
+    informational-cascade trading (the actual outcome becoming apparent)
+    rather than steady-state market-making conditions. Removed trades are
+    dropped from BOTH capture eligibility and markout context, not just
+    capture -- the simplest correct reading of "assume every resting quote
+    is pulled once the cutoff is crossed, and you've stopped watching this
+    market." If resolution_epoch is None (unparseable) or exclusion_seconds
+    is 0, no filtering is possible/requested -- returns sorted_trades
+    unchanged (not a copy)."""
+    if resolution_epoch is None or exclusion_seconds <= 0:
+        return sorted_trades
+    return [t for t in sorted_trades if resolution_epoch - t["timestamp"] > exclusion_seconds]
+
+
+def volume_fraction_near_resolution(sorted_trades: list[dict], resolution_epoch, window_seconds: float):
+    """What fraction of a market's TOTAL real trade volume (not our modeled
+    capture -- the market's own actual activity) happened within
+    `window_seconds` of resolution. Independent of any capture assumption,
+    so it's a clean diagnostic for "is this market's trading concentrated
+    right at the end" regardless of what fill_share/half_spread you'd model
+    with. Returns None if resolution_epoch is unparseable or there's no
+    volume to measure."""
+    if resolution_epoch is None or not sorted_trades:
+        return None
+    total = sum(t["price"] * t["size"] for t in sorted_trades)
+    if total <= 0:
+        return None
+    near = sum(t["price"] * t["size"] for t in sorted_trades if resolution_epoch - t["timestamp"] <= window_seconds)
+    return near / total
 
 
 def market_pace_seconds(sorted_trades: list[dict]):

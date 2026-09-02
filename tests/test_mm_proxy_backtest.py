@@ -16,11 +16,14 @@ from run_mm_proxy_backtest import (
     assign_pace_buckets,
     assign_quantile_buckets,
     concentration_by_top_n,
+    filter_trades_excluding_near_resolution,
     market_pace_seconds,
     market_pnl,
     pace_breakdown,
     parse_and_sort_trades,
     quantile_breakdown,
+    resolution_epoch_seconds,
+    volume_fraction_near_resolution,
 )
 
 
@@ -287,6 +290,44 @@ def test_assign_quantile_buckets_none_field_gets_na():
     rows = [{"volume": None}, {"volume": 1.0}, {"volume": 2.0}]
     assign_quantile_buckets(rows, "volume", "volume_bucket", n_quantiles=2, prefix="V")
     assert rows[0]["volume_bucket"] == "n/a"
+
+
+def test_resolution_epoch_seconds_parses_the_stored_format():
+    assert resolution_epoch_seconds("2023-04-21 23:03:21+00:00") == pytest.approx(1682118201.0)
+
+
+def test_resolution_epoch_seconds_none_on_empty_or_bad_input():
+    assert resolution_epoch_seconds("") is None
+    assert resolution_epoch_seconds(None) is None
+    assert resolution_epoch_seconds("not a date") is None
+
+
+def test_filter_trades_excluding_near_resolution_drops_only_the_tail():
+    trades = [_mk(0.5, 1.0, "BUY", ts) for ts in [0, 100, 200, 300]]
+    resolution_epoch = 300.0  # last trade IS the resolution moment
+    kept = filter_trades_excluding_near_resolution(trades, resolution_epoch, exclusion_seconds=150)
+    # kept: resolution_epoch - ts > 150 -> ts < 150 -> only ts=0 and ts=100
+    assert [t["timestamp"] for t in kept] == [0, 100]
+
+
+def test_filter_trades_excluding_near_resolution_noop_when_unparseable_or_zero_window():
+    trades = [_mk(0.5, 1.0, "BUY", ts) for ts in [0, 100, 200]]
+    assert filter_trades_excluding_near_resolution(trades, None, 100) == trades
+    assert filter_trades_excluding_near_resolution(trades, 300.0, 0) == trades
+
+
+def test_volume_fraction_near_resolution_computes_the_share():
+    # total volume = 4 trades * (0.5*10) = 20.0; the last 2 (ts=200,300) are
+    # within 150s of resolution (300) -> 10.0 of 20.0 = 50%.
+    trades = [_mk(0.5, 10.0, "BUY", ts) for ts in [0, 100, 200, 300]]
+    frac = volume_fraction_near_resolution(trades, resolution_epoch=300.0, window_seconds=150)
+    assert frac == pytest.approx(0.5)
+
+
+def test_volume_fraction_near_resolution_none_when_unparseable():
+    trades = [_mk(0.5, 10.0, "BUY", 0)]
+    assert volume_fraction_near_resolution(trades, None, 100) is None
+    assert volume_fraction_near_resolution([], 300.0, 100) is None
 
 
 def test_quantile_breakdown_works_on_a_non_pace_field():
