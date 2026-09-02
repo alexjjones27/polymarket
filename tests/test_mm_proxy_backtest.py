@@ -13,6 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 from run_mm_proxy_backtest import (
     MAX_MARKET_VOLUME_SHARE,
     MAX_NOTIONAL_PER_TRADE,
+    REBATE_RATE_BY_FEE_CATEGORY,
     assign_pace_buckets,
     assign_quantile_buckets,
     concentration_by_top_n,
@@ -87,6 +88,40 @@ def test_market_pnl_effective_spread_capped_near_price_extremes():
     r = market_pnl(trades, 100.0, half_spread=0.02, fill_share=0.10)
     shares = min(100.0 * 0.10, MAX_NOTIONAL_PER_TRADE / 0.005)
     assert r["pnl_best_case"] == pytest.approx(shares * 0.3 * 0.005)
+
+
+# ---------------------------------------------------------------------------
+# market_pnl: rebate_upper_bound (Maker Rebates program, confirmed live
+# against docs.polymarket.com -- additive-only, off unless fee_category is passed)
+# ---------------------------------------------------------------------------
+
+def test_market_pnl_rebate_upper_bound_is_none_by_default():
+    trades = [_mk(0.50, 100.0, "BUY", 0)]
+    r = market_pnl(trades, 100.0, half_spread=0.01, fill_share=0.10)
+    assert r["rebate_upper_bound"] is None
+
+
+def test_market_pnl_rebate_upper_bound_uses_the_confirmed_fee_and_rebate_formula():
+    trades = [_mk(0.50, 100.0, "BUY", 0)]
+    r = market_pnl(trades, 100.0, half_spread=0.01, fill_share=0.10, fee_category="crypto")
+    # shares = min(100*0.10, 25/0.5) = 10 -> notional = 5.0
+    # taker_fee = notional * feeRate(crypto=0.07) * (1-price=0.5) = 5.0*0.07*0.5 = 0.175
+    # rebate_upper_bound = taker_fee * rebate_rate(crypto=0.20) = 0.035
+    assert r["rebate_upper_bound"] == pytest.approx(0.035)
+
+
+def test_market_pnl_rebate_zero_for_fee_free_geopolitics_category():
+    trades = [_mk(0.50, 100.0, "BUY", 0)]
+    r = market_pnl(trades, 100.0, half_spread=0.01, fill_share=0.10, fee_category="geopolitics")
+    assert r["rebate_upper_bound"] == pytest.approx(0.0)
+
+
+def test_rebate_rate_table_matches_confirmed_polymarket_docs():
+    # docs.polymarket.com/programs/maker-rebates, fetched live 2026-09
+    assert REBATE_RATE_BY_FEE_CATEGORY["crypto"] == pytest.approx(0.20)
+    assert REBATE_RATE_BY_FEE_CATEGORY["sports"] == pytest.approx(0.15)
+    assert REBATE_RATE_BY_FEE_CATEGORY["politics"] == pytest.approx(0.25)
+    assert REBATE_RATE_BY_FEE_CATEGORY["geopolitics"] == pytest.approx(0.0)
 
 
 # ---------------------------------------------------------------------------

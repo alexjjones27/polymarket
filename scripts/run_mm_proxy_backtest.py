@@ -166,8 +166,24 @@ def _time_window_vwap(sorted_trades: list[dict], i: int, seconds: float):
     return w_notional / w_shares, n
 
 
+# Maker Rebates program: confirmed directly against docs.polymarket.com
+# (fetched live 2026-09) -- makers pay 0% and the exchange redistributes a
+# category-specific share of TAKER fees back to makers whose resting orders
+# get filled, split proportionally among all makers active in that market
+# that day (rebate_pool = rebate_rate% of total taker fees generated in the
+# market; your cut = your_fee_equivalent / everyone's fee_equivalent). We
+# have no data on competing makers' activity, so REBATE_UPPER_BOUND below
+# assumes 100% of the pool (i.e. sole liquidity provider) -- a ceiling, not
+# a realistic expectation, and reported as such everywhere it's used.
+REBATE_RATE_BY_FEE_CATEGORY = {
+    "crypto": 0.20, "sports": 0.15, "politics": 0.25,
+    "geopolitics": 0.0, "other": 0.25,
+}
+
+
 def market_pnl(sorted_trades, total_market_volume, half_spread, fill_share,
-                markout_window_seconds: float = MARKOUT_WINDOW_SECONDS):
+                markout_window_seconds: float = MARKOUT_WINDOW_SECONDS,
+                fee_category: str = None):
     """Returns the existing best-case PnL (zero adverse selection, exactly as
     before) alongside TWO markout-adjusted variants (trade-count window and
     time window -- see the module-level comment above), never silently
@@ -178,6 +194,10 @@ def market_pnl(sorted_trades, total_market_volume, half_spread, fill_share,
     `markout_window_seconds` overrides the module default so callers can
     build a sensitivity grid over assumed MM reaction speed (see
     MARKOUT_TIME_GRID_SECONDS) without touching the trade-count window.
+    `fee_category` (one of REBATE_RATE_BY_FEE_CATEGORY's keys) is optional
+    and additive-only: leaving it None (the default) skips rebate
+    computation entirely and returns rebate_upper_bound=None, so every
+    existing caller is unaffected.
 
     A flat, price-independent half_spread is itself unrealistic at the
     extremes this dataset is full of (it's built from markets that crossed
@@ -198,6 +218,8 @@ def market_pnl(sorted_trades, total_market_volume, half_spread, fill_share,
     captured_notional = 0.0
     window_span_seconds_sum = 0.0
     n_windows_with_data = 0
+    rebate_upper_bound = 0.0 if fee_category is not None else None
+    rebate_rate = REBATE_RATE_BY_FEE_CATEGORY.get(fee_category, REBATE_RATE_BY_FEE_CATEGORY["other"]) if fee_category is not None else 0.0
     volume_cap = MAX_MARKET_VOLUME_SHARE * total_market_volume
 
     for i, t in enumerate(sorted_trades):
@@ -217,6 +239,14 @@ def market_pnl(sorted_trades, total_market_volume, half_spread, fill_share,
             notional = remaining
 
         pnl_best_case += shares * eff_half_spread
+        if fee_category is not None:
+            # Each captured fill is a taker's print landing on our resting
+            # maker order -> it generates a taker fee, a category-specific
+            # share of which funds the rebate pool. Uses the SAME confirmed
+            # fee formula as the Final-1% strategy (fee = notional *
+            # feeRate * (1-price)) -- pmf.taker_fee_frac_of_notional.
+            taker_fee = notional * pmf.taker_fee_frac_of_notional(price, fee_category)
+            rebate_upper_bound += taker_fee * rebate_rate
 
         # Captured a SELL print -> we were the resting bid, so we're now long:
         # adverse if the market drifted DOWN after we bought.
@@ -254,6 +284,7 @@ def market_pnl(sorted_trades, total_market_volume, half_spread, fill_share,
         "captured_notional": captured_notional,
         "volume_share_captured": captured_notional / total_market_volume if total_market_volume else None,
         "avg_trades_window_span_s": window_span_seconds_sum / n_windows_with_data if n_windows_with_data else None,
+        "rebate_upper_bound": rebate_upper_bound,
     }
 
 

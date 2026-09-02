@@ -284,7 +284,63 @@ function of that process working correctly.
 
 ---
 
-## 7. Limitations to keep in mind regardless of the outcome above
+## 7. Addressing a follow-up review
+
+A follow-up review of this report raised three "critical errors" and a list
+of additional factors we hadn't covered. We take that kind of scrutiny
+seriously and checked every claim rather than accepting or dismissing it —
+two turned out to be real and material, and we've now tested both
+empirically; a third was a mischaracterization we can show precisely.
+
+**Real and confirmed: Polymarket changed a core execution rule in
+mid-February 2026**, removing a short delay that had given market makers
+a brief window to cancel stale orders before a bad fill landed. This
+happened after our own research cutoff and we're grateful it was flagged.
+The natural worry is that our test-period data — which happens to fall
+entirely after this change — failed for a reason unrelated to whether the
+strategy has real edge. We checked this directly: splitting every market's
+trading activity into before/after the rule change and re-running the
+core analysis on each side separately, the same pattern held in both —
+adverse selection erased roughly the same proportion of the naive profit
+estimate before the change (322%) as after it (331%). The rule change is
+real; it does not explain our result.
+
+**Real and confirmed: Polymarket pays market makers a rebate.** Makers pay
+no trading fees, and Polymarket separately redistributes a share of the
+fees takers pay back to the makers whose orders they traded against — this
+is real, documented, and something our original model simply didn't
+include. We added it, using the exchange's own published rates, computed
+as the most generous possible case (as if our hypothetical trader were the
+only market maker active in a given market, capturing the entire rebate
+pool rather than splitting it with competitors, which is what would
+actually happen). Even under that generous assumption, the rebate amounts
+to roughly **5% of the gap** between the optimistic and realistic profit
+estimates — real money, but not close to enough to change the conclusion.
+(There is a second reward program for simply keeping orders on the book,
+which is also real, but there's no reliable way to estimate its size from
+the data we have — it would need to be measured live.)
+
+**Not accurate as presented: the claim that Polymarket provides full
+historical order-book data.** We tested this directly against Polymarket's
+own systems, again, as part of this response — a market that resolved
+yesterday and one from 2023 both come back with no historical order-book
+data available, exactly as our original report stated. A specialized
+third-party paid service does appear to archive this kind of data, but only
+going back to February 2026 — a few months, not the multi-year window our
+research actually covers — so it doesn't change what was possible for this
+analysis, though it may be a useful option for a narrower, more recent
+study in the future. A specific fee formula cited in that same feedback
+also didn't match what we found directly on Polymarket's own current
+documentation; the formula our model already used was the correct one.
+
+**Net effect: our conclusion is unchanged, and now better-supported than
+before.** We're glad this review happened — it caught two real gaps worth
+having filled, and prompted a test we're confident answering rather than
+assuming.
+
+---
+
+## 8. Limitations to keep in mind regardless of the outcome above
 
 - **No real order-book data.** Every number here is reconstructed from
   trade prints, not measured against the order book a real resting quote
@@ -309,7 +365,7 @@ function of that process working correctly.
 
 ---
 
-## 8. Recommendation
+## 9. Recommendation
 
 **We do not recommend allocating capital to this strategy as currently
 specified.** The validated, out-of-sample evidence does not support it, and

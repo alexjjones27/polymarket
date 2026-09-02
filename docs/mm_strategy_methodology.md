@@ -355,7 +355,132 @@ If this were a live desk deciding what to do next, in priority order:
 
 ---
 
-## 8. Reproducibility index
+## 8. Response to external review
+
+An external review of this document raised three "critical errors" and a
+list of omissions. Each factual claim was independently re-verified — two
+live against Polymarket's own systems and official docs, one against
+multiple independent news/social sources — rather than accepted or
+dismissed on the reviewer's say-so. Two of the three corrections are real
+and material; one is a mischaracterization; both real corrections were then
+tested empirically rather than just noted, and neither changes Section 5's
+conclusion.
+
+### 8.1 Confirmed correct: the Feb 18, 2026 regime change
+
+Polymarket removed the 500ms taker-order execution delay on 2026-02-18
+without prior notice — confirmed via multiple independent, contemporaneous
+sources (X/Twitter posts from several accounts, BlockBeats, Odaily, HTX,
+WEEX). Before this date, resting maker orders had a brief window to be
+cancelled before an adverse fill landed; after, fills are immediate. This
+event postdates this analysis's own knowledge cutoff and was correctly
+flagged as missing.
+
+**Why it doesn't invalidate Section 5**, tested rather than assumed: the
+walk-forward validation's TRAIN period (2023-09 to 2026-04) blends mostly
+pre-change data with a post-change tail, while TEST (2026-04 to 2026-09) is
+100% post-change — raising a real concern that the TEST failure reflected a
+regime mismatch rather than a genuine lack of edge. `scripts/
+run_mm_regime_and_rebate_check.py` isolates this by splitting every
+market's trade tape on the regime-change timestamp (not resolution date,
+since 36 markets straddle it) and computing best-case / 15s-markout
+independently for each side:
+
+| | n active markets | Best case | 15s markout | Markout gap |
+|---|---|---|---|---|
+| Pre-regime-change | 733 | +$34,239.20 | -$76,164.74 | 322.4% |
+| Post-regime-change | 634 | +$15,651.85 | -$36,170.33 | 331.1% |
+
+The gap — how much of the naive best-case number adverse selection erases —
+is essentially identical in both regimes (322% vs. 331%). The regime change
+does not explain Section 5's result; the same fundamental dynamic holds
+before and after it.
+
+### 8.2 Confirmed correct (and now modeled): Maker Rebates
+
+Also confirmed directly against Polymarket's own documentation
+(`docs.polymarket.com/programs/maker-rebates`, fetched live): makers pay 0%
+fees (already correctly modeled in this codebase's Final-1% fee schedule
+before this review) and the exchange redistributes a category-specific
+share of taker fees back to makers whose resting orders get filled — 20%
+for crypto, 15% for sports, 25% for everything else, geopolitics fee-free.
+The real payout is a competitive pool split among every maker active in a
+market that day (`your_fee_equivalent / everyone's_fee_equivalent × pool`),
+which trade-tape data cannot observe — there's no way to know how many
+other makers were quoting alongside a hypothetical position.
+
+`market_pnl` in `scripts/run_mm_proxy_backtest.py` now computes an explicit
+**upper bound** (`rebate_upper_bound`): what the rebate would be if our
+hypothetical maker captured 100% of the pool — i.e. was the sole liquidity
+provider, the most generous assumption possible, clearly labeled as a
+ceiling and never merged into the existing PnL figures. Measured on the
+same unbiased population:
+
+| | Rebate upper bound | vs. the markout gap |
+|---|---|---|
+| All trades | $8,319.51 | 5.13% |
+| Pre-regime | $5,811.33 | 5.26% |
+| Post-regime | $2,508.18 | 4.84% |
+
+Even under the most generous possible assumption, the rebate program closes
+roughly **5% of the gap** between best-case spread capture and realistic
+adverse-selection-adjusted PnL, consistently across both regimes. It is
+real, additive income — and nowhere near large enough to change Section 5's
+conclusion.
+
+A second program, **Liquidity Rewards** (paid for resting orders near the
+midpoint regardless of fill, via a competitive weekly-epoch scoring formula
+— also confirmed against Polymarket's own docs), is real but not modeled:
+its per-market reward-pool allocation and the competing makers' activity
+are not observable from trade-tape data at all, so no defensible number can
+be attached to it here. It remains a genuine, flagged upside for a live
+pilot to measure directly, not a backtest correction.
+
+### 8.3 Mischaracterized: historical order-book availability
+
+The reviewer's central claim — that Polymarket provides historical L2
+order-book data and this analysis's data foundation is therefore invalid —
+was re-tested live, not just re-read. `GET /book` on Polymarket's own CLOB
+API, called against a market that resolved yesterday (as of this
+re-verification) and one from 2023, both return HTTP 404, `"No orderbook
+exists for the requested token id"` — the same result this analysis's
+original code comments recorded when first confirmed live months earlier.
+Polymarket's own systems do not provide this. That specific sentence in the
+client report is accurate as written.
+
+What is real: third-party paid services (e.g. a service branded "PMData")
+have been archiving L2 snapshots from the public websocket feed — but only
+from **2026-02-01 onward** per that service's own documentation. This
+analysis's population spans 2023-09 to 2026-09; a service with roughly
+seven months of history cannot retroactively provide order-book depth for
+the other two-plus years, so it does not "invalidate the entire data
+foundation" as claimed. It is, however, a genuinely useful lead for a
+narrowly-scoped recent-period study or a live pilot, and is worth
+evaluating on its own terms (cost, completeness, reliability) if this
+research continues.
+
+The reviewer's specific fee formula (`Fee = C × 0.25 × (p×(1-p))²`) also
+does not match Polymarket's own documented formula, re-confirmed live in
+the same pass: `fee = C × feeRate × p × (1-p)` (not squared; feeRate is
+category-specific, not a flat 0.25) — identical to the formula already
+implemented in this codebase's Final-1% fee schedule (`src/
+polymarket_final_pct.py`, confirmed live 2026-08-25, independently of this
+review).
+
+### 8.4 Not evaluated
+
+The review's remaining suggestions — VPIN/toxicity detection, YES/NO and
+cross-platform arbitrage, inventory-aware quoting, and specific open-source
+reference implementations — are reasonable directions for a **future**
+phase of research, not corrections to the current finding. None were
+independently verified in this pass (several of the cited figures, e.g. a
+specific aggregate arbitrage-profit total, were not checked against a
+primary source and should not be treated as confirmed); they are noted here
+as candidate next steps, not as claims this document relies on.
+
+---
+
+## 9. Reproducibility index
 
 | Question | Script | Output |
 |---|---|---|
@@ -363,7 +488,8 @@ If this were a live desk deciding what to do next, in priority order:
 | Deep dive on the Q3 pace bucket (biased population) | `scripts/run_mm_proxy_q3_deep_dive.py` | `mm_proxy_q3_deep_dive.json` |
 | Unbiased population construction | `scripts/build_mm_unbiased_population.py` | `mm_unbiased_population.csv` |
 | Walk-forward validation + sensitivity sweep | `scripts/run_mm_walkforward_validation.py` | `mm_walkforward_validation.json` |
-| Unit tests for all pure functions above | `tests/test_mm_proxy_backtest.py`, `tests/test_mm_proxy_q3_deep_dive.py`, `tests/test_mm_walkforward_validation.py` | `pytest tests/` (155 passing at time of writing) |
+| Regime-change split + Maker Rebate upper bound | `scripts/run_mm_regime_and_rebate_check.py` | `mm_regime_and_rebate_check.json` |
+| Unit tests for all pure functions above | `tests/test_mm_proxy_backtest.py`, `tests/test_mm_proxy_q3_deep_dive.py`, `tests/test_mm_walkforward_validation.py`, `tests/test_mm_regime_and_rebate_check.py` | `pytest tests/` (163 passing at time of writing) |
 
 All scripts reuse already-cached data wherever possible (trade tapes,
 census leaf files) and are safe to re-run.
