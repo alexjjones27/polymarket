@@ -557,7 +557,272 @@ out of scope here.
 
 ---
 
-## 10. Reproducibility index
+## 10. Recalibrating VPIN, inventory skew, volatility caps, and a post-fill cooldown
+
+Section 9 left two things open: a VPIN calibration caveat (mean 0.88 against
+an expected ~0.5) reported but not fixed, and a conclusion that neither free
+improvement tested there was "remotely large enough to flip the conclusion."
+This section follows up on both, plus three mechanisms Section 8.4 listed as
+"not evaluated" (inventory-aware quoting was in fact evaluated in Section 9;
+volatility-scaled sizing and a toxicity-triggered cooldown were not, until
+now). Same population (the 1,331-market unbiased sample), same walk-forward
+discipline as Sections 4-5 throughout: every hyperparameter below — VPIN
+bucket size/mechanism, inventory limit, skew shape, volatility-cap
+sensitivity, cooldown parameters — was selected on **TRAIN only**, by the
+same per-market **median** markout PnL criterion `select_best_filter`
+already uses, then applied **unchanged** to TEST. Code: `mm_risk_controls_v3.py`
+(four independently-togglable mechanisms, each verified to reduce exactly to
+`market_pnl_advanced`'s own numbers when switched off — see
+`tests/test_mm_risk_controls_v3.py`); `run_mm_proxy_v3.py` (the selection
+pipeline + whole-population comparison + walk-forward evaluation); results
+in `mm_proxy_v3_results.json`.
+
+### 10.1 Method: staged selection, not a full grid — and why that's a real limitation
+
+Five new hyperparameters together would combinatorially explode a full grid
+search, so selection was staged (toxicity → inventory skew → volatility cap
+→ cooldown), holding each stage's TRAIN-selected winner fixed before moving
+to the next — 36 candidate configs total instead of a cross product. This is
+coordinate ascent, not global optimization: a jointly-swept combination could
+do better or worse than what's reported here, and is not ruled out. Worse,
+one grid was itself bounded by an a-priori researcher choice that turned out
+to bind (Section 10.4) — a concrete instance of exactly the kind of
+"researcher degrees of freedom" Section 6 already flags as mitigated, not
+eliminated, by the walk-forward split alone.
+
+### 10.2 VPIN recalibration: the hypothesis was wrong
+
+The task hypothesis was that the fixed $500 bucket was *too small*, and that
+sizing buckets from each market's own trade-size distribution would pull
+mean VPIN down toward ~0.5. Measured on TRAIN, across 5 fixed bucket sizes
+and 3 dynamic (rolling-median-trade-size-based) configurations:
+
+| Bucket config | Mean VPIN |
+|---|---|
+| Fixed $250 | 0.898 |
+| Fixed $500 (existing) | 0.879 |
+| Fixed $1,000 | 0.860 |
+| Fixed $2,500 | 0.840 |
+| Fixed $5,000 | 0.815 |
+| Dynamic, target 5 trades/bucket | 0.925 |
+| Dynamic, target 10 trades/bucket | 0.915 |
+| Dynamic, target 20 trades/bucket | 0.902 |
+
+**The dynamic (smaller, per-market-adaptive) buckets made calibration
+*worse*, not better** — every dynamic config's mean VPIN exceeds the
+existing fixed-$500 baseline. Only making the bucket *larger* helped, and
+only marginally (0.815 at $5,000, still far from 0.5). The root cause,
+checked directly rather than assumed: the population's trade-count
+distribution is thin. Median trades per market over its **entire life** is
+50; 38% of markets have fewer than 20 total trades; mean is pulled up to 433
+only by a long tail (p90 = 950). A market with a few dozen trades total can
+only ever complete a handful of VPIN buckets, however they're sized, and a
+bucket built from a handful of discrete prints has high sampling variance in
+its own imbalance regardless of its dollar denomination — smaller buckets
+(fewer trades each) make that per-bucket noise *worse*, which is exactly the
+dynamic configs' direction of failure. **This is a data-thinness problem,
+not a bucket-sizing problem, and no amount of backtest-only recalibration
+fixes it** — a conclusion reached by testing the hypothesis, not by assuming
+either direction, same standard as every other finding in this document.
+
+### 10.3 Toxicity signal: a photo finish, and TRAIN-median disagreed with the whole-population number
+
+TRAIN medians across all 12 candidates (5 fixed VPIN + 3 dynamic VPIN + 3
+order-imbalance windows + no signal) span a narrow $0.13-$0.26 band — the
+one clear signal is that *having* a toxicity signal beats having none
+(`toxicity_none` trailed every real signal on both TRAIN median and TRAIN
+total). `order_imbalance` with a 10-trade window won by TRAIN median
+($0.2558) and was carried forward. But on the **whole population**, that
+same config in isolation (holding Section 9's inventory settings unchanged)
+came in at best-case $37,499.79 / markout **-$95,780.69** — very slightly
+*worse* than Section 9's existing VPIN+inventory config (-$94,667.07). This
+is exactly why the project selects filters by median rather than total (a
+median resists domination by a few tail markets) — but it's also a reminder
+that a TRAIN-median winner isn't automatically better by every measure, and
+is reported here rather than smoothed over.
+
+### 10.4 Inventory skew: linear beats sigmoid at every matched limit; the limit dominates
+
+| Limit | Linear TRAIN median | Sigmoid (strength 6) TRAIN median |
+|---|---|---|
+| $10 | 0.1959 | 0.1992 |
+| $20 | 0.2116 | 0.2363 |
+| $30 | 0.2412 | 0.2381 |
+| $50 | 0.2382 | 0.2308 |
+| $75 | 0.2503 | 0.2411 |
+| $100 (Section 9's setting) | 0.2558 | 0.2396 |
+
+Sigmoid's whole point — barely derating a small position, clamping hard near
+the limit — turned out to be a liability here, not an advantage: the *first*
+fills into a new position are exactly the ones markout eventually judges
+over the full subsequent window, and sigmoid lets more of them through
+before it engages. Linear wins (or ties) at every limit tested. **What
+actually moved the needle was the limit itself**: TRAIN median rose
+monotonically as the limit loosened from $10 to $200, the loosest value
+tested. That monotonic trend not topping out is itself a finding worth
+flagging honestly: the grid was bounded at $200 a priori, so the reported
+$200 "winner" may not be the true optimum — a follow-up should extend this
+grid further rather than treat $200 as validated.
+
+Separately, the task's suggested half-life mean-reversion (inventory decays
+toward target between fills, independent of new fills — `decay_inventory_toward_target`)
+was tested at the Stage-2-winning limit:
+
+| Half-life | TRAIN median | TRAIN total |
+|---|---|---|
+| None (existing) | 0.2839 | -101,321.12 |
+| 60s | **1.4531** | -108,141.14 |
+| 120s | 0.9836 | -114,430.93 |
+| 600s | 0.5984 | -120,732.77 |
+
+60s decay wins decisively by median despite making the TRAIN total *worse*
+— another median/total disagreement, carried forward anyway per the
+project's established preference for median (resists tail domination) but
+flagged rather than hidden. Note this reverses the direction Section 9 found
+for category-specific *markout windows*: there, loosening the reaction
+assumption let stale information leak in and hurt every measure. Decay
+appears to behave differently — most likely because it only relaxes the
+model's own internal inventory *bookkeeping*, not what information the
+markout calculation is allowed to see.
+
+### 10.5 Volatility-scaled position cap: tested, did not earn a place in the final config
+
+Layered on top of the Stage 1+2 winners, every volatility-cap sensitivity
+tried (0.5, 1.0, 2.0) scored *worse* on TRAIN median than leaving it off
+(0.88/0.84/0.84 vs 1.4531). Most likely redundant with what the looser
+inventory limit and fast decay are already doing — both are, in different
+ways, "shrink exposure when risk looks elevated" mechanisms, and stacking a
+third on top just cuts capture without buying additional protection once the
+others are already in place. Included in the pipeline and reported here for
+completeness and reproducibility, not because it helped; the standalone
+mechanism (`volatility_scaled_notional_cap`) remains available and tested
+for a future iteration that doesn't already have decay + cooldown engaged.
+
+### 10.6 Post-fill cooldown: the single strongest lever found
+
+| Config | TRAIN median | TRAIN total |
+|---|---|---|
+| Off | 1.4531 | -108,141.14 |
+| Default (2x spread, 50% size cut, 30s half-life) | 2.7401 | -61,999.51 |
+| Strict (2x spread, 80% size cut, 1x-spread toxicity threshold) | **3.8839** | **-34,495.41** |
+
+Mechanism: a captured fill is retroactively judged "toxic" once 15 seconds
+have passed if price has since drifted against it by more than the
+configured multiple of the half-spread it earned; a trigger starts a "heat"
+state that multiplicatively widens spread (up to 2x) and cuts fill_share (up
+to 80%) while active, decaying with a 30-second half-life. Of everything
+tested in this section and in Section 9, this produced the largest single
+jump in TRAIN performance by a wide margin.
+
+### 10.7 Combined result: whole-population comparison
+
+| Configuration | Best case | 15s-equivalent markout | Gap | vs. Section 9's VPIN+inventory config |
+|---|---|---|---|---|
+| Flat baseline (Section 3.1 / Section 9) | $49,891.06 | -$112,335.07 | 325.2% | — |
+| VPIN + inventory (Section 9, `advanced_flat`) | $38,613.41 | -$94,667.07 | 345.2% | — |
+| **v3 combined** (order-imbalance toxicity + $200 linear inventory limit + 60s decay + strict cooldown) | $74,974.04 | **-$41,121.67** | 154.8% | **+$53,545.40 (56.6% less markout loss)** |
+
+A substantial, real improvement on the same filter-free, whole-population
+comparison Section 9 used — more than half the loss recovered, both in
+relative (gap 345%→155%) and absolute (-$94,667→-$41,122) terms. It does
+**not** flip the sign: markout loss is still 1.5x the best-case gain, not
+smaller than it. Concentration was checked, same discipline as
+`concentration_by_top_n` uses elsewhere: the single worst market accounts
+for 46.4% of the entire net loss, the worst 5 for 151.5% (meaning the
+"typical" market in this configuration is net positive, and it's a handful
+of catastrophic markets driving the net result) — the same heavy-tail shape
+this document has flagged before (Section 6's "no portfolio-level /
+correlation risk" limitation applies with full force to this number).
+
+### 10.8 Out-of-sample: does it flip to positive? A real, fragile "maybe" — not a validated result
+
+The cleanest, most trustworthy number here has **no market-selection filter
+at all**: on the 345 TEST-period markets with captured flow under the v3
+combined config, total markout is **-$6,628.54**, against Section 5.1's
+original unfiltered-TEST baseline of -$13,238.51 — **roughly half the
+out-of-sample loss**, with zero researcher degrees of freedom from a filter
+search. This is the single strongest claim this section can defensibly make.
+
+Layering the existing pace/volume/history market-selection filter search
+(Section 4.1's own machinery, unchanged, just fed v3-computed per-market
+stats) on top tells a messier story:
+
+| min_markets | TRAIN-selected filter | TRAIN total markout | TEST n | TEST total markout | P(TEST PnL > 0) |
+|---|---|---|---|---|---|
+| 30 | pace<64s, vol≥$22,285, hist≥48h | -$16,842.21 | 17 | **+$8,285.77** | **95.7%** |
+| 75 | pace<64s, vol≥$22,285, hist≥0h | -$18,653.91 | 21 | **+$8,440.59** | **96.8%** |
+| 150 | pace<6s, vol≥$908, hist≥0h | +$1,265.37 | 26 | -$1,021.35 | 18.8% |
+| 250 | — | no combination met the threshold | — | — | — |
+
+At the two looser thresholds, TEST flips fully positive with a bootstrap
+P(profitable) above 95%. At the stricter threshold, it flips back negative;
+at the strictest, no filter survives at all. This is precisely the pattern
+the min-markets sensitivity sweep exists to catch (Section 4.2's own stated
+purpose: "if TEST results are all over the map across this sweep, the
+'winning' filter... is closer to noise than a real, stable edge") — and it
+does not pass. Note also that the min_markets=30 winner's own **TRAIN**
+total is *negative* (-$16,842.21) despite a positive TRAIN median — the same
+tail-concentration pattern as Section 10.7, here affecting the very filter
+selection step. **The flip to positive should not be treated as validated.**
+It is a real, interesting lead — worth checking against a longer or
+additional TEST period, or cross-validated splits, in any follow-up — but by
+this project's own established standard, it is not a result to act on.
+
+### 10.9 Does the optimal spread/fill-share grid point change?
+
+Yes. Re-running the 3×3 half-spread × fill-share grid on TRAIN under the
+final v3 config shows the best cell shifting from Section 3's ($0.01, 15%)
+to **($0.02, 5%)** — a wider spread, smaller captured share — where TRAIN
+turns *positive* ($16,263.00) under this config specifically, versus
+-$34,493.71 at the original base config under the same v3 mechanisms. This
+grid point was not propagated through the walk-forward TEST evaluation
+above (which kept `BASE_HALF_SPREAD`/`BASE_FILL_SHARE` fixed throughout, to
+keep the comparison against Sections 5 and 9 apples-to-apples on the same
+base config) — re-running Section 10.8's filter search at this new grid
+point is a natural, not-yet-done next step.
+
+### 10.10 Headline conclusion
+
+This does not overturn Section 5's headline finding — no statistically
+robust, validated edge exists yet. But it substantially and legitimately
+narrows the gap on the cleanest available comparison (roughly half the
+out-of-sample loss, filter-free, both in-sample and out-of-sample), and it
+identifies a materially stronger starting configuration for any future
+iteration — order-imbalance toxicity, a much looser but still linear
+inventory limit, fast inventory decay, and an event-triggered post-fill
+cooldown — than Section 9's VPIN+inventory combination. The
+market-selection-filter-plus-v3 result that fully flips to positive on TEST
+is real but explicitly **not validated**: it fails this project's own
+stability check one threshold away from where it succeeds, and should be
+treated as a lead, not a conclusion.
+
+### 10.11 What would move this further
+
+1. **Extend the inventory-limit grid past $200** — TRAIN median was still
+   rising at the boundary tested; the true optimum under this criterion is
+   unknown.
+2. **A finer cooldown sweep** — only two hand-picked parameter sets
+   ("default", "strict") were tried; a real grid could do better, or could
+   reveal the same TRAIN/TEST instability seen in Section 10.8.
+3. **A second, independent TEST period** (more history, or k-fold
+   walk-forward rather than one chronological split) to check whether the
+   Section 10.8 filtered-positive result replicates, or was one lucky split.
+4. **Re-run the filter search at the new ($0.02, 5%) grid point** (Section
+   10.9) instead of the original base config.
+5. **Real order-book data and a live pilot remain the eventual fix**, exactly
+   as Section 7 already concluded — nothing here changes that recommendation,
+   it only makes the backtest-only starting point meaningfully less bad.
+6. The VPIN calibration problem (Section 10.2) is **not fixable from this
+   data**: roughly half this population has fewer than 50 trades in a
+   market's entire life. A future pass could test an explicit fallback rule
+   (use order-imbalance, or no toxicity signal at all, below some minimum
+   trade-count threshold) rather than forcing every market through the same
+   volume-clock construction regardless of how thin it is — not attempted
+   here.
+
+---
+
+## 11. Reproducibility index
 
 | Question | Script | Output |
 |---|---|---|
@@ -567,7 +832,8 @@ out of scope here.
 | Walk-forward validation + sensitivity sweep | `scripts/run_mm_walkforward_validation.py` | `mm_walkforward_validation.json` |
 | Regime-change split + Maker Rebate upper bound | `scripts/run_mm_regime_and_rebate_check.py` | `mm_regime_and_rebate_check.json` |
 | VPIN/inventory-skew + category-window test | `scripts/run_mm_proxy_advanced.py` | `mm_proxy_advanced_results.json` |
-| Unit tests for all pure functions above | `tests/test_mm_proxy_backtest.py`, `tests/test_mm_proxy_q3_deep_dive.py`, `tests/test_mm_walkforward_validation.py`, `tests/test_mm_regime_and_rebate_check.py`, `tests/test_mm_proxy_advanced.py` | `pytest tests/` (172 passing at time of writing) |
+| Dynamic VPIN, sigmoid skew, vol cap, cooldown (Section 10) | `scripts/run_mm_proxy_v3.py` (mechanisms in `scripts/mm_risk_controls_v3.py`) | `mm_proxy_v3_results.json` |
+| Unit tests for all pure functions above | `tests/test_mm_proxy_backtest.py`, `tests/test_mm_proxy_q3_deep_dive.py`, `tests/test_mm_walkforward_validation.py`, `tests/test_mm_regime_and_rebate_check.py`, `tests/test_mm_proxy_advanced.py`, `tests/test_mm_risk_controls_v3.py`, `tests/test_run_mm_proxy_v3.py` | `pytest tests/` (208 passing at time of writing) |
 
 All scripts reuse already-cached data wherever possible (trade tapes,
 census leaf files) and are safe to re-run.

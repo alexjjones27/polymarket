@@ -1,0 +1,1167 @@
+{
+  "n_train": 932,
+  "n_test": 399,
+  "stage_sweeps": {
+    "stage1_toxicity": {
+      "vpin_fixed_250": {
+        "train": {
+          "n_markets": 884,
+          "total_pnl_best_case": 32107.06,
+          "total_pnl_with_markout_time": -88487.92,
+          "median_pnl_with_markout_time": 0.2002,
+          "mean_pnl_with_markout_time": -100.0995,
+          "pct_positive": 68.3
+        },
+        "mean_avg_toxicity": 0.8975368015200058,
+        "config": {
+          "toxicity_mode": "vpin_fixed",
+          "vpin_bucket_notional": 250.0
+        }
+      },
+      "vpin_fixed_500_existing": {
+        "train": {
+          "n_markets": 884,
+          "total_pnl_best_case": 31475.74,
+          "total_pnl_with_markout_time": -89119.25,
+          "median_pnl_with_markout_time": 0.187,
+          "mean_pnl_with_markout_time": -100.8136,
+          "pct_positive": 68.1
+        },
+        "mean_avg_toxicity": 0.879448051661213,
+        "config": {
+          "toxicity_mode": "vpin_fixed",
+          "vpin_bucket_notional": 500.0
+        }
+      },
+      "vpin_fixed_1000": {
+        "train": {
+          "n_markets": 884,
+          "total_pnl_best_case": 30758.97,
+          "total_pnl_with_markout_time": -89836.02,
+          "median_pnl_with_markout_time": 0.187,
+          "mean_pnl_with_markout_time": -101.6245,
+          "pct_positive": 67.9
+        },
+        "mean_avg_toxicity": 0.8598245319115925,
+        "config": {
+          "toxicity_mode": "vpin_fixed",
+          "vpin_bucket_notional": 1000.0
+        }
+      },
+      "vpin_fixed_2500": {
+        "train": {
+          "n_markets": 884,
+          "total_pnl_best_case": 29816.35,
+          "total_pnl_with_markout_time": -90778.63,
+          "median_pnl_with_markout_time": 0.1626,
+          "mean_pnl_with_markout_time": -102.6908,
+          "pct_positive": 67.3
+        },
+        "mean_avg_toxicity": 0.8397952325995774,
+        "config": {
+          "toxicity_mode": "vpin_fixed",
+          "vpin_bucket_notional": 2500.0
+        }
+      },
+      "vpin_fixed_5000": {
+        "train": {
+          "n_markets": 884,
+          "total_pnl_best_case": 28931.09,
+          "total_pnl_with_markout_time": -91663.89,
+          "median_pnl_with_markout_time": 0.1538,
+          "mean_pnl_with_markout_time": -103.6922,
+          "pct_positive": 67.0
+        },
+        "mean_avg_toxicity": 0.8147523250441058,
+        "config": {
+          "toxicity_mode": "vpin_fixed",
+          "vpin_bucket_notional": 5000.0
+        }
+      },
+      "vpin_dynamic_5": {
+        "train": {
+          "n_markets": 884,
+          "total_pnl_best_case": 33086.2,
+          "total_pnl_with_markout_time": -87508.78,
+          "median_pnl_with_markout_time": 0.215,
+          "mean_pnl_with_markout_time": -98.9918,
+          "pct_positive": 68.6
+        },
+        "mean_avg_toxicity": 0.9245513322515276,
+        "config": {
+          "toxicity_mode": "vpin_dynamic",
+          "vpin_bucket_trade_target": 5.0
+        }
+      },
+      "vpin_dynamic_10": {
+        "train": {
+          "n_markets": 884,
+          "total_pnl_best_case": 32583.95,
+          "total_pnl_with_markout_time": -88011.03,
+          "median_pnl_with_markout_time": 0.215,
+          "mean_pnl_with_markout_time": -99.56,
+          "pct_positive": 68.4
+        },
+        "mean_avg_toxicity": 0.9146342543552223,
+        "config": {
+          "toxicity_mode": "vpin_dynamic",
+          "vpin_bucket_trade_target": 10.0
+        }
+      },
+      "vpin_dynamic_20": {
+        "train": {
+          "n_markets": 884,
+          "total_pnl_best_case": 32017.88,
+          "total_pnl_with_markout_time": -88577.1,
+          "median_pnl_with_markout_time": 0.2007,
+          "mean_pnl_with_markout_time": -100.2003,
+          "pct_positive": 68.4
+        },
+        "mean_avg_toxicity": 0.9015365916258834,
+        "config": {
+          "toxicity_mode": "vpin_dynamic",
+          "vpin_bucket_trade_target": 20.0
+        }
+      },
+      "order_imbalance_10": {
+        "train": {
+          "n_markets": 884,
+          "total_pnl_best_case": 30466.18,
+          "total_pnl_with_markout_time": -90128.8,
+          "median_pnl_with_markout_time": 0.2558,
+          "mean_pnl_with_markout_time": -101.9557,
+          "pct_positive": 68.6
+        },
+        "mean_avg_toxicity": 0.882072757617707,
+        "config": {
+          "toxicity_mode": "order_imbalance",
+          "order_imbalance_window_trades": 10
+        }
+      },
+      "order_imbalance_20": {
+        "train": {
+          "n_markets": 884,
+          "total_pnl_best_case": 29534.2,
+          "total_pnl_with_markout_time": -91060.78,
+          "median_pnl_with_markout_time": 0.2558,
+          "mean_pnl_with_markout_time": -103.0099,
+          "pct_positive": 68.6
+        },
+        "mean_avg_toxicity": 0.8707733869237537,
+        "config": {
+          "toxicity_mode": "order_imbalance",
+          "order_imbalance_window_trades": 20
+        }
+      },
+      "order_imbalance_40": {
+        "train": {
+          "n_markets": 884,
+          "total_pnl_best_case": 29022.34,
+          "total_pnl_with_markout_time": -91572.64,
+          "median_pnl_with_markout_time": 0.254,
+          "mean_pnl_with_markout_time": -103.589,
+          "pct_positive": 68.6
+        },
+        "mean_avg_toxicity": 0.866005234371266,
+        "config": {
+          "toxicity_mode": "order_imbalance",
+          "order_imbalance_window_trades": 40
+        }
+      },
+      "toxicity_none": {
+        "train": {
+          "n_markets": 884,
+          "total_pnl_best_case": 20103.06,
+          "total_pnl_with_markout_time": -100491.92,
+          "median_pnl_with_markout_time": 0.1311,
+          "mean_pnl_with_markout_time": -113.6786,
+          "pct_positive": 65.2
+        },
+        "mean_avg_toxicity": null,
+        "config": {
+          "toxicity_mode": "none"
+        }
+      }
+    },
+    "stage2_skew": {
+      "linear_limit10": {
+        "train": {
+          "n_markets": 884,
+          "total_pnl_best_case": 22582.17,
+          "total_pnl_with_markout_time": -49007.84,
+          "median_pnl_with_markout_time": 0.1959,
+          "mean_pnl_with_markout_time": -55.4387,
+          "pct_positive": 69.9
+        },
+        "mean_avg_toxicity": 0.882072757617707,
+        "config": {
+          "toxicity_mode": "order_imbalance",
+          "order_imbalance_window_trades": 10,
+          "skew_mode": "linear",
+          "inventory_limit_notional": 10.0
+        }
+      },
+      "linear_limit20": {
+        "train": {
+          "n_markets": 884,
+          "total_pnl_best_case": 24757.31,
+          "total_pnl_with_markout_time": -59115.68,
+          "median_pnl_with_markout_time": 0.2116,
+          "mean_pnl_with_markout_time": -66.8729,
+          "pct_positive": 69.1
+        },
+        "mean_avg_toxicity": 0.882072757617707,
+        "config": {
+          "toxicity_mode": "order_imbalance",
+          "order_imbalance_window_trades": 10,
+          "skew_mode": "linear",
+          "inventory_limit_notional": 20.0
+        }
+      },
+      "linear_limit30": {
+        "train": {
+          "n_markets": 884,
+          "total_pnl_best_case": 26156.16,
+          "total_pnl_with_markout_time": -67525.53,
+          "median_pnl_with_markout_time": 0.2412,
+          "mean_pnl_with_markout_time": -76.3864,
+          "pct_positive": 69.3
+        },
+        "mean_avg_toxicity": 0.882072757617707,
+        "config": {
+          "toxicity_mode": "order_imbalance",
+          "order_imbalance_window_trades": 10,
+          "skew_mode": "linear",
+          "inventory_limit_notional": 30.0
+        }
+      },
+      "linear_limit50": {
+        "train": {
+          "n_markets": 884,
+          "total_pnl_best_case": 27964.69,
+          "total_pnl_with_markout_time": -77466.29,
+          "median_pnl_with_markout_time": 0.2382,
+          "mean_pnl_with_markout_time": -87.6316,
+          "pct_positive": 68.7
+        },
+        "mean_avg_toxicity": 0.882072757617707,
+        "config": {
+          "toxicity_mode": "order_imbalance",
+          "order_imbalance_window_trades": 10,
+          "skew_mode": "linear",
+          "inventory_limit_notional": 50.0
+        }
+      },
+      "linear_limit75": {
+        "train": {
+          "n_markets": 884,
+          "total_pnl_best_case": 29415.5,
+          "total_pnl_with_markout_time": -84868.84,
+          "median_pnl_with_markout_time": 0.2503,
+          "mean_pnl_with_markout_time": -96.0055,
+          "pct_positive": 68.6
+        },
+        "mean_avg_toxicity": 0.882072757617707,
+        "config": {
+          "toxicity_mode": "order_imbalance",
+          "order_imbalance_window_trades": 10,
+          "skew_mode": "linear",
+          "inventory_limit_notional": 75.0
+        }
+      },
+      "linear_limit100": {
+        "train": {
+          "n_markets": 884,
+          "total_pnl_best_case": 30466.18,
+          "total_pnl_with_markout_time": -90128.8,
+          "median_pnl_with_markout_time": 0.2558,
+          "mean_pnl_with_markout_time": -101.9557,
+          "pct_positive": 68.6
+        },
+        "mean_avg_toxicity": 0.882072757617707,
+        "config": {
+          "toxicity_mode": "order_imbalance",
+          "order_imbalance_window_trades": 10,
+          "skew_mode": "linear",
+          "inventory_limit_notional": 100.0
+        }
+      },
+      "linear_limit150": {
+        "train": {
+          "n_markets": 884,
+          "total_pnl_best_case": 32007.11,
+          "total_pnl_with_markout_time": -97035.41,
+          "median_pnl_with_markout_time": 0.2533,
+          "mean_pnl_with_markout_time": -109.7686,
+          "pct_positive": 68.4
+        },
+        "mean_avg_toxicity": 0.882072757617707,
+        "config": {
+          "toxicity_mode": "order_imbalance",
+          "order_imbalance_window_trades": 10,
+          "skew_mode": "linear",
+          "inventory_limit_notional": 150.0
+        }
+      },
+      "linear_limit200": {
+        "train": {
+          "n_markets": 884,
+          "total_pnl_best_case": 33170.31,
+          "total_pnl_with_markout_time": -101321.12,
+          "median_pnl_with_markout_time": 0.2839,
+          "mean_pnl_with_markout_time": -114.6167,
+          "pct_positive": 68.9
+        },
+        "mean_avg_toxicity": 0.882072757617707,
+        "config": {
+          "toxicity_mode": "order_imbalance",
+          "order_imbalance_window_trades": 10,
+          "skew_mode": "linear",
+          "inventory_limit_notional": 200.0
+        }
+      },
+      "sigmoid_s6_limit10": {
+        "train": {
+          "n_markets": 884,
+          "total_pnl_best_case": 24565.87,
+          "total_pnl_with_markout_time": -61833.71,
+          "median_pnl_with_markout_time": 0.1992,
+          "mean_pnl_with_markout_time": -69.9476,
+          "pct_positive": 68.6
+        },
+        "mean_avg_toxicity": 0.882072757617707,
+        "config": {
+          "toxicity_mode": "order_imbalance",
+          "order_imbalance_window_trades": 10,
+          "skew_mode": "sigmoid",
+          "inventory_limit_notional": 10.0,
+          "skew_strength": 6.0
+        }
+      },
+      "sigmoid_s6_limit20": {
+        "train": {
+          "n_markets": 884,
+          "total_pnl_best_case": 26965.07,
+          "total_pnl_with_markout_time": -76439.94,
+          "median_pnl_with_markout_time": 0.2363,
+          "mean_pnl_with_markout_time": -86.4705,
+          "pct_positive": 68.8
+        },
+        "mean_avg_toxicity": 0.882072757617707,
+        "config": {
+          "toxicity_mode": "order_imbalance",
+          "order_imbalance_window_trades": 10,
+          "skew_mode": "sigmoid",
+          "inventory_limit_notional": 20.0,
+          "skew_strength": 6.0
+        }
+      },
+      "sigmoid_s6_limit30": {
+        "train": {
+          "n_markets": 884,
+          "total_pnl_best_case": 28472.9,
+          "total_pnl_with_markout_time": -86674.14,
+          "median_pnl_with_markout_time": 0.2381,
+          "mean_pnl_with_markout_time": -98.0477,
+          "pct_positive": 68.1
+        },
+        "mean_avg_toxicity": 0.882072757617707,
+        "config": {
+          "toxicity_mode": "order_imbalance",
+          "order_imbalance_window_trades": 10,
+          "skew_mode": "sigmoid",
+          "inventory_limit_notional": 30.0,
+          "skew_strength": 6.0
+        }
+      },
+      "sigmoid_s6_limit50": {
+        "train": {
+          "n_markets": 884,
+          "total_pnl_best_case": 30412.53,
+          "total_pnl_with_markout_time": -98066.21,
+          "median_pnl_with_markout_time": 0.2308,
+          "mean_pnl_with_markout_time": -110.9346,
+          "pct_positive": 67.4
+        },
+        "mean_avg_toxicity": 0.882072757617707,
+        "config": {
+          "toxicity_mode": "order_imbalance",
+          "order_imbalance_window_trades": 10,
+          "skew_mode": "sigmoid",
+          "inventory_limit_notional": 50.0,
+          "skew_strength": 6.0
+        }
+      },
+      "sigmoid_s6_limit75": {
+        "train": {
+          "n_markets": 884,
+          "total_pnl_best_case": 31990.63,
+          "total_pnl_with_markout_time": -107079.34,
+          "median_pnl_with_markout_time": 0.2411,
+          "mean_pnl_with_markout_time": -121.1305,
+          "pct_positive": 67.4
+        },
+        "mean_avg_toxicity": 0.882072757617707,
+        "config": {
+          "toxicity_mode": "order_imbalance",
+          "order_imbalance_window_trades": 10,
+          "skew_mode": "sigmoid",
+          "inventory_limit_notional": 75.0,
+          "skew_strength": 6.0
+        }
+      },
+      "sigmoid_s6_limit100": {
+        "train": {
+          "n_markets": 884,
+          "total_pnl_best_case": 33178.86,
+          "total_pnl_with_markout_time": -111989.56,
+          "median_pnl_with_markout_time": 0.2396,
+          "mean_pnl_with_markout_time": -126.685,
+          "pct_positive": 67.3
+        },
+        "mean_avg_toxicity": 0.882072757617707,
+        "config": {
+          "toxicity_mode": "order_imbalance",
+          "order_imbalance_window_trades": 10,
+          "skew_mode": "sigmoid",
+          "inventory_limit_notional": 100.0,
+          "skew_strength": 6.0
+        }
+      }
+    },
+    "stage2b_half_life": {
+      "no_decay_existing": {
+        "train": {
+          "n_markets": 884,
+          "total_pnl_best_case": 33170.31,
+          "total_pnl_with_markout_time": -101321.12,
+          "median_pnl_with_markout_time": 0.2839,
+          "mean_pnl_with_markout_time": -114.6167,
+          "pct_positive": 68.9
+        },
+        "mean_avg_toxicity": 0.882072757617707,
+        "config": {
+          "toxicity_mode": "order_imbalance",
+          "order_imbalance_window_trades": 10,
+          "skew_mode": "linear",
+          "inventory_limit_notional": 200.0,
+          "inventory_half_life_seconds": null
+        }
+      },
+      "half_life_60": {
+        "train": {
+          "n_markets": 884,
+          "total_pnl_best_case": 59612.29,
+          "total_pnl_with_markout_time": -108141.14,
+          "median_pnl_with_markout_time": 1.4531,
+          "mean_pnl_with_markout_time": -122.3316,
+          "pct_positive": 77.4
+        },
+        "mean_avg_toxicity": 0.882072757617707,
+        "config": {
+          "toxicity_mode": "order_imbalance",
+          "order_imbalance_window_trades": 10,
+          "skew_mode": "linear",
+          "inventory_limit_notional": 200.0,
+          "inventory_half_life_seconds": 60.0
+        }
+      },
+      "half_life_120": {
+        "train": {
+          "n_markets": 884,
+          "total_pnl_best_case": 57391.48,
+          "total_pnl_with_markout_time": -114430.93,
+          "median_pnl_with_markout_time": 0.9836,
+          "mean_pnl_with_markout_time": -129.4468,
+          "pct_positive": 75.7
+        },
+        "mean_avg_toxicity": 0.882072757617707,
+        "config": {
+          "toxicity_mode": "order_imbalance",
+          "order_imbalance_window_trades": 10,
+          "skew_mode": "linear",
+          "inventory_limit_notional": 200.0,
+          "inventory_half_life_seconds": 120.0
+        }
+      },
+      "half_life_600": {
+        "train": {
+          "n_markets": 884,
+          "total_pnl_best_case": 51443.78,
+          "total_pnl_with_markout_time": -120732.77,
+          "median_pnl_with_markout_time": 0.5984,
+          "mean_pnl_with_markout_time": -136.5755,
+          "pct_positive": 72.4
+        },
+        "mean_avg_toxicity": 0.882072757617707,
+        "config": {
+          "toxicity_mode": "order_imbalance",
+          "order_imbalance_window_trades": 10,
+          "skew_mode": "linear",
+          "inventory_limit_notional": 200.0,
+          "inventory_half_life_seconds": 600.0
+        }
+      }
+    },
+    "stage3_vol_cap": {
+      "vol_cap_off_existing": {
+        "train": {
+          "n_markets": 884,
+          "total_pnl_best_case": 59612.29,
+          "total_pnl_with_markout_time": -108141.14,
+          "median_pnl_with_markout_time": 1.4531,
+          "mean_pnl_with_markout_time": -122.3316,
+          "pct_positive": 77.4
+        },
+        "mean_avg_toxicity": 0.882072757617707,
+        "config": {
+          "toxicity_mode": "order_imbalance",
+          "order_imbalance_window_trades": 10,
+          "skew_mode": "linear",
+          "inventory_limit_notional": 200.0,
+          "inventory_half_life_seconds": 60.0,
+          "use_volatility_cap": false
+        }
+      },
+      "vol_cap_sens0.5": {
+        "train": {
+          "n_markets": 884,
+          "total_pnl_best_case": 37364.29,
+          "total_pnl_with_markout_time": -74459.17,
+          "median_pnl_with_markout_time": 0.8774,
+          "mean_pnl_with_markout_time": -84.2298,
+          "pct_positive": 75.5
+        },
+        "mean_avg_toxicity": 0.882072757617707,
+        "config": {
+          "toxicity_mode": "order_imbalance",
+          "order_imbalance_window_trades": 10,
+          "skew_mode": "linear",
+          "inventory_limit_notional": 200.0,
+          "inventory_half_life_seconds": 60.0,
+          "use_volatility_cap": true,
+          "vol_cap_sensitivity": 0.5
+        }
+      },
+      "vol_cap_sens1.0": {
+        "train": {
+          "n_markets": 884,
+          "total_pnl_best_case": 35805.38,
+          "total_pnl_with_markout_time": -75622.65,
+          "median_pnl_with_markout_time": 0.8364,
+          "mean_pnl_with_markout_time": -85.546,
+          "pct_positive": 75.0
+        },
+        "mean_avg_toxicity": 0.882072757617707,
+        "config": {
+          "toxicity_mode": "order_imbalance",
+          "order_imbalance_window_trades": 10,
+          "skew_mode": "linear",
+          "inventory_limit_notional": 200.0,
+          "inventory_half_life_seconds": 60.0,
+          "use_volatility_cap": true,
+          "vol_cap_sensitivity": 1.0
+        }
+      },
+      "vol_cap_sens2.0": {
+        "train": {
+          "n_markets": 884,
+          "total_pnl_best_case": 34950.37,
+          "total_pnl_with_markout_time": -76549.69,
+          "median_pnl_with_markout_time": 0.8364,
+          "mean_pnl_with_markout_time": -86.5947,
+          "pct_positive": 75.0
+        },
+        "mean_avg_toxicity": 0.882072757617707,
+        "config": {
+          "toxicity_mode": "order_imbalance",
+          "order_imbalance_window_trades": 10,
+          "skew_mode": "linear",
+          "inventory_limit_notional": 200.0,
+          "inventory_half_life_seconds": 60.0,
+          "use_volatility_cap": true,
+          "vol_cap_sensitivity": 2.0
+        }
+      }
+    },
+    "stage4_cooldown": {
+      "cooldown_off_existing": {
+        "train": {
+          "n_markets": 884,
+          "total_pnl_best_case": 59612.29,
+          "total_pnl_with_markout_time": -108141.14,
+          "median_pnl_with_markout_time": 1.4531,
+          "mean_pnl_with_markout_time": -122.3316,
+          "pct_positive": 77.4
+        },
+        "mean_avg_toxicity": 0.882072757617707,
+        "config": {
+          "toxicity_mode": "order_imbalance",
+          "order_imbalance_window_trades": 10,
+          "skew_mode": "linear",
+          "inventory_limit_notional": 200.0,
+          "inventory_half_life_seconds": 60.0,
+          "use_volatility_cap": false,
+          "enable_cooldown": false
+        }
+      },
+      "cooldown_default": {
+        "train": {
+          "n_markets": 884,
+          "total_pnl_best_case": 63514.81,
+          "total_pnl_with_markout_time": -61999.51,
+          "median_pnl_with_markout_time": 2.7401,
+          "mean_pnl_with_markout_time": -70.1352,
+          "pct_positive": 81.8
+        },
+        "mean_avg_toxicity": 0.882072757617707,
+        "config": {
+          "toxicity_mode": "order_imbalance",
+          "order_imbalance_window_trades": 10,
+          "skew_mode": "linear",
+          "inventory_limit_notional": 200.0,
+          "inventory_half_life_seconds": 60.0,
+          "use_volatility_cap": false,
+          "enable_cooldown": true
+        }
+      },
+      "cooldown_strict": {
+        "train": {
+          "n_markets": 884,
+          "total_pnl_best_case": 61564.63,
+          "total_pnl_with_markout_time": -34495.41,
+          "median_pnl_with_markout_time": 3.8839,
+          "mean_pnl_with_markout_time": -39.022,
+          "pct_positive": 85.9
+        },
+        "mean_avg_toxicity": 0.882072757617707,
+        "config": {
+          "toxicity_mode": "order_imbalance",
+          "order_imbalance_window_trades": 10,
+          "skew_mode": "linear",
+          "inventory_limit_notional": 200.0,
+          "inventory_half_life_seconds": 60.0,
+          "use_volatility_cap": false,
+          "enable_cooldown": true,
+          "toxic_adverse_spread_multiple": 1.0,
+          "cooldown_max_spread_boost": 2.0,
+          "cooldown_max_size_cut": 0.8
+        }
+      }
+    }
+  },
+  "final_config": {
+    "toxicity_mode": "order_imbalance",
+    "order_imbalance_window_trades": 10,
+    "skew_mode": "linear",
+    "inventory_limit_notional": 200.0,
+    "inventory_half_life_seconds": 60.0,
+    "use_volatility_cap": false,
+    "enable_cooldown": true,
+    "toxic_adverse_spread_multiple": 1.0,
+    "cooldown_max_spread_boost": 2.0,
+    "cooldown_max_size_cut": 0.8
+  },
+  "whole_population_comparison": {
+    "flat_baseline": {
+      "n_active": 1331,
+      "best_case": 49891.06,
+      "markout": -112335.07,
+      "gap_pct": 325.2
+    },
+    "advanced_existing": {
+      "n_active": 1331,
+      "best_case": 38613.41,
+      "markout": -94667.07,
+      "gap_pct": 345.2
+    },
+    "v3_stage1_toxicity_only": {
+      "n_active": 1331,
+      "best_case": 37499.79,
+      "markout": -95780.69,
+      "gap_pct": 355.4
+    },
+    "v3_stage2_plus_skew": {
+      "n_active": 1331,
+      "best_case": 72584.76,
+      "markout": -119013.58,
+      "gap_pct": 264.0
+    },
+    "v3_stage3_plus_volcap": {
+      "n_active": 1331,
+      "best_case": 72584.76,
+      "markout": -119013.58,
+      "gap_pct": 264.0
+    },
+    "v3_final_combined": {
+      "n_active": 1331,
+      "best_case": 74974.04,
+      "markout": -41121.67,
+      "gap_pct": 154.8
+    }
+  },
+  "walkforward_unfiltered_test": {
+    "n_markets": 345,
+    "total_pnl_best_case": 13407.14,
+    "total_pnl_with_markout_time": -6628.54,
+    "median_pnl_with_markout_time": 0.2926,
+    "mean_pnl_with_markout_time": -19.2132,
+    "pct_positive": 82.3
+  },
+  "walkforward_min_markets_sweep": [
+    {
+      "min_markets": 30,
+      "selected_filter": {
+        "pace_range_seconds": [
+          6.0,
+          64.0
+        ],
+        "volume_min": 22284.68,
+        "history_min_seconds": 172800,
+        "train_result": {
+          "n_markets": 52,
+          "total_pnl_best_case": 18386.7,
+          "total_pnl_with_markout_time": -16842.21,
+          "median_pnl_with_markout_time": 123.7432,
+          "mean_pnl_with_markout_time": -323.8887,
+          "pct_positive": 71.2
+        }
+      },
+      "test_result": {
+        "n_markets": 17,
+        "total_pnl_best_case": 4355.43,
+        "total_pnl_with_markout_time": 8285.77,
+        "median_pnl_with_markout_time": 56.3226,
+        "mean_pnl_with_markout_time": 487.3982,
+        "pct_positive": 58.8
+      },
+      "bootstrap_ci": {
+        "n_markets": 17,
+        "n_iterations": 2000,
+        "p5": 336.04,
+        "p25": 4589.77,
+        "median": 8024.57,
+        "p75": 11732.6,
+        "p95": 17206.76,
+        "pct_iterations_positive": 95.7
+      },
+      "drawdown": {
+        "final_equity": 8285.77,
+        "max_drawdown": 1095.87,
+        "equity_curve": [
+          [
+            "2026-04-18",
+            -79.85
+          ],
+          [
+            "2026-05-09",
+            -189.86
+          ],
+          [
+            "2026-05-09",
+            267.9
+          ],
+          [
+            "2026-05-14",
+            345.08
+          ],
+          [
+            "2026-06-01",
+            342.45
+          ],
+          [
+            "2026-06-02",
+            -349.13
+          ],
+          [
+            "2026-06-04",
+            3124.99
+          ],
+          [
+            "2026-06-07",
+            6824.86
+          ],
+          [
+            "2026-06-08",
+            8254.06
+          ],
+          [
+            "2026-06-14",
+            8703.53
+          ],
+          [
+            "2026-06-20",
+            9023.19
+          ],
+          [
+            "2026-06-21",
+            8879.21
+          ],
+          [
+            "2026-06-25",
+            8038.76
+          ],
+          [
+            "2026-06-26",
+            7927.32
+          ],
+          [
+            "2026-06-27",
+            7937.09
+          ],
+          [
+            "2026-08-24",
+            7993.41
+          ],
+          [
+            "2026-09-01",
+            8285.77
+          ]
+        ]
+      }
+    },
+    {
+      "min_markets": 75,
+      "selected_filter": {
+        "pace_range_seconds": [
+          6.0,
+          64.0
+        ],
+        "volume_min": 22284.68,
+        "history_min_seconds": 0,
+        "train_result": {
+          "n_markets": 80,
+          "total_pnl_best_case": 21401.92,
+          "total_pnl_with_markout_time": -18653.91,
+          "median_pnl_with_markout_time": 64.3973,
+          "mean_pnl_with_markout_time": -233.1739,
+          "pct_positive": 71.2
+        }
+      },
+      "test_result": {
+        "n_markets": 21,
+        "total_pnl_best_case": 4624.82,
+        "total_pnl_with_markout_time": 8440.59,
+        "median_pnl_with_markout_time": 56.3226,
+        "mean_pnl_with_markout_time": 401.9328,
+        "pct_positive": 61.9
+      },
+      "bootstrap_ci": {
+        "n_markets": 21,
+        "n_iterations": 2000,
+        "p5": 726.09,
+        "p25": 4858.63,
+        "median": 8086.03,
+        "p75": 11831.66,
+        "p95": 17480.03,
+        "pct_iterations_positive": 96.8
+      },
+      "drawdown": {
+        "final_equity": 8440.59,
+        "max_drawdown": 1095.87,
+        "equity_curve": [
+          [
+            "2026-04-18",
+            -79.85
+          ],
+          [
+            "2026-04-21",
+            43.8
+          ],
+          [
+            "2026-05-09",
+            -66.2
+          ],
+          [
+            "2026-05-09",
+            391.55
+          ],
+          [
+            "2026-05-14",
+            468.74
+          ],
+          [
+            "2026-06-01",
+            466.11
+          ],
+          [
+            "2026-06-02",
+            -225.48
+          ],
+          [
+            "2026-06-04",
+            3248.65
+          ],
+          [
+            "2026-06-07",
+            6948.51
+          ],
+          [
+            "2026-06-08",
+            8377.72
+          ],
+          [
+            "2026-06-14",
+            8827.19
+          ],
+          [
+            "2026-06-20",
+            9146.85
+          ],
+          [
+            "2026-06-21",
+            9002.87
+          ],
+          [
+            "2026-06-25",
+            8162.42
+          ],
+          [
+            "2026-06-26",
+            8050.98
+          ],
+          [
+            "2026-06-27",
+            8060.75
+          ],
+          [
+            "2026-07-19",
+            8109.56
+          ],
+          [
+            "2026-08-05",
+            8166.23
+          ],
+          [
+            "2026-08-06",
+            8091.91
+          ],
+          [
+            "2026-08-24",
+            8148.23
+          ],
+          [
+            "2026-09-01",
+            8440.59
+          ]
+        ]
+      }
+    },
+    {
+      "min_markets": 150,
+      "selected_filter": {
+        "pace_range_seconds": [
+          0.0,
+          6.0
+        ],
+        "volume_min": 907.71,
+        "history_min_seconds": 0,
+        "train_result": {
+          "n_markets": 164,
+          "total_pnl_best_case": 19117.48,
+          "total_pnl_with_markout_time": 1265.37,
+          "median_pnl_with_markout_time": 25.5404,
+          "mean_pnl_with_markout_time": 7.7157,
+          "pct_positive": 81.1
+        }
+      },
+      "test_result": {
+        "n_markets": 26,
+        "total_pnl_best_case": 3438.85,
+        "total_pnl_with_markout_time": -1021.35,
+        "median_pnl_with_markout_time": 1.4467,
+        "mean_pnl_with_markout_time": -39.2826,
+        "pct_positive": 57.7
+      },
+      "bootstrap_ci": {
+        "n_markets": 26,
+        "n_iterations": 2000,
+        "p5": -2961.64,
+        "p25": -1736.48,
+        "median": -939.94,
+        "p75": -220.73,
+        "p95": 709.0,
+        "pct_iterations_positive": 18.8
+      },
+      "drawdown": {
+        "final_equity": -1021.35,
+        "max_drawdown": 1084.98,
+        "equity_curve": [
+          [
+            "2026-04-19",
+            -64.72
+          ],
+          [
+            "2026-04-23",
+            -139.29
+          ],
+          [
+            "2026-04-27",
+            -17.41
+          ],
+          [
+            "2026-05-03",
+            -2.18
+          ],
+          [
+            "2026-05-07",
+            -737.93
+          ],
+          [
+            "2026-05-08",
+            -735.02
+          ],
+          [
+            "2026-05-12",
+            -688.16
+          ],
+          [
+            "2026-05-15",
+            -851.69
+          ],
+          [
+            "2026-05-18",
+            -869.75
+          ],
+          [
+            "2026-05-18",
+            -821.21
+          ],
+          [
+            "2026-05-24",
+            -853.61
+          ],
+          [
+            "2026-05-27",
+            -1006.62
+          ],
+          [
+            "2026-06-07",
+            -765.37
+          ],
+          [
+            "2026-06-11",
+            -763.93
+          ],
+          [
+            "2026-06-12",
+            -669.86
+          ],
+          [
+            "2026-06-12",
+            -679.17
+          ],
+          [
+            "2026-06-14",
+            -620.3
+          ],
+          [
+            "2026-06-14",
+            -613.08
+          ],
+          [
+            "2026-06-18",
+            -612.55
+          ],
+          [
+            "2026-06-27",
+            -863.04
+          ],
+          [
+            "2026-07-11",
+            -454.89
+          ],
+          [
+            "2026-07-17",
+            -1084.98
+          ],
+          [
+            "2026-08-06",
+            -1052.71
+          ],
+          [
+            "2026-08-11",
+            -1047.33
+          ],
+          [
+            "2026-08-23",
+            -1077.71
+          ],
+          [
+            "2026-08-28",
+            -1021.35
+          ]
+        ]
+      }
+    },
+    {
+      "min_markets": 250,
+      "selected_filter": null,
+      "test_result": null,
+      "bootstrap_ci": null,
+      "drawdown": null
+    }
+  ],
+  "half_spread_fill_share_grid_train": [
+    {
+      "half_spread": 0.005,
+      "fill_share": 0.05,
+      "train_total_markout": -17896.97,
+      "n_active": 932
+    },
+    {
+      "half_spread": 0.005,
+      "fill_share": 0.15,
+      "train_total_markout": -61177.42,
+      "n_active": 932
+    },
+    {
+      "half_spread": 0.005,
+      "fill_share": 0.3,
+      "train_total_markout": -116875.62,
+      "n_active": 932
+    },
+    {
+      "half_spread": 0.01,
+      "fill_share": 0.05,
+      "train_total_markout": -5087.13,
+      "n_active": 932
+    },
+    {
+      "half_spread": 0.01,
+      "fill_share": 0.15,
+      "train_total_markout": -34493.71,
+      "n_active": 932
+    },
+    {
+      "half_spread": 0.01,
+      "fill_share": 0.3,
+      "train_total_markout": -77156.97,
+      "n_active": 932
+    },
+    {
+      "half_spread": 0.02,
+      "fill_share": 0.05,
+      "train_total_markout": 16263.0,
+      "n_active": 932
+    },
+    {
+      "half_spread": 0.02,
+      "fill_share": 0.15,
+      "train_total_markout": 8587.98,
+      "n_active": 932
+    },
+    {
+      "half_spread": 0.02,
+      "fill_share": 0.3,
+      "train_total_markout": -13697.88,
+      "n_active": 932
+    }
+  ],
+  "best_grid_point": {
+    "half_spread": 0.02,
+    "fill_share": 0.05,
+    "train_total_markout": 16263.0,
+    "n_active": 932
+  }
+}
