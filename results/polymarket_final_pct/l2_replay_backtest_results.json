@@ -1,0 +1,508 @@
+{
+  "n_markets": 53,
+  "n_skipped_no_data": 0,
+  "base_config": {
+    "half_spread": 0.01,
+    "fill_share": 0.15
+  },
+  "total_best_case": 626.74,
+  "total_markout": -421.36,
+  "total_captured": 4922,
+  "gap_pct": 167.2,
+  "by_contract_length": {
+    "5m": {
+      "n_markets": 7,
+      "best_case": 69.3554185965035,
+      "markout": -14.252461384792124,
+      "n_captured": 620
+    },
+    "15m": {
+      "n_markets": 46,
+      "best_case": 557.3799271522195,
+      "markout": -407.1067021358668,
+      "n_captured": 4302
+    }
+  },
+  "sensitivity_grid": [
+    {
+      "half_spread": 0.005,
+      "fill_share": 0.05,
+      "total_markout": -255.41,
+      "n_captured": 10323
+    },
+    {
+      "half_spread": 0.005,
+      "fill_share": 0.15,
+      "total_markout": -766.24,
+      "n_captured": 10323
+    },
+    {
+      "half_spread": 0.005,
+      "fill_share": 0.3,
+      "total_markout": -1532.47,
+      "n_captured": 10323
+    },
+    {
+      "half_spread": 0.01,
+      "fill_share": 0.05,
+      "total_markout": -140.45,
+      "n_captured": 4922
+    },
+    {
+      "half_spread": 0.01,
+      "fill_share": 0.15,
+      "total_markout": -421.36,
+      "n_captured": 4922
+    },
+    {
+      "half_spread": 0.01,
+      "fill_share": 0.3,
+      "total_markout": -842.72,
+      "n_captured": 4922
+    },
+    {
+      "half_spread": 0.02,
+      "fill_share": 0.05,
+      "total_markout": -25.7,
+      "n_captured": 2570
+    },
+    {
+      "half_spread": 0.02,
+      "fill_share": 0.15,
+      "total_markout": -77.1,
+      "n_captured": 2570
+    },
+    {
+      "half_spread": 0.02,
+      "fill_share": 0.3,
+      "total_markout": -154.19,
+      "n_captured": 2570
+    }
+  ],
+  "per_market": [
+    {
+      "slug": "btc-updown-5m-1788353400",
+      "contract_length": "5m",
+      "coin": "btc",
+      "pnl_best_case": 9.0545,
+      "pnl_with_markout": 4.7533,
+      "n_captured": 67
+    },
+    {
+      "slug": "btc-updown-5m-1788353100",
+      "contract_length": "5m",
+      "coin": "btc",
+      "pnl_best_case": 11.2582,
+      "pnl_with_markout": -20.4847,
+      "n_captured": 87
+    },
+    {
+      "slug": "btc-updown-5m-1788352800",
+      "contract_length": "5m",
+      "coin": "btc",
+      "pnl_best_case": 14.0727,
+      "pnl_with_markout": 9.9469,
+      "n_captured": 168
+    },
+    {
+      "slug": "btc-updown-5m-1788351900",
+      "contract_length": "5m",
+      "coin": "btc",
+      "pnl_best_case": 10.0919,
+      "pnl_with_markout": 4.0106,
+      "n_captured": 109
+    },
+    {
+      "slug": "btc-updown-5m-1788352200",
+      "contract_length": "5m",
+      "coin": "btc",
+      "pnl_best_case": 13.5296,
+      "pnl_with_markout": -3.3963,
+      "n_captured": 99
+    },
+    {
+      "slug": "btc-updown-5m-1788352500",
+      "contract_length": "5m",
+      "coin": "btc",
+      "pnl_best_case": 11.3485,
+      "pnl_with_markout": -9.0822,
+      "n_captured": 90
+    },
+    {
+      "slug": "btc-updown-5m-1788351600",
+      "contract_length": "5m",
+      "coin": "btc",
+      "pnl_best_case": 0.0,
+      "pnl_with_markout": 0.0,
+      "n_captured": 0
+    },
+    {
+      "slug": "btc-updown-15m-1788352200",
+      "contract_length": "15m",
+      "coin": "btc",
+      "pnl_best_case": 12.7392,
+      "pnl_with_markout": 9.8262,
+      "n_captured": 84
+    },
+    {
+      "slug": "btc-updown-15m-1788351300",
+      "contract_length": "15m",
+      "coin": "btc",
+      "pnl_best_case": 10.2385,
+      "pnl_with_markout": -3.7578,
+      "n_captured": 73
+    },
+    {
+      "slug": "btc-updown-15m-1788350400",
+      "contract_length": "15m",
+      "coin": "btc",
+      "pnl_best_case": 13.7293,
+      "pnl_with_markout": -29.2209,
+      "n_captured": 163
+    },
+    {
+      "slug": "btc-updown-15m-1788349500",
+      "contract_length": "15m",
+      "coin": "btc",
+      "pnl_best_case": 15.7627,
+      "pnl_with_markout": -21.1037,
+      "n_captured": 154
+    },
+    {
+      "slug": "btc-updown-15m-1788348600",
+      "contract_length": "15m",
+      "coin": "btc",
+      "pnl_best_case": 13.5629,
+      "pnl_with_markout": 8.953,
+      "n_captured": 83
+    },
+    {
+      "slug": "btc-updown-15m-1788347700",
+      "contract_length": "15m",
+      "coin": "btc",
+      "pnl_best_case": 23.2833,
+      "pnl_with_markout": 4.9703,
+      "n_captured": 110
+    },
+    {
+      "slug": "btc-updown-15m-1788346800",
+      "contract_length": "15m",
+      "coin": "btc",
+      "pnl_best_case": 14.0615,
+      "pnl_with_markout": 1.8525,
+      "n_captured": 160
+    },
+    {
+      "slug": "btc-updown-15m-1788345900",
+      "contract_length": "15m",
+      "coin": "btc",
+      "pnl_best_case": 21.0114,
+      "pnl_with_markout": -5.5823,
+      "n_captured": 177
+    },
+    {
+      "slug": "btc-updown-15m-1788345000",
+      "contract_length": "15m",
+      "coin": "btc",
+      "pnl_best_case": 27.1297,
+      "pnl_with_markout": -42.6386,
+      "n_captured": 248
+    },
+    {
+      "slug": "btc-updown-15m-1788344100",
+      "contract_length": "15m",
+      "coin": "btc",
+      "pnl_best_case": 27.4435,
+      "pnl_with_markout": -8.5195,
+      "n_captured": 250
+    },
+    {
+      "slug": "btc-updown-15m-1788343200",
+      "contract_length": "15m",
+      "coin": "btc",
+      "pnl_best_case": 21.2105,
+      "pnl_with_markout": 4.3483,
+      "n_captured": 128
+    },
+    {
+      "slug": "btc-updown-15m-1788342300",
+      "contract_length": "15m",
+      "coin": "btc",
+      "pnl_best_case": 17.9066,
+      "pnl_with_markout": 5.514,
+      "n_captured": 92
+    },
+    {
+      "slug": "btc-updown-15m-1788341400",
+      "contract_length": "15m",
+      "coin": "btc",
+      "pnl_best_case": 10.1534,
+      "pnl_with_markout": 6.4855,
+      "n_captured": 78
+    },
+    {
+      "slug": "btc-updown-15m-1788340500",
+      "contract_length": "15m",
+      "coin": "btc",
+      "pnl_best_case": 16.3014,
+      "pnl_with_markout": 2.9293,
+      "n_captured": 101
+    },
+    {
+      "slug": "btc-updown-15m-1788339600",
+      "contract_length": "15m",
+      "coin": "btc",
+      "pnl_best_case": 13.2847,
+      "pnl_with_markout": -9.3475,
+      "n_captured": 58
+    },
+    {
+      "slug": "btc-updown-15m-1788338700",
+      "contract_length": "15m",
+      "coin": "btc",
+      "pnl_best_case": 14.6665,
+      "pnl_with_markout": -11.7628,
+      "n_captured": 102
+    },
+    {
+      "slug": "btc-updown-15m-1788337800",
+      "contract_length": "15m",
+      "coin": "btc",
+      "pnl_best_case": 10.1484,
+      "pnl_with_markout": -0.5972,
+      "n_captured": 68
+    },
+    {
+      "slug": "btc-updown-15m-1788336900",
+      "contract_length": "15m",
+      "coin": "btc",
+      "pnl_best_case": 9.5124,
+      "pnl_with_markout": -7.1758,
+      "n_captured": 84
+    },
+    {
+      "slug": "btc-updown-15m-1788336000",
+      "contract_length": "15m",
+      "coin": "btc",
+      "pnl_best_case": 19.3593,
+      "pnl_with_markout": -9.5835,
+      "n_captured": 131
+    },
+    {
+      "slug": "btc-updown-15m-1788335100",
+      "contract_length": "15m",
+      "coin": "btc",
+      "pnl_best_case": 13.0341,
+      "pnl_with_markout": 6.5292,
+      "n_captured": 93
+    },
+    {
+      "slug": "btc-updown-15m-1788334200",
+      "contract_length": "15m",
+      "coin": "btc",
+      "pnl_best_case": 16.6304,
+      "pnl_with_markout": -16.16,
+      "n_captured": 177
+    },
+    {
+      "slug": "btc-updown-15m-1788333300",
+      "contract_length": "15m",
+      "coin": "btc",
+      "pnl_best_case": 21.1537,
+      "pnl_with_markout": -9.2934,
+      "n_captured": 185
+    },
+    {
+      "slug": "btc-updown-15m-1788332400",
+      "contract_length": "15m",
+      "coin": "btc",
+      "pnl_best_case": 12.581,
+      "pnl_with_markout": -3.0353,
+      "n_captured": 108
+    },
+    {
+      "slug": "btc-updown-15m-1788331500",
+      "contract_length": "15m",
+      "coin": "btc",
+      "pnl_best_case": 16.7782,
+      "pnl_with_markout": 2.8923,
+      "n_captured": 139
+    },
+    {
+      "slug": "btc-updown-15m-1788330600",
+      "contract_length": "15m",
+      "coin": "btc",
+      "pnl_best_case": 17.7392,
+      "pnl_with_markout": -12.7713,
+      "n_captured": 113
+    },
+    {
+      "slug": "btc-updown-15m-1788329700",
+      "contract_length": "15m",
+      "coin": "btc",
+      "pnl_best_case": 8.7099,
+      "pnl_with_markout": -27.2473,
+      "n_captured": 95
+    },
+    {
+      "slug": "btc-updown-15m-1788328800",
+      "contract_length": "15m",
+      "coin": "btc",
+      "pnl_best_case": 26.5707,
+      "pnl_with_markout": -211.3527,
+      "n_captured": 181
+    },
+    {
+      "slug": "btc-updown-15m-1788327900",
+      "contract_length": "15m",
+      "coin": "btc",
+      "pnl_best_case": 23.0123,
+      "pnl_with_markout": -5.4543,
+      "n_captured": 208
+    },
+    {
+      "slug": "btc-updown-15m-1788327000",
+      "contract_length": "15m",
+      "coin": "btc",
+      "pnl_best_case": 23.2043,
+      "pnl_with_markout": 2.2562,
+      "n_captured": 157
+    },
+    {
+      "slug": "btc-updown-15m-1788326100",
+      "contract_length": "15m",
+      "coin": "btc",
+      "pnl_best_case": 21.3482,
+      "pnl_with_markout": -9.9607,
+      "n_captured": 127
+    },
+    {
+      "slug": "btc-updown-15m-1788325200",
+      "contract_length": "15m",
+      "coin": "btc",
+      "pnl_best_case": 25.224,
+      "pnl_with_markout": 10.39,
+      "n_captured": 189
+    },
+    {
+      "slug": "btc-updown-15m-1788324300",
+      "contract_length": "15m",
+      "coin": "btc",
+      "pnl_best_case": 4.5609,
+      "pnl_with_markout": -7.1149,
+      "n_captured": 25
+    },
+    {
+      "slug": "btc-updown-15m-1788323400",
+      "contract_length": "15m",
+      "coin": "btc",
+      "pnl_best_case": 0.0,
+      "pnl_with_markout": 0.0,
+      "n_captured": 0
+    },
+    {
+      "slug": "btc-updown-15m-1788322500",
+      "contract_length": "15m",
+      "coin": "btc",
+      "pnl_best_case": 0.0,
+      "pnl_with_markout": 0.0,
+      "n_captured": 0
+    },
+    {
+      "slug": "btc-updown-15m-1788321600",
+      "contract_length": "15m",
+      "coin": "btc",
+      "pnl_best_case": 0.0,
+      "pnl_with_markout": 0.0,
+      "n_captured": 0
+    },
+    {
+      "slug": "btc-updown-15m-1788320700",
+      "contract_length": "15m",
+      "coin": "btc",
+      "pnl_best_case": 0.0,
+      "pnl_with_markout": 0.0,
+      "n_captured": 0
+    },
+    {
+      "slug": "btc-updown-15m-1788319800",
+      "contract_length": "15m",
+      "coin": "btc",
+      "pnl_best_case": 0.0,
+      "pnl_with_markout": 0.0,
+      "n_captured": 0
+    },
+    {
+      "slug": "btc-updown-15m-1788318900",
+      "contract_length": "15m",
+      "coin": "btc",
+      "pnl_best_case": 0.0,
+      "pnl_with_markout": 0.0,
+      "n_captured": 0
+    },
+    {
+      "slug": "btc-updown-15m-1788318000",
+      "contract_length": "15m",
+      "coin": "btc",
+      "pnl_best_case": 0.0,
+      "pnl_with_markout": 0.0,
+      "n_captured": 0
+    },
+    {
+      "slug": "btc-updown-15m-1788317100",
+      "contract_length": "15m",
+      "coin": "btc",
+      "pnl_best_case": 0.0,
+      "pnl_with_markout": 0.0,
+      "n_captured": 0
+    },
+    {
+      "slug": "btc-updown-15m-1788316200",
+      "contract_length": "15m",
+      "coin": "btc",
+      "pnl_best_case": 0.0,
+      "pnl_with_markout": 0.0,
+      "n_captured": 0
+    },
+    {
+      "slug": "btc-updown-15m-1788315300",
+      "contract_length": "15m",
+      "coin": "btc",
+      "pnl_best_case": 0.0,
+      "pnl_with_markout": 0.0,
+      "n_captured": 0
+    },
+    {
+      "slug": "btc-updown-15m-1788313500",
+      "contract_length": "15m",
+      "coin": "btc",
+      "pnl_best_case": 0.0,
+      "pnl_with_markout": 0.0,
+      "n_captured": 0
+    },
+    {
+      "slug": "btc-updown-15m-1788314400",
+      "contract_length": "15m",
+      "coin": "btc",
+      "pnl_best_case": 0.0,
+      "pnl_with_markout": 0.0,
+      "n_captured": 0
+    },
+    {
+      "slug": "btc-updown-15m-1788312600",
+      "contract_length": "15m",
+      "coin": "btc",
+      "pnl_best_case": 1.9048,
+      "pnl_with_markout": -4.5398,
+      "n_captured": 25
+    },
+    {
+      "slug": "btc-updown-15m-1788311700",
+      "contract_length": "15m",
+      "coin": "btc",
+      "pnl_best_case": 13.4229,
+      "pnl_with_markout": -17.8341,
+      "n_captured": 136
+    }
+  ]
+}

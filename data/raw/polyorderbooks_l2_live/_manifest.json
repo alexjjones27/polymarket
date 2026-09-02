@@ -88,5 +88,392 @@
     "volume": 30472.546569,
     "n_rows": 5760,
     "cache_file": "btc-updown-15m-1788350400.json"
+  },
+  "btc-updown-15m-1788349500": {
+    "contract_length": "15m",
+    "coin": "btc",
+    "end_date": "2026-09-02T12:00:00Z",
+    "winner": null,
+    "volume": 20842.972951,
+    "n_rows": 5760,
+    "cache_file": "btc-updown-15m-1788349500.json"
+  },
+  "btc-updown-15m-1788348600": {
+    "contract_length": "15m",
+    "coin": "btc",
+    "end_date": "2026-09-02T11:45:00Z",
+    "winner": null,
+    "volume": 31203.145521,
+    "n_rows": 5760,
+    "cache_file": "btc-updown-15m-1788348600.json"
+  },
+  "btc-updown-15m-1788347700": {
+    "contract_length": "15m",
+    "coin": "btc",
+    "end_date": "2026-09-02T11:30:00Z",
+    "winner": null,
+    "volume": 33161.570535,
+    "n_rows": 5760,
+    "cache_file": "btc-updown-15m-1788347700.json"
+  },
+  "btc-updown-15m-1788346800": {
+    "contract_length": "15m",
+    "coin": "btc",
+    "end_date": "2026-09-02T11:15:00Z",
+    "winner": null,
+    "volume": 36657.558092,
+    "n_rows": 5760,
+    "cache_file": "btc-updown-15m-1788346800.json"
+  },
+  "btc-updown-15m-1788345900": {
+    "contract_length": "15m",
+    "coin": "btc",
+    "end_date": "2026-09-02T11:00:00Z",
+    "winner": null,
+    "volume": 40971.685333,
+    "n_rows": 5760,
+    "cache_file": "btc-updown-15m-1788345900.json"
+  },
+  "btc-updown-15m-1788345000": {
+    "contract_length": "15m",
+    "coin": "btc",
+    "end_date": "2026-09-02T10:45:00Z",
+    "winner": null,
+    "volume": 29459.687126,
+    "n_rows": 5760,
+    "cache_file": "btc-updown-15m-1788345000.json"
+  },
+  "btc-updown-15m-1788344100": {
+    "contract_length": "15m",
+    "coin": "btc",
+    "end_date": "2026-09-02T10:30:00Z",
+    "winner": null,
+    "volume": 31658.322904,
+    "n_rows": 5760,
+    "cache_file": "btc-updown-15m-1788344100.json"
+  },
+  "btc-updown-15m-1788343200": {
+    "contract_length": "15m",
+    "coin": "btc",
+    "end_date": "2026-09-02T10:15:00Z",
+    "winner": null,
+    "volume": 20742.888976,
+    "n_rows": 5760,
+    "cache_file": "btc-updown-15m-1788343200.json"
+  },
+  "btc-updown-15m-1788342300": {
+    "contract_length": "15m",
+    "coin": "btc",
+    "end_date": "2026-09-02T10:00:00Z",
+    "winner": null,
+    "volume": 20865.482663,
+    "n_rows": 5760,
+    "cache_file": "btc-updown-15m-1788342300.json"
+  },
+  "btc-updown-15m-1788341400": {
+    "contract_length": "15m",
+    "coin": "btc",
+    "end_date": "2026-09-02T09:45:00Z",
+    "winner": null,
+    "volume": 34397.820754,
+    "n_rows": 5760,
+    "cache_file": "btc-updown-15m-1788341400.json"
+  },
+  "btc-updown-15m-1788340500": {
+    "contract_length": "15m",
+    "coin": "btc",
+    "end_date": "2026-09-02T09:30:00Z",
+    "winner": null,
+    "volume": 39637.209921,
+    "n_rows": 5760,
+    "cache_file": "btc-updown-15m-1788340500.json"
+  },
+  "btc-updown-15m-1788339600": {
+    "contract_length": "15m",
+    "coin": "btc",
+    "end_date": "2026-09-02T09:15:00Z",
+    "winner": null,
+    "volume": 27706.852034,
+    "n_rows": 5760,
+    "cache_file": "btc-updown-15m-1788339600.json"
+  },
+  "btc-updown-15m-1788338700": {
+    "contract_length": "15m",
+    "coin": "btc",
+    "end_date": "2026-09-02T09:00:00Z",
+    "winner": null,
+    "volume": 50721.249339,
+    "n_rows": 5760,
+    "cache_file": "btc-updown-15m-1788338700.json"
+  },
+  "btc-updown-15m-1788337800": {
+    "contract_length": "15m",
+    "coin": "btc",
+    "end_date": "2026-09-02T08:45:00Z",
+    "winner": null,
+    "volume": 33565.973697,
+    "n_rows": 5760,
+    "cache_file": "btc-updown-15m-1788337800.json"
+  },
+  "btc-updown-15m-1788336900": {
+    "contract_length": "15m",
+    "coin": "btc",
+    "end_date": "2026-09-02T08:30:00Z",
+    "winner": null,
+    "volume": 27256.442251,
+    "n_rows": 5760,
+    "cache_file": "btc-updown-15m-1788336900.json"
+  },
+  "btc-updown-15m-1788336000": {
+    "contract_length": "15m",
+    "coin": "btc",
+    "end_date": "2026-09-02T08:15:00Z",
+    "winner": null,
+    "volume": 26266.541936,
+    "n_rows": 5760,
+    "cache_file": "btc-updown-15m-1788336000.json"
+  },
+  "btc-updown-15m-1788335100": {
+    "contract_length": "15m",
+    "coin": "btc",
+    "end_date": "2026-09-02T08:00:00Z",
+    "winner": null,
+    "volume": 24163.53543,
+    "n_rows": 5760,
+    "cache_file": "btc-updown-15m-1788335100.json"
+  },
+  "btc-updown-15m-1788334200": {
+    "contract_length": "15m",
+    "coin": "btc",
+    "end_date": "2026-09-02T07:45:00Z",
+    "winner": null,
+    "volume": 28532.864857,
+    "n_rows": 5760,
+    "cache_file": "btc-updown-15m-1788334200.json"
+  },
+  "btc-updown-15m-1788333300": {
+    "contract_length": "15m",
+    "coin": "btc",
+    "end_date": "2026-09-02T07:30:00Z",
+    "winner": null,
+    "volume": 23700.187388,
+    "n_rows": 5760,
+    "cache_file": "btc-updown-15m-1788333300.json"
+  },
+  "btc-updown-15m-1788332400": {
+    "contract_length": "15m",
+    "coin": "btc",
+    "end_date": "2026-09-02T07:15:00Z",
+    "winner": null,
+    "volume": 28767.446086,
+    "n_rows": 5760,
+    "cache_file": "btc-updown-15m-1788332400.json"
+  },
+  "btc-updown-15m-1788331500": {
+    "contract_length": "15m",
+    "coin": "btc",
+    "end_date": "2026-09-02T07:00:00Z",
+    "winner": null,
+    "volume": 33148.183873,
+    "n_rows": 5760,
+    "cache_file": "btc-updown-15m-1788331500.json"
+  },
+  "btc-updown-15m-1788330600": {
+    "contract_length": "15m",
+    "coin": "btc",
+    "end_date": "2026-09-02T06:45:00Z",
+    "winner": null,
+    "volume": 32144.055388,
+    "n_rows": 5760,
+    "cache_file": "btc-updown-15m-1788330600.json"
+  },
+  "btc-updown-15m-1788329700": {
+    "contract_length": "15m",
+    "coin": "btc",
+    "end_date": "2026-09-02T06:30:00Z",
+    "winner": null,
+    "volume": 26701.125708,
+    "n_rows": 5760,
+    "cache_file": "btc-updown-15m-1788329700.json"
+  },
+  "btc-updown-15m-1788328800": {
+    "contract_length": "15m",
+    "coin": "btc",
+    "end_date": "2026-09-02T06:15:00Z",
+    "winner": null,
+    "volume": 18812.332832,
+    "n_rows": 5760,
+    "cache_file": "btc-updown-15m-1788328800.json"
+  },
+  "btc-updown-15m-1788327900": {
+    "contract_length": "15m",
+    "coin": "btc",
+    "end_date": "2026-09-02T06:00:00Z",
+    "winner": null,
+    "volume": 27764.311952,
+    "n_rows": 5760,
+    "cache_file": "btc-updown-15m-1788327900.json"
+  },
+  "btc-updown-15m-1788327000": {
+    "contract_length": "15m",
+    "coin": "btc",
+    "end_date": "2026-09-02T05:45:00Z",
+    "winner": null,
+    "volume": 15088.68527,
+    "n_rows": 5760,
+    "cache_file": "btc-updown-15m-1788327000.json"
+  },
+  "btc-updown-15m-1788326100": {
+    "contract_length": "15m",
+    "coin": "btc",
+    "end_date": "2026-09-02T05:30:00Z",
+    "winner": null,
+    "volume": 20128.039569,
+    "n_rows": 5760,
+    "cache_file": "btc-updown-15m-1788326100.json"
+  },
+  "btc-updown-15m-1788325200": {
+    "contract_length": "15m",
+    "coin": "btc",
+    "end_date": "2026-09-02T05:15:00Z",
+    "winner": null,
+    "volume": 25324.881052,
+    "n_rows": 5760,
+    "cache_file": "btc-updown-15m-1788325200.json"
+  },
+  "btc-updown-15m-1788324300": {
+    "contract_length": "15m",
+    "coin": "btc",
+    "end_date": "2026-09-02T05:00:00Z",
+    "winner": null,
+    "volume": 4619.013311,
+    "n_rows": 5760,
+    "cache_file": "btc-updown-15m-1788324300.json"
+  },
+  "btc-updown-15m-1788323400": {
+    "contract_length": "15m",
+    "coin": "btc",
+    "end_date": "2026-09-02T04:45:00Z",
+    "winner": null,
+    "volume": null,
+    "n_rows": 5760,
+    "cache_file": "btc-updown-15m-1788323400.json"
+  },
+  "btc-updown-15m-1788322500": {
+    "contract_length": "15m",
+    "coin": "btc",
+    "end_date": "2026-09-02T04:30:00Z",
+    "winner": null,
+    "volume": null,
+    "n_rows": 5760,
+    "cache_file": "btc-updown-15m-1788322500.json"
+  },
+  "btc-updown-15m-1788321600": {
+    "contract_length": "15m",
+    "coin": "btc",
+    "end_date": "2026-09-02T04:15:00Z",
+    "winner": null,
+    "volume": null,
+    "n_rows": 5760,
+    "cache_file": "btc-updown-15m-1788321600.json"
+  },
+  "btc-updown-15m-1788320700": {
+    "contract_length": "15m",
+    "coin": "btc",
+    "end_date": "2026-09-02T04:00:00Z",
+    "winner": null,
+    "volume": null,
+    "n_rows": 5760,
+    "cache_file": "btc-updown-15m-1788320700.json"
+  },
+  "btc-updown-15m-1788319800": {
+    "contract_length": "15m",
+    "coin": "btc",
+    "end_date": "2026-09-02T03:45:00Z",
+    "winner": null,
+    "volume": 9.80392,
+    "n_rows": 5760,
+    "cache_file": "btc-updown-15m-1788319800.json"
+  },
+  "btc-updown-15m-1788318900": {
+    "contract_length": "15m",
+    "coin": "btc",
+    "end_date": "2026-09-02T03:30:00Z",
+    "winner": null,
+    "volume": 9.80392,
+    "n_rows": 5760,
+    "cache_file": "btc-updown-15m-1788318900.json"
+  },
+  "btc-updown-15m-1788318000": {
+    "contract_length": "15m",
+    "coin": "btc",
+    "end_date": "2026-09-02T03:15:00Z",
+    "winner": null,
+    "volume": 9.615383,
+    "n_rows": 5760,
+    "cache_file": "btc-updown-15m-1788318000.json"
+  },
+  "btc-updown-15m-1788317100": {
+    "contract_length": "15m",
+    "coin": "btc",
+    "end_date": "2026-09-02T03:00:00Z",
+    "winner": null,
+    "volume": null,
+    "n_rows": 5760,
+    "cache_file": "btc-updown-15m-1788317100.json"
+  },
+  "btc-updown-15m-1788316200": {
+    "contract_length": "15m",
+    "coin": "btc",
+    "end_date": "2026-09-02T02:45:00Z",
+    "winner": null,
+    "volume": null,
+    "n_rows": 5760,
+    "cache_file": "btc-updown-15m-1788316200.json"
+  },
+  "btc-updown-15m-1788315300": {
+    "contract_length": "15m",
+    "coin": "btc",
+    "end_date": "2026-09-02T02:30:00Z",
+    "winner": null,
+    "volume": null,
+    "n_rows": 5760,
+    "cache_file": "btc-updown-15m-1788315300.json"
+  },
+  "btc-updown-15m-1788313500": {
+    "contract_length": "15m",
+    "coin": "btc",
+    "end_date": "2026-09-02T02:00:00Z",
+    "winner": null,
+    "volume": 32.34,
+    "n_rows": 0,
+    "cache_file": "btc-updown-15m-1788313500.json"
+  },
+  "btc-updown-15m-1788314400": {
+    "contract_length": "15m",
+    "coin": "btc",
+    "end_date": "2026-09-02T02:15:00Z",
+    "winner": null,
+    "volume": 158.06,
+    "n_rows": 5760,
+    "cache_file": "btc-updown-15m-1788314400.json"
+  },
+  "btc-updown-15m-1788312600": {
+    "contract_length": "15m",
+    "coin": "btc",
+    "end_date": "2026-09-02T01:45:00Z",
+    "winner": null,
+    "volume": 3218.431968,
+    "n_rows": 5760,
+    "cache_file": "btc-updown-15m-1788312600.json"
+  },
+  "btc-updown-15m-1788311700": {
+    "contract_length": "15m",
+    "coin": "btc",
+    "end_date": "2026-09-02T01:30:00Z",
+    "winner": null,
+    "volume": 19381.672154,
+    "n_rows": 5760,
+    "cache_file": "btc-updown-15m-1788311700.json"
   }
 }

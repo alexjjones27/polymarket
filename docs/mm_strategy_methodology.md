@@ -938,7 +938,117 @@ the user makes, not one made unilaterally here.
 
 ---
 
-## 12. Reproducibility index
+## 12. A real order-book replay backtest (BTC Up/Down, live PolyOrderbooks data)
+
+Section 11 checked the trade-print model's *assumptions* against real L2
+snapshots. This goes one step further: an actual market-making backtest
+built directly on real order-book state, with a live PolyOrderbooks account
+(`POLYORDERBOOKS_API_KEY`, provided by the user) rather than the static
+Zenodo archive. For the markets it covers, this removes the limitation every
+other script in this document has had to work around — Polymarket's own
+`/book` 404s on resolved markets — entirely.
+
+### 12.1 What's different from the trade-print model
+
+`scripts/l2_replay_backtest.py` quotes `half_spread` around the REAL
+observed mid at every 1-second tick and credits a fill only when the real
+book's own touch demonstrably crosses our quoted price on the next tick —
+not inferred from a trade print's aggressor tag, but confirmed by the real
+market's own subsequent quote. Markout marks against the real subsequent
+quote midpoint, not a VWAP of trade prints (which was itself always a proxy
+for "fair value" born of not having a book to look at). What's still
+approximate, same as everywhere else in this document: fill *size* is still
+an assumed `fill_share` of a fixed order size, because snapshots (not an
+executed-trades feed) can't distinguish "our order was one of several filled
+when the book crossed our price" from "someone else's was" — true queue
+position is unknowable from snapshots alone, on any L2-snapshot backtest,
+not just this one.
+
+### 12.2 Data: what was actually backfilled, and a real constraint hit along the way
+
+`scripts/backfill_polyorderbooks_l2.py` paces requests under the free
+tier's 60/min ceiling and caches permanently to `data/raw/polyorderbooks_l2_live/`
+(committed to git, unlike every other cache in this repo — this data is
+gone for good once the 7-day retention window passes, so there's nothing to
+gain by treating it as re-fetchable). A 15-minute backfill run produced
+**53 resolved BTC Up/Down markets** (46 fifteen-minute contracts, 7
+five-minute) before hitting two real constraints worth recording plainly:
+a full 40+-level ladder per snapshot runs 7-8MB *per market* at 1-second
+resolution (measured directly, mid-backfill, before `reduce_to_touch` cut
+storage by ~35x down to a compact touch-only array) — and the free tier has
+an **undisclosed daily request cap** on top of its documented per-minute
+one, hit partway through this session and only discovered when a
+previously-working call started returning `"rate_limited: Daily request
+limit exceeded. Limit resets at midnight UTC."` Neither limit is mentioned
+in `/v1/usage`'s own reported limits. The 15-minute time budget was spent
+entirely on BTC (the most frequently-listed coin) before reaching ETH, SOL,
+or the others — this sample is BTC-only, not the full crypto Up/Down
+population, and won't be broader until a follow-up backfill after the daily
+reset.
+
+### 12.3 Results
+
+At the same base config used throughout this document (half_spread=$0.01,
+fill_share=15%):
+
+| | Best case | Markout | Gap | Fills captured | % ticks quotable |
+|---|---|---|---|---|---|
+| All 53 markets | $626.74 | -$421.36 | **167.2%** | 4,922 | — |
+| 5-minute (n=7) | $69.36 | -$14.25 | 120.5% | 620 | — |
+| 15-minute (n=46) | $557.38 | -$407.11 | 173.0% | 4,302 | — |
+
+Same concentration pattern this document has flagged before (Section 6,
+Section 10.7): one single 15-minute market accounts for -$211.35 of the
+-$421.36 net loss — roughly half, from one market out of 53.
+
+### 12.4 Comparison against the trade-print model, same category
+
+The fairest available comparison isn't the whole-population trade-print
+number (a mix of politics/sports/other, mostly not crypto) — it's the
+trade-print model restricted to the SAME `crypto_price` category from the
+unbiased population (255 markets, 2023–2026, all coins, not BTC-only or
+time-matched to this sample — a same-category, not same-market, comparison):
+
+| Model | Population | Best case | Markout | Gap |
+|---|---|---|---|---|
+| Trade-print (`market_pnl`) | crypto_price, 255 markets, 2023–2026 | $14,175.75 | -$7,538.86 | 153.2% |
+| **Real L2 replay** | BTC Up/Down, 53 markets, Aug–Sep 2026 | $626.74 | -$421.36 | **167.2%** |
+
+**Two structurally different models — one inferring fills from trade-print
+aggressor tags, one crediting fills only when a real order book demonstrably
+crossed the quote — arrive at the same conclusion for the same market
+family: markout loss runs at roughly 1.5–1.7x best-case spread capture.**
+This is a genuine triangulation, not a restatement of the same assumption
+twice: the L2 model doesn't use `MAX_RELATIVE_SPREAD`-capped flat spreads,
+doesn't infer anything from trade sides, and marks out against a real quote
+instead of a trade-print VWAP. That two independently-built mechanisms land
+in the same range is the strongest evidence in this document that the
+trade-print proxy's headline finding isn't an artifact of the proxy itself.
+
+### 12.5 What this does and doesn't change
+
+**Does not** overturn Section 5's conclusion — if anything it reinforces it,
+now with a model that has no dependency on the trade-print proxy's own
+assumptions. **Does** retire, for BTC Up/Down markets specifically, the
+single limitation Section 6 has called "the largest source of uncertainty in
+every number in this document": no real order-book depth, ever. That
+limitation is gone for this slice; it remains for everything the free
+tier's 7-day retention and this session's request budget didn't reach —
+which is still nearly all of the actual 1,331-market population.
+
+**Next steps**, concretely: re-run the backfill after the daily reset,
+targeting ETH/SOL/XRP/BNB/DOGE/HYPE/ZEC specifically (BTC dominated this
+run purely because it's the most frequently listed, not by design); extend
+to 4-hour contracts (deliberately skipped here — a several-hour active
+window costs far more of the rate-limit budget per market than a 5- or
+15-minute one); and, if the sample grows large enough, run this same
+walk-forward TRAIN/TEST discipline (Section 4) on it instead of the
+single-pass whole-sample number reported here, which at 53 markets is too
+small to split meaningfully.
+
+---
+
+## 13. Reproducibility index
 
 | Question | Script | Output |
 |---|---|---|
@@ -950,7 +1060,12 @@ the user makes, not one made unilaterally here.
 | VPIN/inventory-skew + category-window test | `scripts/run_mm_proxy_advanced.py` | `mm_proxy_advanced_results.json` |
 | Dynamic VPIN, sigmoid skew, vol cap, cooldown (Section 10) | `scripts/run_mm_proxy_v3.py` (mechanisms in `scripts/mm_risk_controls_v3.py`) | `mm_proxy_v3_results.json` |
 | Real L2 calibration check, crypto Up/Down (Section 11) | `scripts/calibrate_against_real_l2.py` | `l2_calibration_check.json` |
-| Unit tests for all pure functions above | `tests/test_mm_proxy_backtest.py`, `tests/test_mm_proxy_q3_deep_dive.py`, `tests/test_mm_walkforward_validation.py`, `tests/test_mm_regime_and_rebate_check.py`, `tests/test_mm_proxy_advanced.py`, `tests/test_mm_risk_controls_v3.py`, `tests/test_run_mm_proxy_v3.py` | `pytest tests/` (208 passing at time of writing) |
+| Live L2 backfill, BTC Up/Down (Section 12) | `scripts/backfill_polyorderbooks_l2.py` (client in `src/polyorderbooks_client.py`) | `data/raw/polyorderbooks_l2_live/` + `_manifest.json` |
+| Real order-book replay backtest (Section 12) | `scripts/run_l2_replay_backtest.py` (model in `scripts/l2_replay_backtest.py`) | `l2_replay_backtest_results.json` |
+| Unit tests for all pure functions above | `tests/test_mm_proxy_backtest.py`, `tests/test_mm_proxy_q3_deep_dive.py`, `tests/test_mm_walkforward_validation.py`, `tests/test_mm_regime_and_rebate_check.py`, `tests/test_mm_proxy_advanced.py`, `tests/test_mm_risk_controls_v3.py`, `tests/test_run_mm_proxy_v3.py`, `tests/test_l2_replay_backtest.py`, `tests/test_polyorderbooks_client.py` | `pytest tests/` (222 passing at time of writing) |
 
 All scripts reuse already-cached data wherever possible (trade tapes,
-census leaf files) and are safe to re-run.
+census leaf files) and are safe to re-run. The one exception is
+`data/raw/polyorderbooks_l2_live/` (Section 12): unlike every other cache
+here, it is committed to git rather than gitignored, because it is not
+re-fetchable once PolyOrderbooks' 7-day retention window passes.
