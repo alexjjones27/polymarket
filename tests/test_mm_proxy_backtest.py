@@ -60,8 +60,9 @@ def test_market_pnl_best_case_earns_flat_half_spread():
     # each trade: shares = 100*0.10 = 10 (well under the $25/price notional cap), pnl = 10 * 0.01
     assert r["n_captured"] == 30
     assert r["pnl_best_case"] == pytest.approx(30 * 10 * 0.01)
-    # constant price -> no drift -> markout PnL equals best case
-    assert r["pnl_with_markout"] == pytest.approx(r["pnl_best_case"], rel=0.05)
+    # constant price -> no drift -> both markout variants equal best case
+    assert r["pnl_with_markout_trades"] == pytest.approx(r["pnl_best_case"], rel=0.05)
+    assert r["pnl_with_markout_time"] == pytest.approx(r["pnl_best_case"], rel=0.05)
 
 
 def test_market_pnl_respects_per_trade_notional_cap():
@@ -109,11 +110,14 @@ def test_market_pnl_liquidity_cap_does_not_bind_when_fill_share_is_small():
 def test_market_pnl_markout_penalizes_adverse_drift_after_a_buy_fill():
     # We capture a SELL print at t=0 (we're now long); price then drifts DOWN
     # sharply and stays down -- that's adverse selection against our new long.
+    # Timestamps are 1 apart so both the trade-count window (20 trades) and
+    # the time window (15s) see the same post-drift prices.
     trades = [_mk(0.50, 10.0, "SELL", 0)] + [_mk(0.30, 10.0, "SELL", i) for i in range(1, 25)]
     total_volume = sum(t["price"] * t["size"] for t in trades)
     r = market_pnl(trades, total_volume, half_spread=0.01, fill_share=1.0)
     # markout PnL on the first fill should be well below the spread-only best case
-    assert r["pnl_with_markout"] < r["pnl_best_case"]
+    assert r["pnl_with_markout_trades"] < r["pnl_best_case"]
+    assert r["pnl_with_markout_time"] < r["pnl_best_case"]
 
 
 def test_market_pnl_markout_rewards_favorable_drift_after_a_buy_fill():
@@ -122,7 +126,8 @@ def test_market_pnl_markout_rewards_favorable_drift_after_a_buy_fill():
     trades = [_mk(0.50, 10.0, "SELL", 0)] + [_mk(0.70, 10.0, "SELL", i) for i in range(1, 25)]
     total_volume = sum(t["price"] * t["size"] for t in trades)
     r = market_pnl(trades, total_volume, half_spread=0.01, fill_share=1.0)
-    assert r["pnl_with_markout"] > r["pnl_best_case"]
+    assert r["pnl_with_markout_trades"] > r["pnl_best_case"]
+    assert r["pnl_with_markout_time"] > r["pnl_best_case"]
 
 
 def test_market_pnl_markout_falls_back_to_spread_only_at_tail_of_tape():
@@ -132,7 +137,32 @@ def test_market_pnl_markout_falls_back_to_spread_only_at_tail_of_tape():
     trades = [_mk(0.50, 10.0, "BUY", 0)]
     r = market_pnl(trades, 0.50 * 10.0, half_spread=0.01, fill_share=1.0)
     assert r["n_captured"] == 1
-    assert r["pnl_with_markout"] == pytest.approx(r["pnl_best_case"])
+    assert r["pnl_with_markout_trades"] == pytest.approx(r["pnl_best_case"])
+    assert r["pnl_with_markout_time"] == pytest.approx(r["pnl_best_case"])
+    assert r["avg_trades_window_span_s"] is None
+
+
+def test_market_pnl_time_window_markout_ignores_trades_beyond_the_window():
+    # First fill at t=0; a big adverse move happens at t=100, far outside the
+    # 15s time window (MARKOUT_WINDOW_SECONDS), so the time-window markout
+    # must NOT be penalized by it even though the trade-count window (which
+    # has nothing else on the tape) would include it.
+    trades = [_mk(0.50, 10.0, "SELL", 0), _mk(0.10, 10.0, "SELL", 100)]
+    total_volume = sum(t["price"] * t["size"] for t in trades)
+    r = market_pnl(trades, total_volume, half_spread=0.01, fill_share=1.0)
+    assert r["pnl_with_markout_time"] == pytest.approx(r["pnl_best_case"])
+    assert r["pnl_with_markout_trades"] < r["pnl_best_case"]
+
+
+def test_market_pnl_reports_actual_window_span_not_assumed():
+    # Only 2 trades: the first fill's 20-trade window contains just the
+    # second trade (8s later), so the measured real-time span for that one
+    # sample is 8s, not the assumed trade count of 20. The second fill is at
+    # the tail of the tape (no window), so it contributes no sample.
+    trades = [_mk(0.50, 10.0, "SELL", 0), _mk(0.50, 10.0, "SELL", 8)]
+    total_volume = sum(t["price"] * t["size"] for t in trades)
+    r = market_pnl(trades, total_volume, half_spread=0.01, fill_share=1.0)
+    assert r["avg_trades_window_span_s"] == pytest.approx(8.0)
 
 
 # ---------------------------------------------------------------------------
