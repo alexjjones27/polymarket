@@ -288,6 +288,171 @@ def market_pnl(sorted_trades, total_market_volume, half_spread, fill_share,
     }
 
 
+# ---------------------------------------------------------------------------
+# Advanced risk controls: VPIN-driven dynamic spread + inventory-aware skew.
+# Both are CAUSAL (a fill's pricing depends only on trades strictly before
+# it) and layer on top of market_pnl's existing spread-capture/markout core
+# rather than replacing it -- market_pnl (flat spread, no inventory) stays
+# the baseline every comparison is made against.
+# ---------------------------------------------------------------------------
+
+# VPIN (Volume-Synchronized Probability of Informed Trading): buckets trade
+# flow by cumulative NOTIONAL rather than trade count, classifies each
+# trade's volume as buy- or sell-initiated using its own recorded `side` --
+# real VPIN research usually has to *infer* aggressor side via bulk volume
+# classification (a price-change-vs-volatility proxy) because raw trade data
+# often doesn't carry it; Polymarket's does, so no proxy is needed here. A
+# rolling average of |buy-sell|/bucket_notional over recent completed
+# buckets is the toxicity estimate: near 0 means balanced (uninformed) flow,
+# near 1 means one-sided (informed) flow.
+VPIN_BUCKET_NOTIONAL = 500.0
+VPIN_WINDOW_BUCKETS = 20
+VPIN_SPREAD_MULTIPLIER_MAX = 2.0  # effective spread widens up to 2x at VPIN=1 (maximum imbalance)
+
+# Inventory-aware skew: as running (mark-to-last-print) inventory moves away
+# from flat, fill_share on the side that would push it FURTHER away is
+# linearly derated toward zero at this notional -- approximates a real MM
+# pulling or shrinking the unwanted side of its quote as a position builds,
+# rather than passively absorbing unlimited one-sided flow. The side that
+# would FLATTEN inventory is never derated.
+INVENTORY_LIMIT_NOTIONAL = 100.0
+
+
+def compute_vpin_series(sorted_trades: list[dict], bucket_notional: float = VPIN_BUCKET_NOTIONAL,
+                         window_buckets: int = VPIN_WINDOW_BUCKETS) -> list:
+    """Causal per-trade VPIN estimate: vpin_series[i] uses only buckets fully
+    formed from trades STRICTLY BEFORE index i (trade i's own volume is
+    folded in afterward, for future trades' estimates) -- never a lookahead
+    signal. None until at least one bucket has completed. Simplification:
+    a trade whose notional alone exceeds `bucket_notional` completes exactly
+    one (oversized) bucket rather than being split across several -- a coarse
+    volume clock, adequate for a directional toxicity signal, not a precise
+    one."""
+    vpin_series = [None] * len(sorted_trades)
+    completed_bucket_imbalances = []
+    bucket_buy = 0.0
+    bucket_sell = 0.0
+    bucket_notional_accum = 0.0
+    for i, t in enumerate(sorted_trades):
+        if completed_bucket_imbalances:
+            recent = completed_bucket_imbalances[-window_buckets:]
+            vpin_series[i] = sum(recent) / len(recent)
+
+        notional = t["price"] * t["size"]
+        if t["side"] == "BUY":
+            bucket_buy += notional
+        else:
+            bucket_sell += notional
+        bucket_notional_accum += notional
+        if bucket_notional_accum >= bucket_notional:
+            imbalance = abs(bucket_buy - bucket_sell) / bucket_notional_accum
+            completed_bucket_imbalances.append(imbalance)
+            bucket_buy = bucket_sell = bucket_notional_accum = 0.0
+    return vpin_series
+
+
+def market_pnl_advanced(sorted_trades, total_market_volume, half_spread, fill_share,
+                         markout_window_seconds: float = MARKOUT_WINDOW_SECONDS,
+                         vpin_bucket_notional: float = VPIN_BUCKET_NOTIONAL,
+                         vpin_window_buckets: int = VPIN_WINDOW_BUCKETS,
+                         vpin_spread_multiplier_max: float = VPIN_SPREAD_MULTIPLIER_MAX,
+                         inventory_limit_notional: float = INVENTORY_LIMIT_NOTIONAL):
+    """market_pnl's spread-capture/15s-markout core, with two realistic risk
+    controls layered on top -- both causal, both able to be switched off
+    (vpin_spread_multiplier_max=1.0 and/or inventory_limit_notional=inf
+    reduce this to plain market_pnl behavior) so their effect can be
+    measured, not just assumed:
+
+    - VPIN-driven dynamic spread: the effective half-spread widens as recent
+      order flow looks more informed (see compute_vpin_series).
+    - Inventory-aware skew: fill_share on a print that would push our
+      running position further from flat is derated toward zero as that
+      position approaches inventory_limit_notional; the flattening side is
+      never derated. Inventory is marked at each print's own price (no
+      resting order-book valuation exists to mark against, same limitation
+      as everywhere else in this model).
+
+    Returns the same best-case/15s-markout fields as market_pnl, plus
+    avg_vpin, max_abs_inventory_notional, and n_inventory_capped so the
+    effect of these controls is visible, not hidden inside one number."""
+    vpin_series = compute_vpin_series(sorted_trades, vpin_bucket_notional, vpin_window_buckets)
+
+    pnl_best_case = 0.0
+    pnl_with_markout_time = 0.0
+    n_captured = 0
+    captured_notional = 0.0
+    inventory_shares = 0.0  # signed: + long, - short
+    max_abs_inventory_notional = 0.0
+    n_inventory_capped = 0
+    vpin_samples = []
+    volume_cap = MAX_MARKET_VOLUME_SHARE * total_market_volume
+
+    for i, t in enumerate(sorted_trades):
+        price, size, side = t["price"], t["size"], t["side"]
+        base_eff_half_spread = min(half_spread, MAX_RELATIVE_SPREAD * price, MAX_RELATIVE_SPREAD * (1 - price))
+        if base_eff_half_spread <= 0:
+            continue
+
+        vpin = vpin_series[i]
+        spread_multiplier = 1.0 + vpin * (vpin_spread_multiplier_max - 1.0) if vpin is not None else 1.0
+        if vpin is not None:
+            vpin_samples.append(vpin)
+        eff_half_spread = min(base_eff_half_spread * spread_multiplier,
+                               MAX_RELATIVE_SPREAD * price, MAX_RELATIVE_SPREAD * (1 - price))
+
+        # Capturing a SELL print -> we buy -> inventory increases (more long).
+        # Capturing a BUY print -> we sell -> inventory decreases (more short).
+        inventory_notional = inventory_shares * price
+        moving_away_from_flat = (side == "SELL" and inventory_notional >= 0) or (side == "BUY" and inventory_notional <= 0)
+        skewed_fill_share = fill_share
+        if moving_away_from_flat and inventory_limit_notional > 0:
+            headroom = max(0.0, 1.0 - abs(inventory_notional) / inventory_limit_notional)
+            skewed_fill_share = fill_share * headroom
+            if headroom < 1.0:
+                n_inventory_capped += 1
+
+        shares = min(size * skewed_fill_share, MAX_NOTIONAL_PER_TRADE / price)
+        if shares <= 0:
+            continue
+        notional = shares * price
+        if captured_notional + notional > volume_cap:
+            remaining = volume_cap - captured_notional
+            if remaining <= 1e-9:
+                break
+            shares = remaining / price
+            notional = remaining
+
+        pnl_best_case += shares * eff_half_spread
+
+        def _adverse(markout_price):
+            return (price - markout_price) * shares if side == "SELL" else (markout_price - price) * shares
+
+        time_markout_price, _ = _time_window_vwap(sorted_trades, i, markout_window_seconds)
+        if time_markout_price is not None:
+            pnl_with_markout_time += shares * eff_half_spread - _adverse(time_markout_price)
+        else:
+            pnl_with_markout_time += shares * eff_half_spread
+
+        inventory_shares += shares if side == "SELL" else -shares
+        max_abs_inventory_notional = max(max_abs_inventory_notional, abs(inventory_shares * price))
+
+        n_captured += 1
+        captured_notional += notional
+        if captured_notional >= volume_cap:
+            break
+
+    return {
+        "pnl_best_case": pnl_best_case,
+        "pnl_with_markout_time": pnl_with_markout_time,
+        "n_captured": n_captured,
+        "captured_notional": captured_notional,
+        "volume_share_captured": captured_notional / total_market_volume if total_market_volume else None,
+        "avg_vpin": sum(vpin_samples) / len(vpin_samples) if vpin_samples else None,
+        "max_abs_inventory_notional": max_abs_inventory_notional,
+        "n_inventory_capped": n_inventory_capped,
+    }
+
+
 def parse_and_sort_trades(trades: list[dict]) -> tuple[list[dict], float]:
     """Once per market (not once per sensitivity-grid config): parse, filter,
     and chronologically sort the raw trade tape, plus the market's total real

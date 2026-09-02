@@ -16,10 +16,12 @@ from run_mm_proxy_backtest import (
     REBATE_RATE_BY_FEE_CATEGORY,
     assign_pace_buckets,
     assign_quantile_buckets,
+    compute_vpin_series,
     concentration_by_top_n,
     filter_trades_excluding_near_resolution,
     market_pace_seconds,
     market_pnl,
+    market_pnl_advanced,
     pace_breakdown,
     parse_and_sort_trades,
     quantile_breakdown,
@@ -376,3 +378,84 @@ def test_quantile_breakdown_works_on_a_non_pace_field():
     assert set(out.keys()) == {"V1", "V2"}
     assert next(iter(out)) == "V2"  # ranked first: higher pnl_with_markout_time
     assert out["V2"]["total_volume_range"] == [20.0, 20.0]
+
+
+# ---------------------------------------------------------------------------
+# compute_vpin_series
+# ---------------------------------------------------------------------------
+
+def test_compute_vpin_series_is_causal_and_matches_hand_computed_values():
+    # bucket_notional=10: t0 (BUY 5) starts a bucket; t1 (SELL 5) completes it
+    # (buy=5,sell=5 -> imbalance 0.0); t2 (BUY 10) alone completes a second,
+    # maximally one-sided bucket (imbalance 1.0); t3 sees both.
+    trades = [_mk(1.0, 5.0, "BUY", 0), _mk(1.0, 5.0, "SELL", 1),
+              _mk(1.0, 10.0, "BUY", 2), _mk(1.0, 10.0, "BUY", 3)]
+    vpin = compute_vpin_series(trades, bucket_notional=10.0, window_buckets=20)
+    assert vpin[0] is None   # no bucket has completed yet
+    assert vpin[1] is None   # the bucket t1 itself completes isn't usable until AFTER t1
+    assert vpin[2] == pytest.approx(0.0)
+    assert vpin[3] == pytest.approx(0.5)  # rolling avg of completed buckets [0.0, 1.0]
+
+
+def test_compute_vpin_series_empty_input():
+    assert compute_vpin_series([], bucket_notional=10.0) == []
+
+
+# ---------------------------------------------------------------------------
+# market_pnl_advanced: VPIN-driven dynamic spread + inventory-aware skew
+# ---------------------------------------------------------------------------
+
+def test_market_pnl_advanced_reduces_to_plain_market_pnl_when_controls_disabled():
+    # vpin_spread_multiplier_max=1.0 (spread never widens) and
+    # inventory_limit_notional=inf (skew never binds) should reproduce
+    # market_pnl's own numbers exactly.
+    trades = [_mk(0.5, 10.0, "SELL", i * 5) for i in range(10)]
+    total_volume = 100_000.0  # large on purpose -- keeps the liquidity cap from binding
+    base = market_pnl(trades, total_volume, half_spread=0.01, fill_share=0.2)
+    advanced = market_pnl_advanced(trades, total_volume, half_spread=0.01, fill_share=0.2,
+                                    vpin_spread_multiplier_max=1.0, inventory_limit_notional=float("inf"))
+    assert advanced["pnl_best_case"] == pytest.approx(base["pnl_best_case"])
+    assert advanced["pnl_with_markout_time"] == pytest.approx(base["pnl_with_markout_time"])
+    assert advanced["n_captured"] == base["n_captured"]
+
+
+def test_market_pnl_advanced_vpin_widening_increases_best_case_pnl():
+    # All-BUY flow is maximally one-sided (VPIN -> 1.0 once a bucket
+    # completes), so the widened-spread run should earn more per captured
+    # share than the same tape with VPIN widening disabled.
+    trades = [_mk(0.5, 20.0, "BUY", i) for i in range(10)]
+    widened = market_pnl_advanced(trades, 100_000.0, half_spread=0.01, fill_share=0.1,
+                                   vpin_bucket_notional=10.0, vpin_window_buckets=5,
+                                   vpin_spread_multiplier_max=2.0, inventory_limit_notional=float("inf"))
+    flat = market_pnl_advanced(trades, 100_000.0, half_spread=0.01, fill_share=0.1,
+                                vpin_bucket_notional=10.0, vpin_window_buckets=5,
+                                vpin_spread_multiplier_max=1.0, inventory_limit_notional=float("inf"))
+    assert widened["avg_vpin"] == pytest.approx(1.0)
+    assert widened["pnl_best_case"] > flat["pnl_best_case"]
+
+
+def test_market_pnl_advanced_inventory_skew_derates_fills_that_build_a_position():
+    # 5 identical SELL prints (we keep buying -> inventory only grows) with a
+    # $20 inventory limit; ground truth verified independently against the
+    # implementation (see commit message) since this compounds over 5 steps.
+    trades = [_mk(0.5, 10.0, "SELL", i * 5) for i in range(5)]
+    r = market_pnl_advanced(trades, 100_000.0, half_spread=0.01, fill_share=1.0,
+                             vpin_spread_multiplier_max=1.0, inventory_limit_notional=20.0)
+    assert r["n_captured"] == 5
+    assert r["n_inventory_capped"] == 4  # every fill after the first (which starts at flat)
+    assert r["max_abs_inventory_notional"] == pytest.approx(15.25390625)
+    # skew must have actually reduced captured flow vs. the unlimited case
+    r_unlimited = market_pnl_advanced(trades, 100_000.0, half_spread=0.01, fill_share=1.0,
+                                       vpin_spread_multiplier_max=1.0, inventory_limit_notional=float("inf"))
+    assert r["captured_notional"] < r_unlimited["captured_notional"]
+
+
+def test_market_pnl_advanced_never_skews_the_flattening_side():
+    # Alternating SELL/BUY prints of equal size keep inventory near flat --
+    # a tight inventory limit should never bind since no fill pushes further
+    # from flat than the previous one already returned from.
+    trades = [_mk(0.5, 10.0, "SELL" if i % 2 == 0 else "BUY", i) for i in range(10)]
+    r = market_pnl_advanced(trades, 100_000.0, half_spread=0.01, fill_share=1.0,
+                             vpin_spread_multiplier_max=1.0, inventory_limit_notional=1.0)
+    assert r["n_inventory_capped"] == 0
+    assert r["n_captured"] == 10
