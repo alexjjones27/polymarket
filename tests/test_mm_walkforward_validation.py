@@ -13,6 +13,8 @@ from run_mm_walkforward_validation import (
     chronological_split,
     compute_drawdown,
     evaluate_filter,
+    matches_filter,
+    run_at_min_markets,
     select_best_filter,
 )
 
@@ -112,3 +114,37 @@ def test_compute_drawdown_tracks_peak_to_trough():
     dd = compute_drawdown(rows)
     assert dd["final_equity"] == pytest.approx(-2.0)
     assert dd["max_drawdown"] == pytest.approx(15.0)
+
+
+# ---------------------------------------------------------------------------
+# matches_filter / run_at_min_markets
+# ---------------------------------------------------------------------------
+
+def test_matches_filter_matches_evaluate_filter_semantics():
+    r_pass = _row("a", "2024-01-01", pace=100, volume=1000, history_s=100_000, pnl=1.0, pnl_markout=1.0)
+    r_fail = _row("b", "2024-01-01", pace=5, volume=1000, history_s=100_000, pnl=1.0, pnl_markout=1.0)
+    assert matches_filter(r_pass, (50, 200), 500, 50_000) is True
+    assert matches_filter(r_fail, (50, 200), 500, 50_000) is False
+
+
+def test_run_at_min_markets_returns_none_winner_when_threshold_unreachable():
+    train = [_row(f"a{i}", f"2024-01-{i+1:02d}", 100, 1000, 100_000, 1.0, 1.0) for i in range(5)]
+    test = [_row(f"b{i}", f"2024-02-{i+1:02d}", 100, 1000, 100_000, 1.0, 1.0) for i in range(5)]
+    out = run_at_min_markets(train, test, min_markets=100)
+    assert out["winner"] is None
+    assert "test_result" not in out
+
+
+def test_run_at_min_markets_end_to_end_produces_test_and_bootstrap_results():
+    good = [_row(f"g{i}", f"2024-01-{(i % 28) + 1:02d}", pace=100, volume=1000, history_s=100_000,
+                 pnl=1.0, pnl_markout=5.0) for i in range(40)]
+    bad = [_row(f"b{i}", f"2024-01-{(i % 28) + 1:02d}", pace=5, volume=10, history_s=10,
+                pnl=1.0, pnl_markout=-5.0) for i in range(40)]
+    train = good + bad
+    test = [_row(f"t{i}", f"2024-03-{(i % 28) + 1:02d}", pace=100, volume=1000, history_s=100_000,
+                 pnl=1.0, pnl_markout=3.0) for i in range(10)]
+    out = run_at_min_markets(train, test, min_markets=10)
+    assert out["winner"] is not None
+    assert out["test_result"]["n_markets"] == 10
+    assert out["bootstrap_ci"]["n_markets"] == 10
+    assert "final_equity" in out["drawdown"]

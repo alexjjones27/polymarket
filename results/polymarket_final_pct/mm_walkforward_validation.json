@@ -1,0 +1,404 @@
+{
+  "train_fraction": 0.7,
+  "n_train": 932,
+  "n_test": 399,
+  "unfiltered_test_baseline": {
+    "n_markets": 345,
+    "total_pnl_best_case": 8398.91,
+    "total_pnl_with_markout_time": -13238.51,
+    "median_pnl_with_markout_time": 0.1506,
+    "mean_pnl_with_markout_time": -38.3725,
+    "pct_positive": 79.7
+  },
+  "min_markets_sweep": [
+    {
+      "min_markets": 30,
+      "selected_filter": {
+        "pace_range_seconds": [
+          0.0,
+          6.0
+        ],
+        "volume_min": 22284.68,
+        "history_min_seconds": 21600,
+        "train_result": {
+          "n_markets": 53,
+          "total_pnl_best_case": 10802.66,
+          "total_pnl_with_markout_time": -8995.46,
+          "median_pnl_with_markout_time": 87.3244,
+          "mean_pnl_with_markout_time": -169.7257,
+          "pct_positive": 66.0
+        }
+      },
+      "test_result": {
+        "n_markets": 14,
+        "total_pnl_best_case": 1835.49,
+        "total_pnl_with_markout_time": -2858.36,
+        "median_pnl_with_markout_time": -151.1897,
+        "mean_pnl_with_markout_time": -204.1687,
+        "pct_positive": 28.6
+      },
+      "bootstrap_ci": {
+        "n_markets": 14,
+        "n_iterations": 2000,
+        "p5": -5445.54,
+        "p25": -3813.07,
+        "median": -2784.19,
+        "p75": -1818.14,
+        "p95": -663.55,
+        "pct_iterations_positive": 1.1
+      },
+      "drawdown": {
+        "final_equity": -2858.36,
+        "max_drawdown": 3315.67,
+        "equity_curve": [
+          [
+            "2026-04-23",
+            -59.61
+          ],
+          [
+            "2026-04-27",
+            -15.71
+          ],
+          [
+            "2026-05-07",
+            -1385.66
+          ],
+          [
+            "2026-05-12",
+            -1536.85
+          ],
+          [
+            "2026-05-15",
+            -1851.04
+          ],
+          [
+            "2026-05-24",
+            -1871.57
+          ],
+          [
+            "2026-05-27",
+            -2327.02
+          ],
+          [
+            "2026-06-07",
+            -2377.7
+          ],
+          [
+            "2026-06-12",
+            -2645.11
+          ],
+          [
+            "2026-06-14",
+            -2842.46
+          ],
+          [
+            "2026-06-27",
+            -3315.67
+          ],
+          [
+            "2026-07-11",
+            -2969.88
+          ],
+          [
+            "2026-08-06",
+            -2909.43
+          ],
+          [
+            "2026-08-28",
+            -2858.36
+          ]
+        ]
+      },
+      "test_category_mix": {
+        "other": 3,
+        "sports": 11
+      }
+    },
+    {
+      "min_markets": 75,
+      "selected_filter": {
+        "pace_range_seconds": [
+          0.0,
+          6.0
+        ],
+        "volume_min": 4702.88,
+        "history_min_seconds": 21600,
+        "train_result": {
+          "n_markets": 81,
+          "total_pnl_best_case": 11459.53,
+          "total_pnl_with_markout_time": -8913.12,
+          "median_pnl_with_markout_time": 43.6768,
+          "mean_pnl_with_markout_time": -110.0385,
+          "pct_positive": 61.7
+        }
+      },
+      "test_result": {
+        "n_markets": 20,
+        "total_pnl_best_case": 1976.8,
+        "total_pnl_with_markout_time": -4177.44,
+        "median_pnl_with_markout_time": -59.6065,
+        "mean_pnl_with_markout_time": -208.8719,
+        "pct_positive": 30.0
+      },
+      "bootstrap_ci": {
+        "n_markets": 20,
+        "n_iterations": 2000,
+        "p5": -7262.36,
+        "p25": -5337.26,
+        "median": -4135.56,
+        "p75": -3016.96,
+        "p95": -1547.78,
+        "pct_iterations_positive": 0.2
+      },
+      "drawdown": {
+        "final_equity": -4177.44,
+        "max_drawdown": 4228.5,
+        "equity_curve": [
+          [
+            "2026-04-19",
+            -157.28
+          ],
+          [
+            "2026-04-23",
+            -216.88
+          ],
+          [
+            "2026-04-27",
+            -172.99
+          ],
+          [
+            "2026-05-07",
+            -1542.94
+          ],
+          [
+            "2026-05-12",
+            -1694.13
+          ],
+          [
+            "2026-05-15",
+            -2008.31
+          ],
+          [
+            "2026-05-18",
+            -1972.6
+          ],
+          [
+            "2026-05-24",
+            -1993.14
+          ],
+          [
+            "2026-05-27",
+            -2448.59
+          ],
+          [
+            "2026-06-07",
+            -2499.26
+          ],
+          [
+            "2026-06-12",
+            -2397.23
+          ],
+          [
+            "2026-06-12",
+            -2664.65
+          ],
+          [
+            "2026-06-14",
+            -2861.99
+          ],
+          [
+            "2026-06-18",
+            -2873.33
+          ],
+          [
+            "2026-06-27",
+            -3346.55
+          ],
+          [
+            "2026-07-11",
+            -3000.76
+          ],
+          [
+            "2026-07-17",
+            -4022.16
+          ],
+          [
+            "2026-08-06",
+            -3961.71
+          ],
+          [
+            "2026-08-23",
+            -4228.5
+          ],
+          [
+            "2026-08-28",
+            -4177.44
+          ]
+        ]
+      },
+      "test_category_mix": {
+        "other": 5,
+        "sports": 15
+      }
+    },
+    {
+      "min_markets": 150,
+      "selected_filter": {
+        "pace_range_seconds": [
+          0.0,
+          6.0
+        ],
+        "volume_min": 907.71,
+        "history_min_seconds": 0,
+        "train_result": {
+          "n_markets": 164,
+          "total_pnl_best_case": 14042.51,
+          "total_pnl_with_markout_time": -12099.21,
+          "median_pnl_with_markout_time": 23.4525,
+          "mean_pnl_with_markout_time": -73.7757,
+          "pct_positive": 66.5
+        }
+      },
+      "test_result": {
+        "n_markets": 26,
+        "total_pnl_best_case": 1997.2,
+        "total_pnl_with_markout_time": -4180.2,
+        "median_pnl_with_markout_time": -26.1398,
+        "mean_pnl_with_markout_time": -160.777,
+        "pct_positive": 42.3
+      },
+      "bootstrap_ci": {
+        "n_markets": 26,
+        "n_iterations": 2000,
+        "p5": -7112.85,
+        "p25": -5348.09,
+        "median": -4026.91,
+        "p75": -2914.62,
+        "p95": -1603.34,
+        "pct_iterations_positive": 0.2
+      },
+      "drawdown": {
+        "final_equity": -4180.2,
+        "max_drawdown": 4231.27,
+        "equity_curve": [
+          [
+            "2026-04-19",
+            -157.28
+          ],
+          [
+            "2026-04-23",
+            -216.88
+          ],
+          [
+            "2026-04-27",
+            -172.99
+          ],
+          [
+            "2026-05-03",
+            -159.33
+          ],
+          [
+            "2026-05-07",
+            -1529.27
+          ],
+          [
+            "2026-05-08",
+            -1525.93
+          ],
+          [
+            "2026-05-12",
+            -1677.12
+          ],
+          [
+            "2026-05-15",
+            -1991.31
+          ],
+          [
+            "2026-05-18",
+            -2017.45
+          ],
+          [
+            "2026-05-18",
+            -1981.74
+          ],
+          [
+            "2026-05-24",
+            -2002.27
+          ],
+          [
+            "2026-05-27",
+            -2457.72
+          ],
+          [
+            "2026-06-07",
+            -2508.4
+          ],
+          [
+            "2026-06-11",
+            -2507.81
+          ],
+          [
+            "2026-06-12",
+            -2405.78
+          ],
+          [
+            "2026-06-12",
+            -2673.19
+          ],
+          [
+            "2026-06-14",
+            -2870.54
+          ],
+          [
+            "2026-06-14",
+            -2867.1
+          ],
+          [
+            "2026-06-18",
+            -2878.45
+          ],
+          [
+            "2026-06-27",
+            -3351.66
+          ],
+          [
+            "2026-07-11",
+            -3005.87
+          ],
+          [
+            "2026-07-17",
+            -4027.28
+          ],
+          [
+            "2026-08-06",
+            -3966.82
+          ],
+          [
+            "2026-08-11",
+            -3964.47
+          ],
+          [
+            "2026-08-23",
+            -4231.27
+          ],
+          [
+            "2026-08-28",
+            -4180.2
+          ]
+        ]
+      },
+      "test_category_mix": {
+        "other": 6,
+        "sports": 20
+      }
+    },
+    {
+      "min_markets": 250,
+      "selected_filter": null,
+      "test_result": null,
+      "bootstrap_ci": null,
+      "drawdown": null,
+      "test_category_mix": null
+    }
+  ]
+}

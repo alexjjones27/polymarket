@@ -87,19 +87,26 @@ def chronological_split(per_market: list[dict], train_frac: float = TRAIN_FRACTI
     return ordered[:k], ordered[k:]
 
 
+def matches_filter(r: dict, pace_range: tuple[float, float], volume_min: float, history_min_s: float) -> bool:
+    """The one predicate defining a candidate market-selection rule -- used
+    by evaluate_filter (aggregate scoring) and by main() (extracting the
+    actual filtered row list), so "what passes the filter" can never drift
+    between the two."""
+    return (
+        r["median_inter_trade_s"] is not None
+        and pace_range[0] <= r["median_inter_trade_s"] < pace_range[1]
+        and r["total_market_volume"] >= volume_min
+        and r["pre_resolution_history_s"] is not None
+        and r["pre_resolution_history_s"] >= history_min_s
+    )
+
+
 def evaluate_filter(subset: list[dict], pace_range: tuple[float, float], volume_min: float, history_min_s: float) -> dict:
     """Applies one candidate filter combo to `subset` and reports aggregate +
     per-market stats. Shared by the train-side grid search and the final
     test-side report, so "how a combo is scored" is identical in both
     places."""
-    filtered = [
-        r for r in subset
-        if r["median_inter_trade_s"] is not None
-        and pace_range[0] <= r["median_inter_trade_s"] < pace_range[1]
-        and r["total_market_volume"] >= volume_min
-        and r["pre_resolution_history_s"] is not None
-        and r["pre_resolution_history_s"] >= history_min_s
-    ]
+    filtered = [r for r in subset if matches_filter(r, pace_range, volume_min, history_min_s)]
     if not filtered:
         return {
             "n_markets": 0, "total_pnl_best_case": 0.0, "total_pnl_with_markout_time": 0.0,
@@ -187,10 +194,12 @@ def compute_drawdown(filtered: list[dict]) -> dict:
     return {"final_equity": round(equity, 2), "max_drawdown": round(max_dd, 2), "equity_curve": curve}
 
 
-def main():
-    meta = load_population_meta()
-    print(f"[walkforward] {len(meta)} markets in the unbiased population")
-
+def build_per_market_stats(meta: dict) -> list[dict]:
+    """One pass over every market: fetch (cached) trades, compute market_pnl
+    ONCE at the base config, and derive the three market-selection
+    characteristics (pace, volume, pre-resolution history). Everything
+    downstream -- the min-markets sensitivity sweep included -- reuses this
+    same list without touching a trade tape again."""
     per_market = []
     n_no_trades = 0
     for i, (cid, m) in enumerate(meta.items()):
@@ -221,8 +230,41 @@ def main():
         })
         if (i + 1) % 250 == 0:
             print(f"  [walkforward] {i + 1}/{len(meta)} markets processed ...", flush=True)
-
     print(f"[walkforward] {len(per_market)} markets with captured flow ({n_no_trades} had no usable trades)")
+    return per_market
+
+
+def run_at_min_markets(train: list[dict], test: list[dict], min_markets: int) -> dict:
+    """Full pipeline (select on TRAIN, evaluate + bootstrap + drawdown on
+    TEST) at one MIN_MARKETS_FOR_CANDIDATE threshold -- the building block
+    for the sensitivity sweep across thresholds in main(). A stricter
+    (higher) threshold can't cherry-pick as small/extreme a TRAIN corner;
+    if the out-of-sample conclusion flips depending on this choice, that
+    itself is evidence the "winning" filter is closer to noise than edge."""
+    winner = select_best_filter(train, min_markets=min_markets)
+    if winner is None:
+        return {"min_markets": min_markets, "winner": None}
+    test_result = evaluate_filter(test, winner["pace_range"], winner["volume_min"], winner["history_min_s"])
+    filtered_test = [r for r in test if matches_filter(r, winner["pace_range"], winner["volume_min"], winner["history_min_s"])]
+    ci = bootstrap_ci(filtered_test)
+    dd = compute_drawdown(filtered_test)
+    category_mix = {}
+    for r in filtered_test:
+        category_mix[r["report_bucket"]] = category_mix.get(r["report_bucket"], 0) + 1
+    return {
+        "min_markets": min_markets, "winner": winner, "test_result": test_result,
+        "filtered_test": filtered_test, "bootstrap_ci": ci, "drawdown": dd, "test_category_mix": category_mix,
+    }
+
+
+MIN_MARKETS_SWEEP = [30, 75, 150, 250]
+
+
+def main():
+    meta = load_population_meta()
+    print(f"[walkforward] {len(meta)} markets in the unbiased population")
+
+    per_market = build_per_market_stats(meta)
 
     train, test = chronological_split(per_market)
     print(f"[walkforward] TRAIN: {len(train)} markets ({train[0]['resolution_time'][:10]} to {train[-1]['resolution_time'][:10]})")
@@ -233,62 +275,48 @@ def main():
           f"n={unfiltered_test['n_markets']}  total_markout=${unfiltered_test['total_pnl_with_markout_time']:,.2f}  "
           f"median=${unfiltered_test['median_pnl_with_markout_time']}  %positive={unfiltered_test['pct_positive']}%")
 
-    winner = select_best_filter(train)
-    if winner is None:
-        print("\n[walkforward] No filter combination met the minimum TRAIN market count -- population too small. Stopping.")
-        return
-
-    lo, hi = winner["pace_range"]
-    print(f"\nBest TRAIN-derived filter (selected by TRAIN median markout PnL, "
-          f">= {MIN_MARKETS_FOR_CANDIDATE} markets required):")
-    print(f"  pace range: [{lo:.1f}s, {hi:.1f}s)   volume floor: ${winner['volume_min']:,.2f}   "
-          f"min pre-resolution history: {winner['history_min_s'] / 3600:.1f}h")
-    print(f"  TRAIN result: n={winner['result']['n_markets']}  "
-          f"total_markout=${winner['result']['total_pnl_with_markout_time']:,.2f}  "
-          f"median=${winner['result']['median_pnl_with_markout_time']}  %positive={winner['result']['pct_positive']}%")
-
-    test_result = evaluate_filter(test, winner["pace_range"], winner["volume_min"], winner["history_min_s"])
-    print(f"\n=== OUT-OF-SAMPLE TEST result (same filter, held-out period, never seen during selection) ===")
-    print(f"  n={test_result['n_markets']}  total_best_case=${test_result['total_pnl_best_case']:,.2f}  "
-          f"total_markout=${test_result['total_pnl_with_markout_time']:,.2f}  "
-          f"median=${test_result['median_pnl_with_markout_time']}  mean=${test_result['mean_pnl_with_markout_time']}  "
-          f"%positive={test_result['pct_positive']}%")
-
-    filtered_test = [
-        r for r in test
-        if r["median_inter_trade_s"] is not None and winner["pace_range"][0] <= r["median_inter_trade_s"] < winner["pace_range"][1]
-        and r["total_market_volume"] >= winner["volume_min"]
-        and r["pre_resolution_history_s"] is not None and r["pre_resolution_history_s"] >= winner["history_min_s"]
-    ]
-
-    ci = bootstrap_ci(filtered_test)
-    print(f"\nBootstrap CI on the TEST result ({ci['n_iterations']} resamples of its {ci['n_markets']} markets):")
-    print(f"  p5=${ci.get('p5')}  p25=${ci.get('p25')}  median=${ci.get('median')}  p75=${ci.get('p75')}  p95=${ci.get('p95')}")
-    print(f"  P(total PnL > 0) = {ci.get('pct_iterations_positive')}%")
-
-    dd = compute_drawdown(filtered_test)
-    print(f"\nTEST equity curve: final=${dd['final_equity']:,.2f}  max_drawdown=${dd['max_drawdown']:,.2f}")
-
-    category_mix = {}
-    for r in filtered_test:
-        category_mix[r["report_bucket"]] = category_mix.get(r["report_bucket"], 0) + 1
-    print(f"TEST filtered population category mix: {category_mix}")
+    print(f"\n=== Sensitivity sweep: does the out-of-sample conclusion depend on how permissive the TRAIN "
+          f"grid search is allowed to be? A stricter (higher) MIN_MARKETS_FOR_CANDIDATE can't select as small/"
+          f"extreme a TRAIN corner -- if TEST results are all over the map across this sweep, the 'winning' "
+          f"filter at any single threshold is closer to noise than a real, stable edge. ===")
+    sweep_results = []
+    for min_markets in MIN_MARKETS_SWEEP:
+        res = run_at_min_markets(train, test, min_markets)
+        sweep_results.append(res)
+        if res["winner"] is None:
+            print(f"\nmin_markets={min_markets}: no combo met the threshold on TRAIN.")
+            continue
+        w, tr = res["winner"], res["test_result"]
+        lo, hi = w["pace_range"]
+        print(f"\nmin_markets={min_markets}:")
+        print(f"  TRAIN-selected filter: pace=[{lo:.1f}s,{hi:.1f}s)  volume>=${w['volume_min']:,.0f}  "
+              f"history>={w['history_min_s']/3600:.1f}h  (TRAIN n={w['result']['n_markets']}, "
+              f"TRAIN median=${w['result']['median_pnl_with_markout_time']})")
+        print(f"  OUT-OF-SAMPLE TEST: n={tr['n_markets']}  total_markout=${tr['total_pnl_with_markout_time']:,.2f}  "
+              f"median=${tr['median_pnl_with_markout_time']}  %positive={tr['pct_positive']}  "
+              f"P(profitable)={res['bootstrap_ci'].get('pct_iterations_positive')}%")
 
     import json
     out = {
         "train_fraction": TRAIN_FRACTION,
         "n_train": len(train), "n_test": len(test),
         "unfiltered_test_baseline": unfiltered_test,
-        "selected_filter": {
-            "pace_range_seconds": list(winner["pace_range"]),
-            "volume_min": winner["volume_min"],
-            "history_min_seconds": winner["history_min_s"],
-            "train_result": winner["result"],
-        },
-        "test_result": test_result,
-        "bootstrap_ci": ci,
-        "drawdown": dd,
-        "test_category_mix": category_mix,
+        "min_markets_sweep": [
+            {
+                "min_markets": res["min_markets"],
+                "selected_filter": None if res["winner"] is None else {
+                    "pace_range_seconds": list(res["winner"]["pace_range"]),
+                    "volume_min": res["winner"]["volume_min"],
+                    "history_min_seconds": res["winner"]["history_min_s"],
+                    "train_result": res["winner"]["result"],
+                },
+                "test_result": res.get("test_result"),
+                "bootstrap_ci": res.get("bootstrap_ci"),
+                "drawdown": res.get("drawdown"),
+                "test_category_mix": res.get("test_category_mix"),
+            }
+            for res in sweep_results
+        ],
     }
     out_path = RESULTS_DIR / "mm_walkforward_validation.json"
     with open(out_path, "w") as f:
