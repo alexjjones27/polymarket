@@ -480,7 +480,84 @@ as candidate next steps, not as claims this document relies on.
 
 ---
 
-## 9. Reproducibility index
+## 9. Testing the "no new data" production-engineering suggestions
+
+A follow-up roadmap (translated from Chinese, engaged with in English per
+the requester) proposed several realistic risk controls, split into items
+requiring new paid data/credentials versus items implementable against data
+already on disk. Only the second group was in scope for this pass. Three
+were implemented and tested on the unbiased population, never merged into
+the existing baseline numbers (`scripts/run_mm_proxy_advanced.py`):
+
+**VPIN-driven dynamic spread + inventory-aware skew** (`market_pnl_advanced`,
+`compute_vpin_series` in `run_mm_proxy_backtest.py`): VPIN buckets flow by
+cumulative notional and classifies each trade using its own recorded
+aggressor side — Polymarket's data has real side tags, so unlike most VPIN
+applications no bulk-volume-classification proxy is needed. Effective
+spread widens as recent flow looks more one-sided; a running position's
+fill_share is derated toward zero as it nears an inventory limit, and never
+on the side that would flatten it. Both mechanisms are causal (verified: a
+fill's terms depend only on trades strictly before it) and reduce exactly
+to `market_pnl`'s own numbers when disabled — checked directly in tests,
+not assumed.
+
+**Category-specific markout windows**: each market's window set to its own
+category's median trading pace (clamped to 5–120s) instead of one flat 15s
+for every market.
+
+Measured on the same 1,331-market unbiased population used throughout:
+
+| Configuration | Best case | 15s-equivalent markout | Gap | vs. flat baseline |
+|---|---|---|---|---|
+| Flat baseline (existing) | $49,891.06 | -$112,335.07 | 325.2% | — |
+| + VPIN/inventory, flat window | $38,613.41 | -$94,667.06 | 345.2% | **+$17,668.01 (improves)** |
+| + category-specific window | $49,891.06 | -$195,073.85 | 491.0% | -$82,738.77 (worsens) |
+| + both combined | $38,613.41 | -$163,719.28 | 524.0% | -$51,384.20 (worsens) |
+
+**VPIN + inventory skew is a real, if modest, improvement** — about 15.7%
+less markout loss. Both mechanisms are legitimate risk-reduction practice
+(pricing risk higher when flow looks informed; refusing to keep
+accumulating a position that's already moving against you), and the data
+agrees they help, even under this proxy model's limitations.
+
+**Category-specific windows were a genuine, testable hypothesis — and it
+failed.** Politics, sports, and "other" all clamp to the 120s ceiling
+(their real median pace is far slower than that), and stretching the
+window that far reintroduces the same failure mode Section 3.3 already
+found: a long window lets price drift toward the eventual outcome before
+markout is measured, which isn't adverse selection, it's information
+arriving. The lesson is precise: a reaction-speed assumption should be
+about how fast the *market maker's own infrastructure* can react
+(technology-limited), not how often the *underlying market* happens to
+print (an unrelated, category-dependent fact). Conflating the two makes
+the model worse, not more realistic, and this was worth finding out by
+testing it rather than assuming either direction.
+
+**Neither change is remotely large enough to flip the conclusion.** Even
+the improved configuration still shows a markout loss more than double the
+best-case gain.
+
+**A calibration caveat, reported rather than smoothed over**: mean VPIN
+across the population was 0.88 — very close to the 1.0 ceiling for a
+measure that should center nearer 0.5 for typical flow. This most likely
+means the $500 notional bucket size is too small relative to many markets'
+real trade sizes, so buckets containing only one or two trades look
+artificially one-sided just from small-sample noise, not genuine informed
+trading. The qualitative finding (VPIN + inventory skew helps, by a modest
+amount) is probably directionally sound; the exact dollar figure should be
+treated as approximate until bucket sizing is recalibrated against each
+market's own real trade-size distribution — a natural, still-free next
+step if this line of work continues.
+
+The remaining roadmap items (real L2 order-book data, YES/NO and
+cross-platform arbitrage, production bot reference architectures) require
+paid third-party services, external accounts, or live trading
+infrastructure this pass does not have access to, and were correspondingly
+out of scope here.
+
+---
+
+## 10. Reproducibility index
 
 | Question | Script | Output |
 |---|---|---|
@@ -489,7 +566,8 @@ as candidate next steps, not as claims this document relies on.
 | Unbiased population construction | `scripts/build_mm_unbiased_population.py` | `mm_unbiased_population.csv` |
 | Walk-forward validation + sensitivity sweep | `scripts/run_mm_walkforward_validation.py` | `mm_walkforward_validation.json` |
 | Regime-change split + Maker Rebate upper bound | `scripts/run_mm_regime_and_rebate_check.py` | `mm_regime_and_rebate_check.json` |
-| Unit tests for all pure functions above | `tests/test_mm_proxy_backtest.py`, `tests/test_mm_proxy_q3_deep_dive.py`, `tests/test_mm_walkforward_validation.py`, `tests/test_mm_regime_and_rebate_check.py` | `pytest tests/` (163 passing at time of writing) |
+| VPIN/inventory-skew + category-window test | `scripts/run_mm_proxy_advanced.py` | `mm_proxy_advanced_results.json` |
+| Unit tests for all pure functions above | `tests/test_mm_proxy_backtest.py`, `tests/test_mm_proxy_q3_deep_dive.py`, `tests/test_mm_walkforward_validation.py`, `tests/test_mm_regime_and_rebate_check.py`, `tests/test_mm_proxy_advanced.py` | `pytest tests/` (172 passing at time of writing) |
 
 All scripts reuse already-cached data wherever possible (trade tapes,
 census leaf files) and are safe to re-run.
