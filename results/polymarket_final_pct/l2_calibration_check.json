@@ -1,0 +1,249 @@
+{
+  "dataset": {
+    "doi": "10.5281/zenodo.22084114",
+    "record": 22084977,
+    "capture_window": "2026-08-21 to 2026-08-24",
+    "coins": "BTC,ETH,SOL,XRP,BNB,DOGE,HYPE,ZEC"
+  },
+  "model_assumptions": {
+    "base_half_spread": 0.01,
+    "implied_base_full_spread": 0.02,
+    "half_spread_grid": [
+      0.005,
+      0.01,
+      0.02
+    ],
+    "implied_full_spread_grid": [
+      0.01,
+      0.02,
+      0.04
+    ],
+    "max_notional_per_trade": 25.0,
+    "markout_window_seconds": 15
+  },
+  "by_contract_length": {
+    "updown_5m": {
+      "n_markets": 471,
+      "n_rows": 167941,
+      "capture_cadence_seconds": {
+        "median_s": 1.0,
+        "p10_s": 1.0,
+        "p90_s": 3.0
+      },
+      "real_full_spread": {
+        "n_clean_rows": 134167,
+        "n_total_rows": 167941,
+        "median": 0.02,
+        "mean": 0.06,
+        "p25": 0.01,
+        "p75": 0.06
+      },
+      "real_touch_depth_usd": {
+        "median_usd": 14.0,
+        "p10_usd": 2.1,
+        "p25_usd": 4.08,
+        "p75_usd": 32.84,
+        "pct_below_model_notional_cap": 65.8
+      },
+      "empty_and_crossed_by_minute_to_close": {
+        "0": {
+          "empty_rate_pct": 76.7,
+          "crossed_rate_pct": 1.9,
+          "n_rows": 26703
+        },
+        "1": {
+          "empty_rate_pct": 22.3,
+          "crossed_rate_pct": 3.1,
+          "n_rows": 29190
+        },
+        "2": {
+          "empty_rate_pct": 4.0,
+          "crossed_rate_pct": 2.7,
+          "n_rows": 30307
+        },
+        "3": {
+          "empty_rate_pct": 0.4,
+          "crossed_rate_pct": 3.5,
+          "n_rows": 31037
+        },
+        "4": {
+          "empty_rate_pct": 0.0,
+          "crossed_rate_pct": 5.5,
+          "n_rows": 30855
+        },
+        "5": {
+          "empty_rate_pct": 0.0,
+          "crossed_rate_pct": 2.0,
+          "n_rows": 19401
+        },
+        "6": {
+          "empty_rate_pct": 0.0,
+          "crossed_rate_pct": 0.0,
+          "n_rows": 448
+        }
+      }
+    },
+    "updown_15m": {
+      "n_markets": 265,
+      "n_rows": 239310,
+      "capture_cadence_seconds": {
+        "median_s": 1.0,
+        "p10_s": 1.0,
+        "p90_s": 4.0
+      },
+      "real_full_spread": {
+        "n_clean_rows": 209741,
+        "n_total_rows": 239310,
+        "median": 0.02,
+        "mean": 0.0572,
+        "p25": 0.01,
+        "p75": 0.05
+      },
+      "real_touch_depth_usd": {
+        "median_usd": 19.0,
+        "p10_usd": 2.08,
+        "p25_usd": 5.7,
+        "p75_usd": 37.2,
+        "pct_below_model_notional_cap": 59.6
+      },
+      "empty_and_crossed_by_minute_to_close": {
+        "0": {
+          "empty_rate_pct": 85.8,
+          "crossed_rate_pct": 0.9,
+          "n_rows": 12370
+        },
+        "1": {
+          "empty_rate_pct": 37.5,
+          "crossed_rate_pct": 1.5,
+          "n_rows": 12910
+        },
+        "2": {
+          "empty_rate_pct": 22.3,
+          "crossed_rate_pct": 1.9,
+          "n_rows": 15375
+        },
+        "3": {
+          "empty_rate_pct": 13.2,
+          "crossed_rate_pct": 2.1,
+          "n_rows": 15927
+        },
+        "4": {
+          "empty_rate_pct": 5.8,
+          "crossed_rate_pct": 2.3,
+          "n_rows": 14920
+        },
+        "5": {
+          "empty_rate_pct": 1.0,
+          "crossed_rate_pct": 2.1,
+          "n_rows": 15149
+        },
+        "6": {
+          "empty_rate_pct": 0.6,
+          "crossed_rate_pct": 1.3,
+          "n_rows": 15323
+        },
+        "7": {
+          "empty_rate_pct": 0.4,
+          "crossed_rate_pct": 3.6,
+          "n_rows": 15875
+        },
+        "8": {
+          "empty_rate_pct": 0.2,
+          "crossed_rate_pct": 2.5,
+          "n_rows": 15579
+        },
+        "9": {
+          "empty_rate_pct": 0.0,
+          "crossed_rate_pct": 1.2,
+          "n_rows": 15995
+        },
+        "10+ (rest of tape)": {
+          "empty_rate_pct": 0.0,
+          "crossed_rate_pct": 5.0,
+          "n_rows": 89887
+        }
+      }
+    },
+    "updown_4h": {
+      "n_markets": 69,
+      "n_rows": 489941,
+      "capture_cadence_seconds": {
+        "median_s": 2.0,
+        "p10_s": 1.0,
+        "p90_s": 8.0
+      },
+      "real_full_spread": {
+        "n_clean_rows": 480183,
+        "n_total_rows": 489941,
+        "median": 0.02,
+        "mean": 0.0468,
+        "p25": 0.01,
+        "p75": 0.04
+      },
+      "real_touch_depth_usd": {
+        "median_usd": 25.14,
+        "p10_usd": 3.0,
+        "p25_usd": 10.0,
+        "p75_usd": 44.0,
+        "pct_below_model_notional_cap": 49.2
+      },
+      "empty_and_crossed_by_minute_to_close": {
+        "0": {
+          "empty_rate_pct": 46.4,
+          "crossed_rate_pct": 9.3,
+          "n_rows": 948
+        },
+        "1": {
+          "empty_rate_pct": 34.2,
+          "crossed_rate_pct": 0.6,
+          "n_rows": 1024
+        },
+        "2": {
+          "empty_rate_pct": 21.2,
+          "crossed_rate_pct": 4.3,
+          "n_rows": 885
+        },
+        "3": {
+          "empty_rate_pct": 20.9,
+          "crossed_rate_pct": 5.3,
+          "n_rows": 834
+        },
+        "4": {
+          "empty_rate_pct": 17.2,
+          "crossed_rate_pct": 1.0,
+          "n_rows": 967
+        },
+        "5": {
+          "empty_rate_pct": 11.7,
+          "crossed_rate_pct": 3.3,
+          "n_rows": 1019
+        },
+        "6": {
+          "empty_rate_pct": 7.7,
+          "crossed_rate_pct": 9.0,
+          "n_rows": 1193
+        },
+        "7": {
+          "empty_rate_pct": 6.3,
+          "crossed_rate_pct": 0.7,
+          "n_rows": 1151
+        },
+        "8": {
+          "empty_rate_pct": 4.9,
+          "crossed_rate_pct": 0.2,
+          "n_rows": 1272
+        },
+        "9": {
+          "empty_rate_pct": 4.6,
+          "crossed_rate_pct": 0.1,
+          "n_rows": 1388
+        },
+        "10+ (rest of tape)": {
+          "empty_rate_pct": 0.1,
+          "crossed_rate_pct": 1.5,
+          "n_rows": 479260
+        }
+      }
+    }
+  }
+}

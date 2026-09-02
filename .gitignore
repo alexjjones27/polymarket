@@ -20,6 +20,12 @@ data/football_data/
 # scripts/download_tennis_data.py.
 data/tennis_data/
 
+# PolyOrderbooks' open Zenodo L2 order-book archive (~45MB, 3 parquet files,
+# CC BY 4.0, no account needed -- https://doi.org/10.5281/zenodo.22084114).
+# Third-party data, not Polymarket's own API, so it lives outside
+# data/raw/polymarket/; re-fetch via scripts/calibrate_against_real_l2.py.
+data/raw/polyorderbooks_l2/
+
 # Secrets: this repo is public on GitHub. Never commit private keys, API
 # keys/secrets/passphrases, or wallet material under any name/extension.
 .env

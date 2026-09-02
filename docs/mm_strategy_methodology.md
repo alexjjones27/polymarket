@@ -822,7 +822,123 @@ treated as a lead, not a conclusion.
 
 ---
 
-## 11. Reproducibility index
+## 11. Real L2 calibration check (crypto Up/Down, Aug 2026) — the first real order-book data used in this document
+
+Section 7's top recommendation, since the very first version of this
+document, has been "get real order-book / quote data, even a short
+live-recorded sample" — everything else in this document is a reconstruction
+from trade prints because Polymarket's own `/book` endpoint 404s on resolved
+markets. This section is that recommendation's first actual attempt, prompted
+by a list of seven third-party data vendors surfaced externally and checked
+here rather than taken on faith.
+
+### 11.1 What was checked, and how
+
+All seven named sources — PolyOrderbooks, PMData, PolyHistorical,
+PolymarketData.co, Telonex, Probalytics, and PolyData (an eighth, not in the
+original list, surfaced during the search) — are real, live services, not
+hallucinated. That was itself worth confirming rather than assuming: lists of
+specific boutique data vendors with plausible names and matching feature
+descriptions are a known pattern for fabricated content, and this one held up
+under direct inspection. But six of the seven gate even their advertised
+"free" tier behind an API key, which means an account signup — not attempted
+here without asking first, since it means creating accounts on unknown
+third-party services on the user's behalf.
+
+One is different: PolyOrderbooks also publishes an **open dataset on
+Zenodo** (a real, CERN-operated open-data repository), DOI
+`10.5281/zenodo.22084114`, CC BY 4.0, no account or key required. This was
+independently verified, not just read off the landing page: the DOI was
+resolved through `doi.org`, the Zenodo record was fetched directly, and all
+three files were downloaded and opened — row counts (167,941 / 239,310 /
+489,941) match the published README exactly, market counts per file sum to
+the claimed 805, and the data itself has the shape of a real, carefully
+produced capture (full multi-level bid/ask ladders, realistic non-round order
+sizes, correctly-formatted Polymarket CTF token IDs and market slugs,
+resolved-outcome labels, and a documented, disclosed rate of crossed/stale
+quotes rather than a suspiciously clean dataset). Reproducible via
+`scripts/calibrate_against_real_l2.py`, which downloads (retrying through the
+same intermittent Zenodo 504s hit while building it) and analyzes all three
+files; results in `results/polymarket_final_pct/l2_calibration_check.json`.
+
+### 11.2 Scope — stated plainly, because it is the whole reason this is a calibration check and not a validation
+
+This dataset is **crypto Up/Down markets only** (BTC, ETH, SOL, XRP, BNB,
+DOGE, HYPE, ZEC), three contract lengths (5m/15m/4h), captured over a single
+**4-day window** (2026-08-21 to 2026-08-24), ~800 markets sampled at random
+from those that resolved in the window. It shares essentially no overlap with
+the 1,331-market unbiased population used everywhere else in this document —
+that population is 2023–2026, mostly sports/other/crypto_price/politics, not
+crypto Up/Down specifically. **It cannot re-run or validate Sections 4–5's
+walk-forward result.** It also contains order-book *snapshots*, not executed
+trades — there is no fill data here, so `fill_share` cannot be checked this
+way, only spread and depth. What it can do: check whether the MM proxy
+model's core numeric assumptions are in the right ballpark for at least this
+slice, against real book state instead of inferring everything from trade
+prints.
+
+### 11.3 Findings
+
+**Spread: the model's base assumption lines up with the real median almost
+exactly.** Real full spread (best ask − best bid, non-crossed, two-sided
+rows) across all three contract lengths has a median of **$0.02** —
+`BASE_HALF_SPREAD=0.01` (a $0.02 assumed full spread) is not a guess pulled
+from nowhere, it matches the real median spread for this market family. The
+distribution is right-skewed (mean $0.045–$0.06, p75 $0.04–$0.06), which the
+existing `HALF_SPREADS` sensitivity grid ($0.01/$0.02/$0.04 full spread)
+already brackets reasonably well.
+
+**Touch depth: the flat $25 notional cap is defensible, not obviously
+wrong.** Real median size available at the best bid/ask is $14 (5m
+contracts), $19 (15m), and **$25.14 (4h)** — the 4-hour figure lands almost
+exactly on the model's own $25 cap. 50–66% of touch-level quotes (more for
+shorter contracts) are actually *smaller* than $25, meaning the cap is, if
+anything, mildly generous for the fastest contracts rather than unrealistic.
+
+**Empty-sided books independently confirm the exact mechanism this document
+has inferred indirectly from markout, for two years, without ever seeing a
+real book.** In the final minute before resolution, one side of the book is
+completely empty — no counterparty exists at any price — for **76.7% of 5m
+snapshots, 85.8% of 15m, and 46.4% of 4h**. This is not "the market moved
+against a resting quote," it is "there was no resting quote possible on the
+losing side at all," because as a binary market resolves, nobody offers the
+losing side. Section 3.3's "flash market" finding and Section 6's disclosed
+15-second-markout-window assumption were both reasoning toward this same
+phenomenon from trade-print evidence alone; this is the first time it's been
+measured directly, on real book state, and it is dramatic — not a minor edge
+effect.
+
+Crossed quotes (`best_bid >= best_ask`, a data-collection staleness artifact,
+disclosed in the source README rather than cleaned away) run 1–9% across the
+sample and are excluded from the spread/depth numbers above; they are a
+collector-quality caveat, not a market phenomenon, and are noted here rather
+than silently affecting the results.
+
+### 11.4 What this does and doesn't change
+
+**Does not** revise any number in Sections 3–10 — this is a different
+population and a different kind of data, and mixing it into the existing
+walk-forward result would contaminate a careful methodology with an
+unrepresentative slice. **Does** provide the first real-data check on two of
+the MM proxy model's central assumptions, and both check out better than a
+backtest-only project has any right to expect: the base half-spread and the
+per-trade notional cap are both close to real touch-level market conditions
+for crypto Up/Down markets, at least. It also delivers independent,
+non-inferred confirmation of the empty-book/no-counterparty mechanism this
+document's markout numbers have been pointing at all along.
+
+**Immediate next step, now that one source has been shown to actually work**:
+extend this to the six gated providers — cheapest first would be creating a
+free-tier account (PolyOrderbooks' own live API, PolyHistorical, or PMData
+all claim a genuinely free, no-card tier once signed in) to get broader
+market-category and longer time-window coverage, still short of what would
+be needed to fully re-run Sections 4–5 on real L2 but a meaningfully larger
+step than this 4-day, crypto-only slice. That requires an account decision
+the user makes, not one made unilaterally here.
+
+---
+
+## 12. Reproducibility index
 
 | Question | Script | Output |
 |---|---|---|
@@ -833,6 +949,7 @@ treated as a lead, not a conclusion.
 | Regime-change split + Maker Rebate upper bound | `scripts/run_mm_regime_and_rebate_check.py` | `mm_regime_and_rebate_check.json` |
 | VPIN/inventory-skew + category-window test | `scripts/run_mm_proxy_advanced.py` | `mm_proxy_advanced_results.json` |
 | Dynamic VPIN, sigmoid skew, vol cap, cooldown (Section 10) | `scripts/run_mm_proxy_v3.py` (mechanisms in `scripts/mm_risk_controls_v3.py`) | `mm_proxy_v3_results.json` |
+| Real L2 calibration check, crypto Up/Down (Section 11) | `scripts/calibrate_against_real_l2.py` | `l2_calibration_check.json` |
 | Unit tests for all pure functions above | `tests/test_mm_proxy_backtest.py`, `tests/test_mm_proxy_q3_deep_dive.py`, `tests/test_mm_walkforward_validation.py`, `tests/test_mm_regime_and_rebate_check.py`, `tests/test_mm_proxy_advanced.py`, `tests/test_mm_risk_controls_v3.py`, `tests/test_run_mm_proxy_v3.py` | `pytest tests/` (208 passing at time of writing) |
 
 All scripts reuse already-cached data wherever possible (trade tapes,
