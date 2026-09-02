@@ -13,6 +13,8 @@ from politics_kelly_calibration import (
     bucket_range,
     calibrated_p_yes,
     kelly_fraction,
+    kernel_weight,
+    local_calibrated_p_yes,
     midpoint_centered_prior,
     price_bucket,
 )
@@ -117,3 +119,64 @@ def test_kelly_fraction_matches_hand_computed_value():
     # p=0.70, price=0.50 -> b = (1-0.5)/0.5 = 1.0, q=0.30, L=1.0
     # f = (0.7*1.0 - 0.3*1.0) / (1.0*1.0) = 0.4
     assert kelly_fraction(p=0.70, price=0.50, fee_frac=0.0) == pytest.approx(0.4)
+
+
+# ---------------------------------------------------------------------------
+# kernel_weight
+# ---------------------------------------------------------------------------
+
+def test_kernel_weight_full_at_zero_distance():
+    assert kernel_weight(0.0, bandwidth=0.05) == pytest.approx(1.0)
+
+
+def test_kernel_weight_linear_decay():
+    assert kernel_weight(0.025, bandwidth=0.05) == pytest.approx(0.5)
+
+
+def test_kernel_weight_zero_beyond_bandwidth():
+    assert kernel_weight(0.05, bandwidth=0.05) == 0.0
+    assert kernel_weight(0.10, bandwidth=0.05) == 0.0
+
+
+# ---------------------------------------------------------------------------
+# local_calibrated_p_yes
+# ---------------------------------------------------------------------------
+
+def test_local_calibrated_p_yes_with_no_history_returns_price_exactly():
+    # The load-bearing invariant this fix exists to preserve: with nothing
+    # resolved nearby yet, belief must equal price exactly (zero edge).
+    p = local_calibrated_p_yes(price=0.55, history=[], prior_strength=20.0)
+    assert p == pytest.approx(0.55)
+
+
+def test_local_calibrated_p_yes_ignores_history_outside_the_bandwidth():
+    history = [(0.90, True), (0.95, False)]  # far from 0.55, all outside a 0.05 bandwidth
+    p = local_calibrated_p_yes(price=0.55, history=history, prior_strength=20.0, bandwidth=0.05)
+    assert p == pytest.approx(0.55)
+
+
+def test_local_calibrated_p_yes_pulls_toward_nearby_resolved_outcomes():
+    # A cluster of markets priced right next to 0.55 that mostly resolved
+    # YES should pull the estimate above the bare price.
+    history = [(0.54, True), (0.55, True), (0.56, True), (0.55, False)]
+    p = local_calibrated_p_yes(price=0.55, history=history, prior_strength=5.0, bandwidth=0.05)
+    assert p > 0.55
+
+
+def test_local_calibrated_p_yes_does_not_conflate_opposite_ends_of_a_wide_bucket():
+    # The exact discretization bug this replaces: two prices both inside the
+    # old [0.5, 0.6) bucket, evaluated against the SAME nearby history,
+    # should NOT get the same estimate -- 0.51 is close to a cluster of
+    # losers near 0.50, 0.59 is not.
+    history = [(0.50, False), (0.50, False), (0.50, False), (0.50, False)]
+    p_near = local_calibrated_p_yes(price=0.51, history=history, prior_strength=1.0, bandwidth=0.05)
+    p_far = local_calibrated_p_yes(price=0.59, history=history, prior_strength=1.0, bandwidth=0.05)
+    assert p_near < p_far
+
+
+def test_local_calibrated_p_yes_higher_prior_strength_resists_a_thin_local_sample():
+    history = [(0.551, True)]  # one nearby winner
+    weak_prior = local_calibrated_p_yes(price=0.55, history=history, prior_strength=1.0)
+    strong_prior = local_calibrated_p_yes(price=0.55, history=history, prior_strength=100.0)
+    assert weak_prior > strong_prior  # weak prior lets the single winner move the estimate further
+    assert strong_prior == pytest.approx(0.55, abs=0.01)

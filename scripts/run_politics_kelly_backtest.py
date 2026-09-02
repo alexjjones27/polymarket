@@ -1,16 +1,27 @@
 """Walk-forward backtest: buy YES on Polymarket politics markets, Kelly-sized
-against an empirically-calibrated probability estimate for the market's own
-entry-price bucket (see politics_kelly_calibration.py for why this, and not
-trusting the market's own price as truth, is what generates the edge Kelly
-sizes against). Population and entries from
-scripts/build_politics_kelly_population.py (results/polymarket_final_pct/politics_kelly_entries.csv).
+against an empirically-calibrated LOCAL probability estimate for the
+market's own entry price (see politics_kelly_calibration.py -- specifically
+local_calibrated_p_yes -- for why this, and not trusting the market's own
+price as truth, is what generates the edge Kelly sizes against). Population
+and entries from scripts/build_politics_kelly_population.py
+(results/polymarket_final_pct/politics_kelly_entries.csv).
 
 Mechanics mirror run_kelly_backtest.py's own event-loop simulation (entry/
 resolve events over a shared bankroll, walk-forward belief updates, per-
 trade/per-bucket/aggregate risk caps, the same FRACTIONS sweep and
-START_BANKROLL) -- reused deliberately rather than reinvented, generalized
-from "one belief per report_bucket, near-100% tail only" to "one belief per
-10%-wide entry-price bucket, full 0-100% range."
+START_BANKROLL) -- reused deliberately rather than reinvented.
+
+An earlier version of this script calibrated against fixed 10%-wide price
+buckets (one posterior mean per bucket). Discarded after inspecting the
+first backtest run: comparing one bucket-average estimate against each
+member's own EXACT entry price is a real discretization bug (see
+local_calibrated_p_yes's docstring) that systematically selects the
+worst-performing market within each bucket, not just adds noise -- a likely
+cause of the wild, non-monotonic swings the bucket version showed across
+the fraction sweep (adjacent Kelly fractions producing +9.7% and -45% CAGR
+back to back). Price buckets are kept only for the whole-sample calibration
+DIAGNOSTIC below (a coarse summary table is still a fine way to eyeball
+calibration), never for sizing a trade.
 """
 import csv
 import json
@@ -21,7 +32,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
-from politics_kelly_calibration import BUCKET_WIDTH, calibrated_p_yes, kelly_fraction, midpoint_centered_prior, price_bucket
+from politics_kelly_calibration import BUCKET_WIDTH, KERNEL_BANDWIDTH, kelly_fraction, local_calibrated_p_yes, price_bucket
 import polymarket_final_pct as pmf
 
 REPO = Path(__file__).resolve().parents[1]
@@ -32,10 +43,23 @@ START_BANKROLL = 10_000.0
 FRACTIONS = [1.0, 0.5, 0.25, 0.125, 0.0625, 0.03125]
 MAX_POS_PCT = 0.03       # no single trade risks more than 3% of current equity
 AGG_CAP_PCT = 0.50       # no more than 50% of equity committed across all open positions at once
-BUCKET_CAP_PCT = 0.25    # no more than 25% of equity committed to any one price bucket at once
-DEFAULT_PRIOR_STRENGTH = 20.0  # pseudo-observations of weight behind each bucket's midpoint-centered prior
+BUCKET_CAP_PCT = 0.25    # no more than 25% of equity committed to any one (still 10%-wide) price band at once -- a risk/diversification cap, unrelated to how calibration itself is computed
+DEFAULT_PRIOR_STRENGTH = 20.0  # pseudo-observations of weight behind "assume this exact price is already correct"
 PRIOR_STRENGTH_SWEEP = [5.0, 20.0, 50.0]
+DEFAULT_BANDWIDTH = KERNEL_BANDWIDTH
+BANDWIDTH_SWEEP = [0.02, 0.05, 0.10]
 FEE_CATEGORY = "politics"
+
+# A market's own first-trade notional is a real, measured ceiling on what
+# could plausibly have been filled at that exact price -- median across
+# this population is $9.20, 88% under $50 (checked directly against the
+# cached trade tapes). Sizing purely off a growing bankroll (up to
+# MAX_POS_PCT of it) would silently assume fills many multiples larger than
+# the entire real market activity being modeled. 1.0x means "at most the
+# one observed trade's own size" -- the most conservative, defensible
+# reading, not "up to some assumed multiple of it."
+DEFAULT_LIQUIDITY_CAP_MULTIPLE = 1.0
+BANKROLL_SWEEP = [10_000.0, 1_000.0]
 
 
 def parse_dt(s: str) -> datetime:
@@ -49,13 +73,16 @@ def load_entries(path: Path = ENTRIES_PATH) -> list[dict]:
         r["entry_dt"] = parse_dt(r["entry_time"])
         r["resolve_dt"] = parse_dt(r["resolution_time"])
         r["yes_price"] = float(r["yes_price"])
+        r["first_trade_notional"] = float(r["first_trade_notional"])
         r["resolved_yes"] = r["resolved_yes"] == "True"
         r["n_trades"] = int(r["n_trades"])
     return rows
 
 
 def run_sim(entries: list[dict], fraction: float, fee_mode: str, prior_strength: float = DEFAULT_PRIOR_STRENGTH,
+            bandwidth: float = DEFAULT_BANDWIDTH,
             max_pos_pct: float = MAX_POS_PCT, agg_cap_pct: float = AGG_CAP_PCT, bucket_cap_pct: float = BUCKET_CAP_PCT,
+            liquidity_cap_multiple: float = DEFAULT_LIQUIDITY_CAP_MULTIPLE, start_bankroll: float = START_BANKROLL,
             track_trades: bool = False) -> dict:
     events = []
     for r in entries:
@@ -64,14 +91,12 @@ def run_sim(entries: list[dict], fraction: float, fee_mode: str, prior_strength:
         events.append((resolve_key_t, 1, "resolve", r))
     events.sort(key=lambda e: (e[0], e[1]))
 
-    bucket_wins: dict[int, int] = {}
-    bucket_n: dict[int, int] = {}
+    # Growing list of (entry_price, resolved_yes) for markets already
+    # resolved by this point in the walk-forward simulation -- what
+    # local_calibrated_p_yes weighs by proximity to a new entry's price.
+    resolved_history: list[tuple[float, bool]] = []
 
-    def p_hat(bucket_idx: int) -> float:
-        prior_a, prior_b = midpoint_centered_prior(bucket_idx, prior_strength, BUCKET_WIDTH)
-        return calibrated_p_yes(prior_a, prior_b, bucket_wins.get(bucket_idx, 0), bucket_n.get(bucket_idx, 0))
-
-    cash = START_BANKROLL
+    cash = start_bankroll
     committed: dict[int, float] = {}
     committed_by_bucket: dict[int, float] = {}
     equity_series = []
@@ -82,8 +107,8 @@ def run_sim(entries: list[dict], fraction: float, fee_mode: str, prior_strength:
         if kind == "entry":
             price = r["yes_price"]
             fee_frac = 0.0 if fee_mode == "maker" else pmf.taker_fee_frac_of_notional(price, FEE_CATEGORY)
-            bucket = price_bucket(price, BUCKET_WIDTH)
-            p = p_hat(bucket)
+            bucket = price_bucket(price)  # risk-cap bucketing only, not calibration -- see module docstring
+            p = local_calibrated_p_yes(price, resolved_history, prior_strength, bandwidth)
             equity = cash + sum(committed.values())
             f_kelly = kelly_fraction(p, price, fee_frac)
             if f_kelly <= 0:
@@ -95,7 +120,8 @@ def run_sim(entries: list[dict], fraction: float, fee_mode: str, prior_strength:
             bucket_committed = committed_by_bucket.get(bucket, 0.0)
             room_agg = agg_cap_pct * equity - total_committed
             room_bucket = bucket_cap_pct * equity - bucket_committed
-            stake = min(desired, room_agg, room_bucket, cash)
+            liquidity_cap = r["first_trade_notional"] * liquidity_cap_multiple
+            stake = min(desired, room_agg, room_bucket, cash, liquidity_cap)
             if stake <= 1e-6:
                 n_skip_capital += 1
                 continue
@@ -111,10 +137,11 @@ def run_sim(entries: list[dict], fraction: float, fee_mode: str, prior_strength:
             if track_trades:
                 r["_entry_equity"] = equity
         else:
-            bucket = price_bucket(r["yes_price"], BUCKET_WIDTH)
-            bucket_n[bucket] = bucket_n.get(bucket, 0) + 1
-            if r["resolved_yes"]:
-                bucket_wins[bucket] = bucket_wins.get(bucket, 0) + 1
+            # The outcome is public information regardless of whether we had
+            # capital in this specific market -- every resolved entry feeds
+            # the calibration history, same convention as run_kelly_backtest.py's
+            # own bucket_flips/bucket_n update.
+            resolved_history.append((r["yes_price"], r["resolved_yes"]))
 
             key = id(r)
             if key not in committed:
@@ -152,7 +179,7 @@ def run_sim(entries: list[dict], fraction: float, fee_mode: str, prior_strength:
         by_day[t.date()] = eq
     daily = []
     d = start_day
-    last_eq = START_BANKROLL
+    last_eq = start_bankroll
     while d <= end_day:
         if d in by_day:
             last_eq = by_day[d]
@@ -160,7 +187,7 @@ def run_sim(entries: list[dict], fraction: float, fee_mode: str, prior_strength:
         d += timedelta(days=1)
 
     span_days = (end_day - start_day).days
-    cagr = (final_equity / START_BANKROLL) ** (365.0 / span_days) - 1 if span_days > 0 and final_equity > 0 else float("nan")
+    cagr = (final_equity / start_bankroll) ** (365.0 / span_days) - 1 if span_days > 0 and final_equity > 0 else float("nan")
 
     peak = -math.inf
     max_dd = 0.0
@@ -180,9 +207,10 @@ def run_sim(entries: list[dict], fraction: float, fee_mode: str, prior_strength:
     sharpe = (mean_r / std_r * math.sqrt(365)) if std_r > 0 else float("nan")
 
     return {
-        "fraction": fraction, "fee_mode": fee_mode, "prior_strength": prior_strength,
+        "fraction": fraction, "fee_mode": fee_mode, "prior_strength": prior_strength, "bandwidth": bandwidth,
+        "start_bankroll": start_bankroll, "liquidity_cap_multiple": liquidity_cap_multiple,
         "final_equity": round(final_equity, 2),
-        "total_return_pct": round((final_equity / START_BANKROLL - 1) * 100, 2),
+        "total_return_pct": round((final_equity / start_bankroll - 1) * 100, 2),
         "cagr_pct": round(cagr * 100, 2) if not math.isnan(cagr) else None,
         "max_drawdown_pct": round(max_dd * 100, 2),
         "sharpe": round(sharpe, 2) if not math.isnan(sharpe) else None,
@@ -233,7 +261,7 @@ def main():
                   f"CAGR={res['cagr_pct']:>7.1f}%  MaxDD={res['max_drawdown_pct']:>6.1f}%  Sharpe={res['sharpe']}  "
                   f"taken={res['n_taken']:<6} skip_noedge={res['n_skip_noedge']:<6} skip_cap={res['n_skip_capital']}")
 
-    print(f"\n=== Prior-strength sensitivity (maker fees, quarter-Kelly) ===")
+    print(f"\n=== Prior-strength sensitivity (maker fees, quarter-Kelly, bandwidth={DEFAULT_BANDWIDTH}) ===")
     prior_sweep = {}
     for ps in PRIOR_STRENGTH_SWEEP:
         res = run_sim([dict(r) for r in entries], 0.25, "maker", prior_strength=ps)
@@ -242,11 +270,33 @@ def main():
               f"MaxDD={res['max_drawdown_pct']:>6.1f}%  Sharpe={res['sharpe']}  taken={res['n_taken']}")
     results["prior_strength_sweep"] = prior_sweep
 
-    print(f"\n=== Recommended configuration, trade-level detail (quarter-Kelly, maker fees) ===")
-    recommended = run_sim([dict(r) for r in entries], 0.25, "maker", track_trades=True)
-    print(f"  final=${recommended['final_equity']:>12,.0f}  CAGR={recommended['cagr_pct']:.1f}%  "
-          f"MaxDD={recommended['max_drawdown_pct']:.1f}%  Sharpe={recommended['sharpe']}  n_trades={recommended['n_taken']}")
-    results["recommended"] = recommended
+    print(f"\n=== Kernel-bandwidth sensitivity (maker fees, quarter-Kelly, prior_strength={DEFAULT_PRIOR_STRENGTH}) ===")
+    bandwidth_sweep = {}
+    for bw in BANDWIDTH_SWEEP:
+        res = run_sim([dict(r) for r in entries], 0.25, "maker", bandwidth=bw)
+        bandwidth_sweep[str(bw)] = res
+        print(f"  bandwidth={bw:<6} final=${res['final_equity']:>12,.0f}  CAGR={res['cagr_pct']:>7.1f}%  "
+              f"MaxDD={res['max_drawdown_pct']:>6.1f}%  Sharpe={res['sharpe']}  taken={res['n_taken']}")
+    results["bandwidth_sweep"] = bandwidth_sweep
+
+    print(f"\n=== Liquidity-cap stress test (maker fees, quarter-Kelly): what if stakes weren't capped by the "
+          f"market's own first-trade size? ===")
+    liq_capped = run_sim([dict(r) for r in entries], 0.25, "maker", liquidity_cap_multiple=1.0)
+    liq_uncapped = run_sim([dict(r) for r in entries], 0.25, "maker", liquidity_cap_multiple=float("inf"))
+    print(f"  capped (1.0x first-trade size): final=${liq_capped['final_equity']:>12,.0f}  CAGR={liq_capped['cagr_pct']:.1f}%  taken={liq_capped['n_taken']}")
+    print(f"  uncapped (bankroll-sized only):  final=${liq_uncapped['final_equity']:>12,.0f}  CAGR={liq_uncapped['cagr_pct']:.1f}%  taken={liq_uncapped['n_taken']}")
+    results["liquidity_cap_stress_test"] = {"capped": liq_capped, "uncapped": liq_uncapped}
+
+    print(f"\n=== Bankroll sweep (quarter-Kelly, maker fees, liquidity-capped) ===")
+    bankroll_sweep = {}
+    for bankroll in BANKROLL_SWEEP:
+        res = run_sim([dict(r) for r in entries], 0.25, "maker", start_bankroll=bankroll, track_trades=True)
+        bankroll_sweep[str(bankroll)] = res
+        print(f"  bankroll=${bankroll:<10,.0f} final=${res['final_equity']:>12,.0f}  total_return={res['total_return_pct']:>7.1f}%  "
+              f"CAGR={res['cagr_pct']:>7.1f}%  MaxDD={res['max_drawdown_pct']:>6.1f}%  Sharpe={res['sharpe']}  "
+              f"taken={res['n_taken']:<6} skip_cap={res['n_skip_capital']}")
+    results["bankroll_sweep"] = bankroll_sweep
+    results["recommended"] = bankroll_sweep[str(START_BANKROLL)]
     results["calibration_report"] = calibration
     results["n_entries"] = len(entries)
 

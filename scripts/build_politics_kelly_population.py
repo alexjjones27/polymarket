@@ -110,7 +110,12 @@ def stream_politics_population(cache_dir: Path = pmf.GAMMA_CACHE_DIR) -> list[di
 
 def fetch_entry(meta: dict) -> dict | None:
     """First real (chronologically-sorted) trade for this market, price
-    normalized onto the YES side. None if the market has no usable trades."""
+    normalized onto the YES side, plus that trade's own notional -- a
+    real, measured liquidity ceiling for the backtest (median first-trade
+    notional across this population is $9.20; 88% are under $50 -- a Kelly
+    stake sized off bankroll alone, with no reference to this, would
+    silently assume fills many multiples larger than the entire real market
+    activity being modeled). None if the market has no usable trades."""
     raw = pmf.fetch_market_trades(meta["condition_id"])
     if not raw:
         return None
@@ -118,13 +123,14 @@ def fetch_entry(meta: dict) -> dict | None:
     for t in raw:
         try:
             price = float(t["price"])
+            size = float(t["size"])
             ts = float(t.get("timestamp", 0))
             outcome = t["outcome"]
         except (KeyError, ValueError, TypeError):
             continue
-        if price <= 0 or price >= 1 or outcome not in ("Yes", "No"):
+        if price <= 0 or price >= 1 or size <= 0 or outcome not in ("Yes", "No"):
             continue
-        valid.append({"price": price, "timestamp": ts, "outcome": outcome})
+        valid.append({"price": price, "size": size, "timestamp": ts, "outcome": outcome})
     if not valid:
         return None
     valid.sort(key=lambda t: t["timestamp"])
@@ -135,6 +141,7 @@ def fetch_entry(meta: dict) -> dict | None:
         "question": meta["question"][:120],
         "entry_time": pmf.pd.Timestamp(first["timestamp"], unit="s", tz="UTC").isoformat(),
         "yes_price": round(yes_price, 4),
+        "first_trade_notional": round(first["price"] * first["size"], 4),
         "resolution_time": meta["resolution_time"],
         "resolved_yes": meta["resolved_outcome"] == "Yes",
         "n_trades": len(valid),
@@ -166,7 +173,7 @@ def main():
     entries.sort(key=lambda r: r["entry_time"])
     out_path = RESULTS_DIR / "politics_kelly_entries.csv"
     with open(out_path, "w", newline="", encoding="utf-8") as f:
-        w = csv.DictWriter(f, fieldnames=["condition_id", "question", "entry_time", "yes_price",
+        w = csv.DictWriter(f, fieldnames=["condition_id", "question", "entry_time", "yes_price", "first_trade_notional",
                                            "resolution_time", "resolved_yes", "n_trades"])
         w.writeheader()
         w.writerows(entries)
