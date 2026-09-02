@@ -369,45 +369,58 @@ def market_pace_seconds(sorted_trades: list[dict]):
     return gaps[mid] if n % 2 else (gaps[mid - 1] + gaps[mid]) / 2
 
 
+def assign_quantile_buckets(per_market: list[dict], field: str, out_field: str,
+                             n_quantiles: int = PACE_QUANTILES, prefix: str = "Q") -> None:
+    """Generic equal-COUNT quantile bucketing (bucket 1 = lowest `field`,
+    bucket n_quantiles = highest) -- data-driven edges over the actual
+    population, not a fixed threshold picked by hand. Mutates `per_market` in
+    place, writing `out_field`. Rows where `field` is None get "n/a" and are
+    excluded from the split itself. Used for pace (assign_pace_buckets below)
+    and, identically, for any other per-market numeric characteristic worth
+    segmenting by -- e.g. trade volume."""
+    eligible = [r for r in per_market if r[field] is not None]
+    eligible.sort(key=lambda r: r[field])
+    n = len(eligible)
+    for idx, r in enumerate(eligible):
+        r[out_field] = f"{prefix}{min(n_quantiles - 1, idx * n_quantiles // n) + 1}" if n else "n/a"
+    for r in per_market:
+        r.setdefault(out_field, "n/a")
+
+
 def assign_pace_buckets(per_market: list[dict]) -> None:
     """Mutates `per_market` in place, adding a `pace_bucket` field (Q1..Q5,
     Q1 = fastest/most active market, Q5 = slowest) via data-driven quantile
-    edges over median_inter_trade_s -- an equal-COUNT split of the actual
-    population, not a fixed threshold picked by hand. Markets with no
-    measurable pace (median_inter_trade_s is None, i.e. <2 real trades) get
-    pace_bucket "n/a" and are excluded from the quantile split itself."""
-    paced = [r for r in per_market if r["median_inter_trade_s"] is not None]
-    paced.sort(key=lambda r: r["median_inter_trade_s"])
-    n = len(paced)
-    for idx, r in enumerate(paced):
-        r["pace_bucket"] = f"Q{min(PACE_QUANTILES - 1, idx * PACE_QUANTILES // n) + 1}" if n else "n/a"
-    for r in per_market:
-        r.setdefault("pace_bucket", "n/a")
+    edges over median_inter_trade_s. Markets with no measurable pace
+    (median_inter_trade_s is None, i.e. <2 real trades) get pace_bucket
+    "n/a" and are excluded from the quantile split itself."""
+    assign_quantile_buckets(per_market, "median_inter_trade_s", "pace_bucket", PACE_QUANTILES, "Q")
 
 
-def pace_breakdown(per_market: list[dict]) -> dict:
-    """Same shape as category_breakdown, keyed by pace_bucket (Q1..Q5)
-    instead of report_bucket, plus the actual pace range each bucket spans
+def quantile_breakdown(per_market: list[dict], bucket_field: str, range_field: str) -> dict:
+    """Same shape as category_breakdown, keyed by whatever quantile bucket
+    was assigned to `bucket_field` (by assign_quantile_buckets) instead of
+    report_bucket, plus the actual range of `range_field` each bucket spans
     (for interpretability -- "Q5" alone doesn't say anything, "median gap
     38-420 minutes" does). Sorted best-to-worst by pnl_with_markout_time,
     same convention as category_breakdown, so callers can just take the
-    first entry as "the best bucket" without assuming pace and profitability
-    are monotonic -- they're expected to correlate, not required to."""
+    first entry as "the best bucket" without assuming the bucketed
+    characteristic and profitability are monotonic -- they're expected to
+    correlate, not required to."""
     buckets = {}
     for r in per_market:
-        if r["pace_bucket"] == "n/a":
+        if r[bucket_field] == "n/a":
             continue
-        b = buckets.setdefault(r["pace_bucket"], {
+        b = buckets.setdefault(r[bucket_field], {
             "n_markets": 0, "pnl_best_case": 0.0,
             "pnl_with_markout_trades": 0.0, "pnl_with_markout_time": 0.0,
-            "captured_notional": 0.0, "pace_samples": [],
+            "captured_notional": 0.0, "range_samples": [],
         })
         b["n_markets"] += 1
         b["pnl_best_case"] += r["pnl"]
         b["pnl_with_markout_trades"] += r["pnl_with_markout_trades"]
         b["pnl_with_markout_time"] += r["pnl_with_markout_time"]
         b["captured_notional"] += r["captured_notional"]
-        b["pace_samples"].append(r["median_inter_trade_s"])
+        b["range_samples"].append(r[range_field])
     out = {}
     for name, b in sorted(buckets.items(), key=lambda kv: -kv[1]["pnl_with_markout_time"]):
         out[name] = {
@@ -420,9 +433,15 @@ def pace_breakdown(per_market: list[dict]) -> dict:
                 round(b["pnl_with_markout_time"] / b["pnl_best_case"] * 100, 1)
                 if b["pnl_best_case"] else None
             ),
-            "median_inter_trade_s_range": [round(min(b["pace_samples"]), 1), round(max(b["pace_samples"]), 1)],
+            f"{range_field}_range": [round(min(b["range_samples"]), 1), round(max(b["range_samples"]), 1)],
         }
     return out
+
+
+def pace_breakdown(per_market: list[dict]) -> dict:
+    """quantile_breakdown specialized to pace_bucket / median_inter_trade_s
+    -- kept as a named function since it's the one used throughout main()."""
+    return quantile_breakdown(per_market, "pace_bucket", "median_inter_trade_s")
 
 
 def main():

@@ -10,7 +10,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 
-from run_mm_proxy_q3_deep_dive import find_crossover, load_bucket_condition_ids
+from run_mm_proxy_q3_deep_dive import build_volume_threshold_sweep, find_crossover, load_bucket_condition_ids
 
 
 # ---------------------------------------------------------------------------
@@ -87,3 +87,38 @@ def test_find_crossover_picks_the_first_crossing_not_the_last():
         {"window_seconds": 300, "total_pnl": -30.0},
     ]
     assert find_crossover(grid) == (5, 15)
+
+
+# ---------------------------------------------------------------------------
+# build_volume_threshold_sweep
+# ---------------------------------------------------------------------------
+
+def _vrow(volume, pnl_time):
+    return {"total_market_volume": volume, "pnl": 1.0, "pnl_with_markout_time": pnl_time}
+
+
+def test_build_volume_threshold_sweep_reports_per_market_stats_not_just_the_sum():
+    # Deliberately mirrors the real finding: low-volume markets lose a
+    # little, the highest-volume one wins big. The sum can hide that most
+    # markets are negative -- median and pct_positive must not.
+    rows = [_vrow(10.0, -10.0), _vrow(20.0, -5.0), _vrow(30.0, 2.0), _vrow(40.0, 3.0), _vrow(50.0, 100.0)]
+    sweep = build_volume_threshold_sweep(rows, percentiles=[0, 50, 90])
+    by_p = {row["percentile"]: row for row in sweep}
+
+    assert by_p[0]["n_markets"] == 5
+    assert by_p[0]["total_pnl_with_markout_time"] == pytest.approx(90.0)
+    assert by_p[0]["median_pnl_with_markout_time"] == pytest.approx(2.0)
+    assert by_p[0]["pct_markets_positive_markout"] == pytest.approx(60.0)
+
+    assert by_p[50]["n_markets"] == 3  # volume >= 30 -> the 30/40/50 markets
+    assert by_p[50]["median_pnl_with_markout_time"] == pytest.approx(3.0)
+    assert by_p[50]["pct_markets_positive_markout"] == pytest.approx(100.0)
+
+    assert by_p[90]["n_markets"] == 1  # just the $50-volume market
+    assert by_p[90]["total_pnl_with_markout_time"] == pytest.approx(100.0)
+
+
+def test_build_volume_threshold_sweep_handles_empty_input():
+    sweep = build_volume_threshold_sweep([], percentiles=[0, 50])
+    assert all(row["n_markets"] == 0 for row in sweep)
+    assert all(row["median_pnl_with_markout_time"] is None for row in sweep)

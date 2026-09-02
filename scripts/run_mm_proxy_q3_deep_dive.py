@@ -42,6 +42,10 @@ TARGET_BUCKET = "Q3"
 # specifically to locate the crossover it only bracketed (positive at 60s,
 # negative at 300s).
 TIME_WINDOW_FINE_GRID = [5, 10, 15, 20, 30, 45, 60, 90, 120, 180, 240, 300]
+# Percentile cutoffs on total_market_volume, for the "does a volume floor on
+# top of the pace filter turn a few-winners-carry-it bucket into something
+# broad-based" sweep.
+VOLUME_PERCENTILE_THRESHOLDS = [0, 10, 25, 50, 75, 90]
 
 
 def load_bucket_condition_ids(results_path: Path = RESULTS_PATH, bucket: str = TARGET_BUCKET) -> list[str]:
@@ -72,6 +76,33 @@ def find_crossover(time_grid: list[dict]):
         if a["total_pnl"] >= 0 and b["total_pnl"] < 0:
             return a["window_seconds"], b["window_seconds"]
     return None
+
+
+def build_volume_threshold_sweep(per_market: list[dict], percentiles: list[float] = VOLUME_PERCENTILE_THRESHOLDS) -> list[dict]:
+    """For each percentile P, keep only markets whose total_market_volume is
+    at or above that percentile of the population, and report the PER-MARKET
+    median/mean of pnl_with_markout_time for what's left, not just the sum.
+    The sum alone can hide one big winner carrying an otherwise-flat group
+    (exactly what the deep dive found for Q3 as a whole); the median is the
+    actual answer to "does the typical market above this volume bar work,"
+    which is the real question a volume filter is supposed to answer."""
+    volumes = sorted(r["total_market_volume"] for r in per_market)
+    out = []
+    for p in percentiles:
+        cutoff = base._percentile(volumes, p)
+        subset = [r for r in per_market if r["total_market_volume"] >= cutoff] if cutoff is not None else []
+        markouts = sorted(r["pnl_with_markout_time"] for r in subset)
+        out.append({
+            "percentile": p,
+            "volume_cutoff": round(cutoff, 2) if cutoff is not None else None,
+            "n_markets": len(subset),
+            "total_pnl_best_case": round(sum(r["pnl"] for r in subset), 2),
+            "total_pnl_with_markout_time": round(sum(markouts), 2),
+            "median_pnl_with_markout_time": round(base._percentile(markouts, 50), 2) if markouts else None,
+            "mean_pnl_with_markout_time": round(sum(markouts) / len(markouts), 2) if markouts else None,
+            "pct_markets_positive_markout": round(sum(1 for x in markouts if x > 0) / len(markouts) * 100, 1) if markouts else None,
+        })
+    return out
 
 
 def main():
@@ -141,6 +172,20 @@ def main():
     concentration_markout = base.concentration_by_top_n(per_market, "pnl_with_markout_time", worst=True)
     category_report = base.category_breakdown(per_market)
 
+    # Does a volume filter turn "a few winners carry a breakeven bucket" into
+    # something broad-based? Segment by total_market_volume (an inherent
+    # property of the market, same kind of characteristic pace was) and check
+    # both the top volume bucket's own concentration AND a threshold sweep's
+    # PER-MARKET outcome -- a bigger total can still hide one big winner;
+    # only the per-market median/mean says whether the TYPICAL high-volume
+    # market actually works.
+    base.assign_quantile_buckets(per_market, "total_market_volume", "volume_bucket", n_quantiles=5, prefix="V")
+    volume_report = base.quantile_breakdown(per_market, "volume_bucket", "total_market_volume")
+    best_volume_bucket = next(iter(volume_report), None)
+    top_volume_subset = [r for r in per_market if r["volume_bucket"] == best_volume_bucket]
+    concentration_top_volume = base.concentration_by_top_n(top_volume_subset, "pnl_with_markout_time")
+    volume_threshold_sweep = build_volume_threshold_sweep(per_market)
+
     per_market.sort(key=lambda r: r["resolution_time"])
     equity = base.START_BANKROLL
     equity_markout = base.START_BANKROLL
@@ -172,6 +217,10 @@ def main():
         "concentration_best_case": concentration_best,
         "concentration_markout_worst": concentration_markout,
         "category_breakdown": category_report,
+        "volume_breakdown": volume_report,
+        "best_volume_bucket": best_volume_bucket,
+        "concentration_within_best_volume_bucket": concentration_top_volume,
+        "volume_threshold_sweep": volume_threshold_sweep,
         "volume_share_captured": {
             "mean": round(sum(vol_shares) / len(vol_shares), 4) if vol_shares else None,
             "max": round(max(vol_shares), 4) if vol_shares else None,
@@ -216,6 +265,25 @@ def main():
 
     print(f"\nLiquidity: mean volume share captured {summary['volume_share_captured']['mean']}, "
           f"max {summary['volume_share_captured']['max']} (cap is {base.MAX_MARKET_VOLUME_SHARE})")
+
+    print(f"\n(5) Volume segmentation within Q3 -- does market size (V1=lowest .. V5=highest "
+          f"total_market_volume) explain the concentration?")
+    for name, b in volume_report.items():
+        pct = f"{b['markout_time_pct_of_best_case']}%" if b['markout_time_pct_of_best_case'] is not None else "n/a"
+        lo, hi = b["total_market_volume_range"]
+        print(f"  {name}  n_markets={b['n_markets']:<5} volume=${lo:>9,.0f}-${hi:>10,.0f}  "
+              f"best_case=${b['pnl_best_case']:>9,.2f}  markout_time=${b['pnl_with_markout_time']:>9,.2f}  ({pct} of best case)")
+    print(f"  Best volume bucket: {best_volume_bucket} -- concentration within it (top N as % of ITS OWN total):")
+    for row in concentration_top_volume["by_top_n"]:
+        print(f"    top {row['n']:<3}: ${row['pnl']:>9,.2f}  ({row['pct_of_total']}% of {best_volume_bucket}'s total)")
+
+    print(f"\nVolume threshold sweep -- as the minimum market-volume bar rises, does the TYPICAL "
+          f"(median) market start working, or is it still just the total being carried by a few?")
+    for row in volume_threshold_sweep:
+        print(f"  p{row['percentile']:>2} (volume>=${row['volume_cutoff']:>9,.0f})  n={row['n_markets']:<4}  "
+              f"total_markout=${row['total_pnl_with_markout_time']:>9,.2f}  "
+              f"median=${row['median_pnl_with_markout_time']:>8,.2f}  mean=${row['mean_pnl_with_markout_time']:>8,.2f}  "
+              f"%positive={row['pct_markets_positive_markout']}%")
 
     print("\n(4) Top 5 markets by 15s markout PnL:")
     for r in top10[:5]:

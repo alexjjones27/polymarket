@@ -14,11 +14,13 @@ from run_mm_proxy_backtest import (
     MAX_MARKET_VOLUME_SHARE,
     MAX_NOTIONAL_PER_TRADE,
     assign_pace_buckets,
+    assign_quantile_buckets,
     concentration_by_top_n,
     market_pace_seconds,
     market_pnl,
     pace_breakdown,
     parse_and_sort_trades,
+    quantile_breakdown,
 )
 
 
@@ -267,3 +269,34 @@ def test_concentration_by_top_n_handles_zero_total_pnl():
     out = concentration_by_top_n(rows, "pnl")
     top1 = next(r for r in out["by_top_n"] if r["n"] == 1)
     assert top1["pct_of_total"] is None
+
+
+# ---------------------------------------------------------------------------
+# assign_quantile_buckets / quantile_breakdown -- the generic machinery
+# assign_pace_buckets/pace_breakdown are now thin wrappers over
+# ---------------------------------------------------------------------------
+
+def test_assign_quantile_buckets_uses_the_given_field_and_prefix():
+    rows = [{"volume": v} for v in [50.0, 10.0, 30.0, 40.0, 20.0]]
+    assign_quantile_buckets(rows, "volume", "volume_bucket", n_quantiles=5, prefix="V")
+    by_volume = sorted(rows, key=lambda r: r["volume"])
+    assert [r["volume_bucket"] for r in by_volume] == ["V1", "V2", "V3", "V4", "V5"]
+
+
+def test_assign_quantile_buckets_none_field_gets_na():
+    rows = [{"volume": None}, {"volume": 1.0}, {"volume": 2.0}]
+    assign_quantile_buckets(rows, "volume", "volume_bucket", n_quantiles=2, prefix="V")
+    assert rows[0]["volume_bucket"] == "n/a"
+
+
+def test_quantile_breakdown_works_on_a_non_pace_field():
+    rows = [
+        {"volume_bucket": "V1", "total_volume": 10.0, "pnl": 1.0, "pnl_with_markout_trades": 1.0,
+         "pnl_with_markout_time": -5.0, "captured_notional": 1.0},
+        {"volume_bucket": "V2", "total_volume": 20.0, "pnl": 1.0, "pnl_with_markout_trades": 1.0,
+         "pnl_with_markout_time": 5.0, "captured_notional": 1.0},
+    ]
+    out = quantile_breakdown(rows, "volume_bucket", "total_volume")
+    assert set(out.keys()) == {"V1", "V2"}
+    assert next(iter(out)) == "V2"  # ranked first: higher pnl_with_markout_time
+    assert out["V2"]["total_volume_range"] == [20.0, 20.0]
