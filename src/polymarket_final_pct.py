@@ -100,6 +100,7 @@ from typing import Optional
 
 import numpy as np
 import pandas as pd
+import requests
 
 # ---------------------------------------------------------------------------
 # Paths / constants
@@ -132,19 +133,25 @@ CLOB_LAUNCH_CUTOFF = "2022-09-01"
 
 
 def _request_json(url: str, retries: int = 5, timeout: float = 30.0) -> object:
-    req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+    """Uses `requests`, not `urllib.request`, on purpose -- confirmed live
+    that clob.polymarket.com's WAF 403s stdlib urllib's TLS handshake
+    specifically (same URL, same User-Agent string, curl and `requests`
+    both succeed) while gamma-api.polymarket.com does not block it. Raises
+    urllib.error.HTTPError on a non-retryable status so every existing
+    `except urllib.error.HTTPError` call site (e.g. fetch_prices_chunk)
+    keeps working unchanged."""
     last_err: Exception | None = None
     for attempt in range(retries):
         try:
-            with urllib.request.urlopen(req, timeout=timeout) as resp:
-                return json.loads(resp.read())
-        except urllib.error.HTTPError as exc:
-            if exc.code in (429, 500, 502, 503, 504):
-                last_err = exc
-                time.sleep(min(2 ** attempt, 20))
-                continue
-            raise
-        except (urllib.error.URLError, TimeoutError, ConnectionError) as exc:
+            resp = requests.get(url, headers={"User-Agent": USER_AGENT}, timeout=timeout)
+            if resp.status_code >= 400:
+                if resp.status_code in (429, 500, 502, 503, 504):
+                    last_err = urllib.error.HTTPError(url, resp.status_code, resp.reason, None, None)
+                    time.sleep(min(2 ** attempt, 20))
+                    continue
+                raise urllib.error.HTTPError(url, resp.status_code, resp.reason, None, None)
+            return resp.json()
+        except requests.exceptions.RequestException as exc:
             last_err = exc
             time.sleep(min(2 ** attempt, 20))
     raise RuntimeError(f"GET {url} failed after {retries} retries: {last_err}")
