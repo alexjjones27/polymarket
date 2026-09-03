@@ -87,8 +87,11 @@ def _slim_updown_meta(m: dict) -> dict | None:
     token_ids = pmf._safe_json_list(m.get("clobTokenIds"))
     if len(token_ids) != 2:
         return None
+    asset_match = pmf.re.search(r"\b(bitcoin|btc|ethereum|eth|solana|sol|xrp)\b", q, pmf.re.IGNORECASE)
+    asset = (asset_match.group(1) if asset_match else "unknown").lower()
+    asset = {"btc": "bitcoin", "eth": "ethereum", "sol": "solana"}.get(asset, asset)
     return {
-        "conditionId": cid, "question": q, "token_id": token_ids[0],
+        "conditionId": cid, "question": q, "token_id": token_ids[0], "asset": asset,
         "start_s": start_ts, "resolution_time": res_ts.isoformat(),
         "resolved_yes": pmf._safe_json_list(m.get("outcomes"))[idx] == "Yes",
     }
@@ -115,10 +118,24 @@ def logit(p):
     return np.log(p / (1 - p))
 
 
-def simulate_market(meta: dict, direction: str, holding_s: int):
+def simulate_market(meta: dict, direction: str, holding_s: int,
+                     trailing_stop_delta=TRAILING_STOP_DELTA, vol_scaled_stop_k=None,
+                     mom_threshold=MOM5_THRESHOLD):
     """direction: 'momentum' (bet the move continues) or 'reversal' (bet
     it gives back). Returns a list of closed trade dicts for this one
-    market at this one holding period."""
+    market at this one holding period.
+
+    Exit stop sizing: a FIXED delta (trailing_stop_delta) was the original
+    version and turned out to be the dominant source of loss -- 89% of
+    momentum trades got stopped there, averaging -6.1% return, while the
+    11% that weren't stopped averaged +19.1% with a 77% win rate (see
+    results/polymarket_final_pct/momentum_backtest_results.json's
+    trailing_stop_artifact_check). vol_scaled_stop_k, when set, replaces
+    the fixed delta with k times this market's OWN trailing 30-minute
+    realized volatility as of entry (computed only from prices already
+    seen, no lookahead) -- a stop sized to how much this specific market
+    actually moves, not one flat number applied to a calm crypto-Sunday
+    market and a news-driven spike alike."""
     end_s = int(pmf.pd.Timestamp(meta["resolution_time"]).timestamp())
     start_s = meta["start_s"]
     if end_s <= start_s:
@@ -188,11 +205,22 @@ def simulate_market(meta: dict, direction: str, holding_s: int):
 
         vconfirm = trailing_vol(t) >= VOL_CONFIRM_MULTIPLE * mean_5min_vol and mean_5min_vol > 0
 
-        long_signal = m5 > MOM5_THRESHOLD and m30 > 0 and vconfirm
-        short_signal = m5 < -MOM5_THRESHOLD and m30 < 0 and vconfirm
+        long_signal = m5 > mom_threshold and m30 > 0 and vconfirm
+        short_signal = m5 < -mom_threshold and m30 < 0 and vconfirm
         if not (long_signal or short_signal):
             i += 1
             continue
+
+        if vol_scaled_stop_k is not None:
+            # std of the price LEVEL over the trailing 30min (not tick
+            # diffs) -- proxies "how wide this market's normal chop has
+            # been recently," which is the right scale for a give-back
+            # tolerance, not tick-to-tick noise.
+            window = p_arr[idx_30m:i + 1]
+            recent_vol = float(np.std(window)) if len(window) > 2 else 0.01
+            stop_delta = max(0.015, vol_scaled_stop_k * recent_vol)
+        else:
+            stop_delta = trailing_stop_delta
 
         # momentum bets the move continues; reversal bets it gives back
         if direction == "momentum":
@@ -215,7 +243,7 @@ def simulate_market(meta: dict, direction: str, holding_s: int):
             if tj - entry_t >= holding_s:
                 exit_price, exit_reason = pj, "time_stop"
                 break
-            if peak - pj >= TRAILING_STOP_DELTA:
+            if peak - pj >= stop_delta:
                 exit_price, exit_reason = pj, "trailing_stop"
                 break
             if end_s - tj < MIN_TTR_BUFFER_S:
@@ -233,8 +261,11 @@ def simulate_market(meta: dict, direction: str, holding_s: int):
         shares = STAKE / entry_price
         pnl = shares * net_frac
 
+        price_bucket = "extreme" if (entry_price < 0.2 or entry_price > 0.8) else (
+            "mid" if 0.4 <= entry_price <= 0.6 else "off_center")
         trades.append({
             "conditionId": meta["conditionId"], "question": meta["question"][:80],
+            "asset": meta.get("asset", "unknown"), "price_bucket": price_bucket,
             "direction": direction, "side": side, "entry_time": int(entry_t), "exit_time": int(t_arr[j]),
             "entry_price": round(float(entry_price), 4), "exit_price": round(float(exit_price), 4),
             "exit_reason": exit_reason, "net_return_frac": round(float(net_frac / entry_price), 4),
@@ -246,10 +277,10 @@ def simulate_market(meta: dict, direction: str, holding_s: int):
     return trades
 
 
-def run_variant(sample, direction, holding_s):
+def run_variant(sample, direction, holding_s, **sim_kwargs):
     all_trades = []
     with ThreadPoolExecutor(max_workers=FETCH_WORKERS) as pool:
-        futures = {pool.submit(simulate_market, meta, direction, holding_s): meta for meta in sample}
+        futures = {pool.submit(simulate_market, meta, direction, holding_s, **sim_kwargs): meta for meta in sample}
         for fut in as_completed(futures):
             all_trades.extend(fut.result())
 
