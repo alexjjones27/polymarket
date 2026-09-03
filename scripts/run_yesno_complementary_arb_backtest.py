@@ -42,6 +42,7 @@ SAMPLE_TARGET = 3000
 FIDELITY_MIN = 60          # 1h bars, this project's established "coarse full-lifetime" convention
 N_CONSECUTIVE = 2          # persistence filter, same as the Final-1% and NegRisk signals
 FETCH_WORKERS = 24
+STALENESS_TOLERANCE_S = 20 * 60  # both sides' last print must be within 20min of each other to count as simultaneous
 
 
 def _slim_two_outcome_meta(m: dict) -> dict | None:
@@ -113,9 +114,20 @@ def fetch_arb_windows(meta: dict) -> dict | None:
     if series[tok0].empty or series[tok1].empty:
         return {"conditionId": meta["conditionId"], "question": meta["question"][:120], "usable": False}
 
-    s0 = series[tok0].set_index("t")["p"].rename("p0")
-    s1 = series[tok1].set_index("t")["p"].rename("p1")
-    combined = pmf.pd.concat([s0, s1], axis=1).sort_index().ffill().dropna(how="any")
+    # merge_asof with a tight tolerance, NOT concat+ffill: the two tokens
+    # trade independently, so a naive union-then-forward-fill pairs a fresh
+    # print on one side with a stale (sometimes hours-old) one on the
+    # other, and their sum drifting from 1 in that case is just two
+    # asynchronous last-trade prints, not a real simultaneously-executable
+    # gap. Confirmed live on a thin FDA-approval market: the two sides'
+    # RAW prints never actually cross, but ffill-then-sum manufactured an
+    # apparent 48%-profit gap out of prints roughly a day apart. Requiring
+    # both sides within STALENESS_TOLERANCE_S of each other is the direct
+    # fix, same discipline as this project's other artifact checks.
+    d0 = series[tok0].rename(columns={"p": "p0"})[["t", "p0"]].sort_values("t")
+    d1 = series[tok1].rename(columns={"p": "p1"})[["t", "p1"]].sort_values("t")
+    combined = pmf.pd.merge_asof(d0, d1, on="t", direction="nearest", tolerance=STALENESS_TOLERANCE_S)
+    combined = combined.dropna(how="any").set_index("t").sort_index()
     if combined.empty:
         return {"conditionId": meta["conditionId"], "question": meta["question"][:120], "usable": False}
 
@@ -150,11 +162,17 @@ def fetch_arb_windows(meta: dict) -> dict | None:
 
 
 def main():
-    population = stream_two_outcome_population()
-    print(f"[yesno-arb] {len(population)} cleanly-resolved, two-outcome, post-CLOB markets in the census")
-
-    sample = pmf.stratified_sample_markets(population, SAMPLE_TARGET)
-    print(f"[yesno-arb] stratified sample: {len(sample)} markets (quarter x category)")
+    sample_cache = REPO / "data" / "raw" / "polymarket" / "yesno_arb_sample.json"
+    if sample_cache.exists():
+        sample = json.loads(sample_cache.read_text())
+        print(f"[yesno-arb] loaded cached stratified sample: {len(sample)} markets ({sample_cache})")
+    else:
+        population = stream_two_outcome_population()
+        print(f"[yesno-arb] {len(population)} cleanly-resolved, two-outcome, post-CLOB markets in the census")
+        sample = pmf.stratified_sample_markets(population, SAMPLE_TARGET)
+        print(f"[yesno-arb] stratified sample: {len(sample)} markets (quarter x category)")
+        sample_cache.parent.mkdir(parents=True, exist_ok=True)
+        sample_cache.write_text(json.dumps(sample, default=str))
 
     results = []
     t0 = time.time()
