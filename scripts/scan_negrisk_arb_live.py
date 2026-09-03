@@ -21,6 +21,7 @@ it finishes, which defeats the point of a *live* scanner.
 import json
 import sys
 import time
+import urllib.error
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
@@ -85,14 +86,33 @@ def extract_live_legs(event):
     return legs
 
 
-def fetch_live_asks(token_id):
-    """Ascending-price ask ladder [(price, size), ...] for one token, live.
-    Empty list (not an error) if the book has no resting asks right now."""
+def fetch_live_book(token_id):
+    """Ascending-price ask ladder [(price, size), ...] for one token, live,
+    plus its last_trade_price. Confirmed live -- and the real reason a
+    first pass of this scanner found zero opportunities anywhere -- that
+    many large NegRisk baskets carry reserved-but-never-activated candidate
+    slots (Gamma lists them with placeholder names like "Person C", not a
+    real person, presumably a slate pre-allocated before every candidate was
+    announced): `/book` 404s for these specifically, not "no resting
+    orders" but "no market exists for this token at all" -- so the leg
+    genuinely cannot be bought at any price right now, which is a sharper
+    and more common condition on live events than the merely-unquoted legs
+    this fallback is for. Returns {"inactive": True} for a 404, {"asks":
+    [...], "last_trade_price": ...} for a real market (asks empty if
+    nothing is resting), and None only for a genuine fetch failure
+    (network/5xx after retries) that should be treated as unknown, not
+    counted as either."""
     try:
         book = pmf._get(pmf.CLOB_BASE, "/book", {"token_id": token_id})
+    except urllib.error.HTTPError as exc:
+        if exc.code == 404:
+            return {"inactive": True}
+        return None
     except Exception:
         return None
-    asks = book.get("asks", []) if isinstance(book, dict) else []
+    if not isinstance(book, dict):
+        return None
+    asks = book.get("asks", [])
     levels = []
     for lvl in asks:
         try:
@@ -100,7 +120,12 @@ def fetch_live_asks(token_id):
         except (KeyError, ValueError, TypeError):
             continue
     levels.sort(key=lambda x: x[0])  # cheapest first, regardless of the API's own ordering
-    return levels
+    ltp = book.get("last_trade_price")
+    try:
+        ltp = float(ltp) if ltp not in (None, "") else None
+    except (ValueError, TypeError):
+        ltp = None
+    return {"asks": levels, "last_trade_price": ltp}
 
 
 def cost_at_k(asks_asc, fee_rate, k):
@@ -160,39 +185,68 @@ def scan_event(event):
         return None
 
     with ThreadPoolExecutor(max_workers=16) as pool:
-        futures = {pool.submit(fetch_live_asks, l["token_id"]): l for l in legs}
-        asks_by_leg = {}
+        futures = {pool.submit(fetch_live_book, l["token_id"]): l for l in legs}
+        book_by_leg = {}
         for fut in as_completed(futures):
             l = futures[fut]
-            asks_by_leg[l["token_id"]] = fut.result()
+            book_by_leg[l["token_id"]] = fut.result()
 
-    n_no_book = sum(1 for l in legs if not asks_by_leg.get(l["token_id"]))
-    legs_asks = [(asks_by_leg.get(l["token_id"]) or [], l["fee_rate"]) for l in legs]
+    n_inactive = sum(1 for l in legs if (book_by_leg.get(l["token_id"]) or {}).get("inactive"))
+    n_fetch_failed = sum(1 for l in legs if book_by_leg.get(l["token_id"]) is None)
+    legs_asks = [((book_by_leg.get(l["token_id"]) or {}).get("asks") or [], l["fee_rate"]) for l in legs]
+    n_no_live_ask = sum(1 for asks_asc, _ in legs_asks if not asks_asc)
 
-    top_of_book_sum = 0.0
-    top_of_book_ok = True
-    for asks_asc, fee_rate in legs_asks:
-        if not asks_asc:
-            top_of_book_ok = False
-            continue
-        p = asks_asc[0][0]
-        top_of_book_sum += p + fee_rate * p * (1 - p)
+    # A genuine fetch failure (network/5xx) leaves the leg's real state
+    # unknown, so nothing can be estimated for this event at all. A 404'd
+    # (inactive, never-activated) leg is different: common enough on this
+    # population (confirmed live -- most large baskets have at least one)
+    # that excluding every such event would make the indicative screen
+    # useless. It gets the same $0.001 floor the historical backtest uses
+    # for a leg with zero recorded trades, purely as a diagnostic input --
+    # never mistaken for tradable, since `executable` below still requires
+    # n_inactive == 0 (you cannot buy a token that doesn't exist).
+    INACTIVE_FLOOR = 0.001
+    can_estimate = n_fetch_failed == 0
+
+    # Indicative sum: live best ask where quoted, last observed trade price
+    # for a real leg with no resting ask, or the floor for an inactive one
+    # -- each tracked separately so the report never conflates "estimated
+    # from a stale real trade" with "this leg can't be bought at all".
+    indicative_sum = 0.0
+    n_estimated = 0
+    if can_estimate:
+        for l in legs:
+            book = book_by_leg[l["token_id"]]
+            if book.get("inactive"):
+                p = INACTIVE_FLOOR
+                n_estimated += 1
+            elif book["asks"]:
+                p = book["asks"][0][0]
+            elif book["last_trade_price"] is not None:
+                p = book["last_trade_price"]
+                n_estimated += 1
+            else:
+                p = INACTIVE_FLOOR
+                n_estimated += 1
+            indicative_sum += p + l["fee_rate"] * p * (1 - p)
 
     depth_cap = 200.0  # shares; a live scan's practical ceiling per leg, not a claim the book has more
-    result = max_profitable_k(legs_asks, depth_cap) if n_no_book == 0 else None
+    executable = max_profitable_k(legs_asks, depth_cap) if n_inactive == 0 and n_no_live_ask == 0 else None
 
     return {
         "event_id": event["id"], "title": event["title"].strip(), "n_legs": len(legs),
-        "n_no_book": n_no_book, "volume": event.get("volume"),
-        "top_of_book_sum": round(top_of_book_sum, 4) if top_of_book_ok else None,
-        "top_of_book_profit_frac": round(1.0 - top_of_book_sum, 4) if top_of_book_ok else None,
-        "executable": result,
+        "n_inactive": n_inactive, "n_no_live_ask": n_no_live_ask,
+        "n_estimated_from_last_trade": n_estimated, "n_fetch_failed": n_fetch_failed,
+        "volume": event.get("volume"),
+        "indicative_sum": round(indicative_sum, 4) if can_estimate else None,
+        "indicative_profit_frac": round(1.0 - indicative_sum, 4) if can_estimate else None,
+        "executable": executable,
     }
 
 
 def main():
     events = fetch_top_open_negrisk_events(N_EVENTS)
-    scanned_at = pmf.pd.Timestamp.utcnow().isoformat()
+    scanned_at = pmf.pd.Timestamp.now("UTC").isoformat()
     print(f"[negrisk-live] scanning {len(events)} events, {sum(len(e['markets']) for e in events)} legs total ...")
 
     results = []
@@ -205,24 +259,26 @@ def main():
         tag = ""
         if r["executable"]:
             tag = f"  <<< LIVE ARB: {r['executable']['k_sets']} sets, ${r['executable']['profit_usd']:.2f} profit"
-        elif r["top_of_book_profit_frac"] is not None and r["top_of_book_profit_frac"] > 0:
-            tag = f"  (top-of-book only, {r['top_of_book_profit_frac']*100:.2f}%, doesn't survive 1 full share)"
+        elif r["indicative_profit_frac"] is not None and r["indicative_profit_frac"] > 0:
+            tag = (f"  (indicative only, {r['indicative_profit_frac']*100:.2f}%, "
+                   f"{r['n_estimated_from_last_trade']}/{r['n_legs']} legs estimated)")
         print(f"[negrisk-live] ({i+1}/{len(events)}) {r['title'][:50]:50s} legs={r['n_legs']:3d}{tag}", flush=True)
         if (i + 1) % 25 == 0:
             print(f"  ... {i+1}/{len(events)} done, {time.time()-t0:.0f}s elapsed", flush=True)
 
     live_hits = sorted([r for r in results if r["executable"]], key=lambda r: -r["executable"]["profit_usd"])
-    top_of_book_hits = sorted(
-        [r for r in results if not r["executable"] and r["top_of_book_profit_frac"] and r["top_of_book_profit_frac"] > 0],
-        key=lambda r: -r["top_of_book_profit_frac"])
+    indicative_hits = sorted(
+        [r for r in results if not r["executable"] and r["indicative_profit_frac"] and r["indicative_profit_frac"] > 0],
+        key=lambda r: -r["indicative_profit_frac"])
 
     summary = {
         "scanned_at_utc": scanned_at,
         "n_events_scanned": len(results),
         "n_live_arb_hits": len(live_hits),
         "total_live_profit_usd": round(sum(r["executable"]["profit_usd"] for r in live_hits), 2),
+        "n_indicative_hits": len(indicative_hits),
         "live_hits": live_hits,
-        "top_of_book_only_hits": top_of_book_hits[:20],
+        "indicative_only_hits": indicative_hits[:30],
         "all_events": results,
     }
 
@@ -232,6 +288,10 @@ def main():
         ex = r["executable"]
         print(f"  {r['title'][:45]:45s} {ex['k_sets']:6.1f} sets  ${ex['profit_usd']:7.2f}  "
               f"(cost ${ex['total_cost']:.2f} for ${ex['k_sets']:.2f} redemption)")
+    print(f"\n=== {len(indicative_hits)}/{len(results)} more show a gap on the indicative (ask + last-trade-fallback) sum ===")
+    for r in indicative_hits[:15]:
+        print(f"  {r['title'][:45]:45s} {r['indicative_profit_frac']*100:6.2f}%  "
+              f"({r['n_estimated_from_last_trade']}/{r['n_legs']} legs estimated from last trade, not a live ask)")
 
     out_path = RESULTS_DIR / "negrisk_arb_live_scan.json"
     with open(out_path, "w") as f:
