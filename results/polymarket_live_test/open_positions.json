@@ -4,10 +4,79 @@
     "outcome": "No",
     "token_id": "45720947308530468765087874228584729250108790729495800420104302263408503667446",
     "entry_price": 0.991,
-    "stake_usd": 2.0018,
-    "order_id": "0xb22d3d682b198bb1ab04b8772e1e35b4b054a9f33537dc49c6e9b95327298133",
-    "tx_hashes": ["0xf657a8fb765394fc3e4c6adfda160c0a281d41a011e36cdbbdad1b0b9a19cbb8"],
+    "stake_usd": 4.0036,
+    "shares": 4.04,
+    "orders": [
+      {
+        "order_id": "0xb22d3d682b198bb1ab04b8772e1e35b4b054a9f33537dc49c6e9b95327298133",
+        "tx_hash": "0xf657a8fb765394fc3e4c6adfda160c0a281d41a011e36cdbbdad1b0b9a19cbb8",
+        "stake_usd": 2.0018,
+        "date": "2026-09-05"
+      },
+      {
+        "order_id": "0x0d6f2b75feb3c3cd91c0b3fd4129a15f95689fa4e4dcfd93eb38c51b31b55e70",
+        "tx_hash": "0xdb4c27bc47361bac0f7f66a5189cfddf261575fe95fbbb629685dd0e9efda488",
+        "stake_usd": 2.00182,
+        "date": "2026-09-05"
+      }
+    ],
     "entry_date": "2026-09-05",
     "resolution_date": "2026-11-03T00:00:00Z"
+  },
+  "1090003": {
+    "question": "Will Charles Oliveira be the UFC Lightweight Champion on December 31, 2026?",
+    "outcome": "No",
+    "token_id": "83100122040240399113356973342094720094832083297030174008551666181088733056204",
+    "strategy": "final_1pct",
+    "entry_price": 0.994,
+    "stake_usd": 1.988,
+    "order_id": "0x0cdb7169bb10374590820877a44ab3169b36848f445347aa7a268d7340bcadc1",
+    "tx_hashes": [
+      "0xa354109be355ef2bd9d99b42f5268800dc5ceba046bb669040ee1c5f89ec8ca7"
+    ],
+    "entry_date": "2026-09-05",
+    "resolution_date": "2027-01-01T04:59:00Z"
+  },
+  "706862": {
+    "question": "Will Theo launch a token by December 31 2026?",
+    "outcome": "No",
+    "token_id": "77252871213718171302366733423040853068559560472592880057397053251095076197790",
+    "strategy": "seventy_pct",
+    "entry_price": 0.738,
+    "stake_usd": 3.0037,
+    "order_id": "0x8ed96a0ba67aab06d63d92a2f65d3af1c281d17f2863c02469e21ddc6cb311ff",
+    "tx_hashes": [
+      "0xedc186196685724954de8266073da27ac6619aadc72b0f5152e4a3691b275fdd"
+    ],
+    "entry_date": "2026-09-05",
+    "resolution_date": "2027-01-01T05:00:00Z"
+  },
+  "665265": {
+    "question": "Will Donald Trump visit Germany in 2026?",
+    "outcome": "No",
+    "token_id": "45758629206278296523241491992706519462704945313648320096954439860797269883565",
+    "strategy": "seventy_pct",
+    "entry_price": 0.75,
+    "stake_usd": 3.0,
+    "order_id": "0x7b52edb2dcf1d9ea36a0f16c39d98f3d0829cd3aac8c34758dfc0020e79bd9d7",
+    "tx_hashes": [
+      "0x573942dca51c8ed90c6032258f6eb905b22013aa8b0fc1166e5b000447e7c7fe"
+    ],
+    "entry_date": "2026-09-05",
+    "resolution_date": "2027-01-01T04:59:00Z"
+  },
+  "1089956": {
+    "question": "Will Steve Garcia be the UFC Featherweight Champion on December 31, 2026?",
+    "outcome": "No",
+    "token_id": "53696857665729060421570546940942903941423393552040949078546160708276639101406",
+    "strategy": "final_1pct",
+    "entry_price": 0.998,
+    "stake_usd": 3.004,
+    "order_id": "0x9f0cae76cd842885a31226a38138f380154e84500d2f4f7c29a3262fd7a75d11",
+    "tx_hashes": [
+      "0x8fad261ef3b7e9da104dd4f2fb02e6e8e4e5669894ea5684fb67f639e3753b88"
+    ],
+    "entry_date": "2026-09-05",
+    "resolution_date": "2027-01-01T04:59:00Z"
   }
 }
