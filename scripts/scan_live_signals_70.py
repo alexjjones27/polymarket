@@ -47,7 +47,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 import polymarket_final_pct as pmf
 
-BANKROLL = float(sys.argv[1]) if len(sys.argv) > 1 else 5.0
+BANKROLL = 5.0  # overridden from argv in main() when run standalone; other importers set sls70.BANKROLL directly
 MAX_POS_PCT = 0.03
 AGG_CAP_PCT = 0.50
 CAT_CAP_PCT = 0.25
@@ -235,6 +235,9 @@ def allocate_portfolio(rows: list[dict], bankroll: float) -> list[dict]:
 
 
 def main():
+    global BANKROLL
+    if len(sys.argv) > 1:
+        BANKROLL = float(sys.argv[1])
     print(f"Bankroll for this scan: ${BANKROLL:.2f}")
     print("Fetching currently active (open) Polymarket markets ...")
     today = pmf.pd.Timestamp.utcnow().strftime("%Y-%m-%d")

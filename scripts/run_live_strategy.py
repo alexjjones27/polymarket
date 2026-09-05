@@ -1,13 +1,25 @@
-"""Fully autonomous live execution of the Final-1% / threshold-crossing
-strategy (src/polymarket_final_pct.py, scanned the same way as
-scripts/scan_live_signals.py): scans currently-open markets for a live
-$0.99+ crossing, buys the "No" side, and holds to resolution. Intended to
-run unattended on a schedule (see .github/workflows/polymarket_live_trade.yml).
+"""Fully autonomous live execution of two threshold-crossing strategies:
+
+  - "final_1pct": src/polymarket_final_pct.py / scripts/scan_live_signals.py
+    -- buys "No" on a $0.99+ crossing. Measured flip rate ~0.2-0.33%.
+  - "seventy_pct": scripts/scan_live_signals_70.py -- buys on a $0.70+
+    crossing, two-pass verified (true-first-crossing + real order book).
+    Measured flip rate ~12-15% per category -- meaningfully riskier per
+    trade than final_1pct. Both strategies currently use the same flat
+    stake by deliberate choice, not because the risk is the same.
+
+Both strategies' candidates are pooled and ranked together by margin
+(the same Kelly-edge quantity in both scanners), then executed against a
+single shared per-run position cap and a single shared open_positions.json
+-- a market flagged by either strategy is never re-entered by the other.
+Intended to run unattended on a schedule (see
+.github/workflows/polymarket_live_trade.yml).
 
 Safety model (all hardcoded, since nobody is present to type CONFIRM):
   - MAX_ORDER_USD: hard per-trade circuit breaker, independent of --usd.
   - MAX_NEW_POSITIONS_PER_RUN: caps how much of the bankroll one scheduled
-    run can deploy, even if many signals fire at once.
+    run can deploy, even if many signals fire at once, shared across both
+    strategies.
   - Re-checks real pUSD balance before every single order and stops the
     run the moment it can't cover another stake -- never overdraws.
   - Never re-enters a market_id already recorded in open_positions.json.
@@ -33,6 +45,7 @@ sys.path.insert(0, str(REPO_ROOT / "src"))
 sys.path.insert(0, str(REPO_ROOT / "scripts"))
 import polymarket_final_pct as pmf  # noqa: E402
 import scan_live_signals as sls  # noqa: E402
+import scan_live_signals_70 as sls70  # noqa: E402
 
 MAX_ORDER_USD = 5.0
 MAX_NEW_POSITIONS_PER_RUN = 3
@@ -81,11 +94,11 @@ def get_token_id(market_id: str, outcome: str) -> str | None:
     return token_ids[idx] if idx < len(token_ids) else None
 
 
-def find_candidates() -> list[dict]:
+def find_candidates_99() -> list[dict]:
     """Reuses scan_live_signals' detection logic (same $0.99/3-consecutive
-    crossing rule, same exact-score/weather exclusion), ranked by margin
-    (highest edge first). Position sizing here is flat-stake, not Kelly --
-    see module docstring / --usd."""
+    crossing rule, same exact-score/weather exclusion). token_id is left
+    None -- resolved lazily at execution time, since scan_live_signals
+    doesn't need it for a read-only report."""
     today = pmf.pd.Timestamp.utcnow().strftime("%Y-%m-%d")
     far_future = "2028-01-01"
     markets = sls.fetch_active_markets(today, far_future)
@@ -106,9 +119,84 @@ def find_candidates() -> list[dict]:
                 r = None
             if r and not r["excluded"]:
                 r["margin"] = sls.kelly_size(r["category"], r["current_price"], 1.0)["margin"]
+                r["strategy"] = "final_1pct"
+                r["token_id"] = None
                 hits.append(r)
     hits.sort(key=lambda r: r["margin"], reverse=True)
     return hits
+
+
+def find_candidates_70() -> list[dict]:
+    """Reuses scan_live_signals_70's two-pass verification (true-first-
+    crossing over full history + real order book + same-event dedup) --
+    this is the expensive, already-verified path, so token_id/real ask
+    price are already populated on the returned rows."""
+    sls70.BANKROLL = 5.0  # placeholder for margin-threshold filtering only; execution uses a flat stake, not this
+    today = pmf.pd.Timestamp.utcnow().strftime("%Y-%m-%d")
+    far_future = "2028-01-01"
+    markets = sls70.fetch_active_markets(today, far_future)
+    markets += sls70.fetch_active_markets(
+        (pmf.pd.Timestamp.utcnow() - pmf.pd.Timedelta(days=1)).strftime("%Y-%m-%d"), today
+    )
+    markets = pmf._dedupe_by_id(markets)
+    markets = [m for m in markets if pmf._safe_json_list(m.get("clobTokenIds"))]
+
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    hits = []
+    with ThreadPoolExecutor(max_workers=16) as pool:
+        futures = {pool.submit(sls70.check_market, m): m for m in markets}
+        for fut in as_completed(futures):
+            try:
+                r = fut.result()
+            except Exception:
+                r = None
+            if r and not r["excluded"]:
+                hits.append(r)
+
+    pass1 = []
+    for h in hits:
+        approx = sls70.kelly_size(h["report_bucket"], h["current_price"], sls70.BANKROLL)
+        if approx["margin"] <= 0.03:
+            continue
+        pass1.append({**h, "_approx_margin": approx["margin"]})
+    pass1.sort(key=lambda r: r["_approx_margin"], reverse=True)
+    to_verify = pass1[: sls70.MAX_VERIFY_CANDIDATES]
+
+    verified = []
+    with ThreadPoolExecutor(max_workers=10) as pool:
+        futures = {pool.submit(sls70.verify_candidate, h): h for h in to_verify}
+        for fut in as_completed(futures):
+            try:
+                r = fut.result()
+            except Exception:
+                r = None
+            if r:
+                verified.append(r)
+
+    by_event: dict[str, dict] = {}
+    standalone = []
+    for r in verified:
+        key = r.get("neg_risk_market_id")
+        if not key:
+            standalone.append(r)
+            continue
+        if key not in by_event or r["margin"] > by_event[key]["margin"]:
+            by_event[key] = r
+    deduped = standalone + list(by_event.values())
+
+    for r in deduped:
+        r["strategy"] = "seventy_pct"
+        r["current_price"] = r["real_best_ask"]  # execution loop re-fetches the book anyway, but keep this consistent
+    deduped.sort(key=lambda r: r["margin"], reverse=True)
+    return deduped
+
+
+def find_candidates() -> list[dict]:
+    """Pools both strategies' candidates, ranked together by margin (the
+    same Kelly-edge quantity in both scanners) -- see module docstring."""
+    candidates = find_candidates_99() + find_candidates_70()
+    candidates.sort(key=lambda r: r["margin"], reverse=True)
+    return candidates
 
 
 def get_real_balance_usd(client) -> float:
@@ -153,9 +241,9 @@ def main():
     open_positions = load_open_positions()
     print(f"Already-open positions on file: {len(open_positions)}")
 
-    print("Scanning for live $0.99+ crossing signals ...")
+    print("Scanning for live $0.99+ (final_1pct) and $0.70+ (seventy_pct, two-pass verified) crossing signals ...")
     candidates = find_candidates()
-    print(f"{len(candidates)} qualifying signals (post-exclusion), ranked by margin.")
+    print(f"{len(candidates)} qualifying signals across both strategies (post-exclusion), ranked by margin.")
 
     new_trades = 0
     for c in candidates:
@@ -171,7 +259,7 @@ def main():
             break
 
         try:
-            token_id = get_token_id(market_id, c["outcome"])
+            token_id = c.get("token_id") or get_token_id(market_id, c["outcome"])
             if not token_id:
                 print(f"  [skip] {c['question'][:60]!r}: could not resolve token_id")
                 continue
@@ -190,7 +278,7 @@ def main():
                 continue
             cost = round(size * price, 4)
 
-            print(f"  [{'LIVE' if args.live else 'DRY'}] BUY {size} '{c['outcome']}' "
+            print(f"  [{'LIVE' if args.live else 'DRY'}] [{c['strategy']}] BUY {size} '{c['outcome']}' "
                   f"@ ${price} = ${cost}  -- {c['question'][:60]!r}")
 
             if not args.live:
@@ -209,16 +297,16 @@ def main():
             new_trades += 1
             open_positions[market_id] = {
                 "question": c["question"], "outcome": c["outcome"], "token_id": token_id,
-                "entry_price": price, "stake_usd": cost, "order_id": resp.get("orderID"),
-                "tx_hashes": resp.get("transactionsHashes"), "entry_date": time.strftime("%Y-%m-%d"),
-                "resolution_date": c.get("end_date"),
+                "strategy": c["strategy"], "entry_price": price, "stake_usd": cost,
+                "order_id": resp.get("orderID"), "tx_hashes": resp.get("transactionsHashes"),
+                "entry_date": time.strftime("%Y-%m-%d"), "resolution_date": c.get("end_date"),
             }
             save_open_positions(open_positions)
             append_trade_log({
                 "date": time.strftime("%Y-%m-%d"), "market": c["question"], "outcome": c["outcome"],
                 "quoted_price": price, "actual_fill_price": price, "stake_usd": cost,
                 "live_depth_at_scan": available, "resolution_date": c.get("end_date"),
-                "notes": f"run_live_strategy.py autonomous; order {resp.get('orderID')}",
+                "notes": f"run_live_strategy.py autonomous [{c['strategy']}]; order {resp.get('orderID')}",
             })
             print(f"    filled: order {resp.get('orderID')}")
         except Exception as e:
