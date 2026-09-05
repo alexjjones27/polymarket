@@ -1,15 +1,22 @@
 name: Polymarket live strategy
 
-# Deliberately schedule + manual dispatch ONLY. This workflow trades real
-# money using POLYMARKET_PRIVATE_KEY -- never add a pull_request trigger,
-# which would expose repo secrets to workflow runs triggered from forks.
+# Manual dispatch only -- NOT scheduled. Polymarket geoblocks order
+# placement from GitHub Actions' runner IPs (403 "Trading restricted in
+# your region" on every attempt, confirmed empirically), so a scheduled
+# --live run here can never actually fill anything; live execution now
+# runs on a local Windows Task Scheduler job instead (see
+# scripts/run_live_strategy_scheduled.ps1), which both places real orders
+# successfully and pushes state back to this repo. Running both on a
+# schedule would also race the same commit (results/polymarket_live_test/).
+# Kept as workflow_dispatch for manual dry-run scanning/diagnostics only.
+# Never add a schedule or pull_request trigger back without re-verifying
+# the geoblock status first -- pull_request in particular would expose
+# repo secrets to workflow runs triggered from forks (this repo is public).
 on:
-  schedule:
-    - cron: "0 */4 * * *"
   workflow_dispatch:
     inputs:
       live:
-        description: "Submit real orders (unchecked = dry run)"
+        description: "Submit real orders (unchecked = dry run) -- will fail with a 403 geoblock; kept for re-testing only"
         type: boolean
         default: false
 
