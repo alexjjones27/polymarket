@@ -30,3 +30,7 @@ data/tennis_data/
 *.pem
 *.key
 polymarket_creds*
+
+# Local Task Scheduler run logs for scripts/run_live_strategy.py (see
+# scripts/run_live_strategy_scheduled.ps1). Not useful to other clones.
+logs/

@@ -51,6 +51,16 @@ MAX_ORDER_USD = 5.0
 MAX_NEW_POSITIONS_PER_RUN = 3
 MIN_REMAINING_BALANCE_USD = 0.50  # stop before scraping the account to $0
 
+# MAX_NEW_POSITIONS_PER_RUN only counts successful fills -- without a
+# separate cap on attempts, a systematic failure (e.g. Polymarket's
+# geoblock coming back) turns into a live order POST against every single
+# qualifying candidate before the loop runs out of candidates to try (this
+# happened for real: one run made 105 live attempts, all rejected, before
+# stopping only because it ran out of candidates). These two caps bound
+# that regardless of why orders are failing.
+MAX_LIVE_ATTEMPTS_PER_RUN = 10
+MAX_CONSECUTIVE_ERRORS = 3
+
 STATE_DIR = REPO_ROOT / "results" / "polymarket_live_test"
 OPEN_POSITIONS_PATH = STATE_DIR / "open_positions.json"
 TRADE_LOG_PATH = STATE_DIR / "trade_log.csv"
@@ -121,8 +131,9 @@ def find_candidates_99() -> list[dict]:
                 r["margin"] = sls.kelly_size(r["category"], r["current_price"], 1.0)["margin"]
                 r["strategy"] = "final_1pct"
                 r["token_id"] = None
+                r["depth_usd"] = r.get("live_ask_depth_notional") or 0.0
                 hits.append(r)
-    hits.sort(key=lambda r: r["margin"], reverse=True)
+    hits.sort(key=lambda r: r["depth_usd"], reverse=True)
     return hits
 
 
@@ -187,15 +198,23 @@ def find_candidates_70() -> list[dict]:
     for r in deduped:
         r["strategy"] = "seventy_pct"
         r["current_price"] = r["real_best_ask"]  # execution loop re-fetches the book anyway, but keep this consistent
-    deduped.sort(key=lambda r: r["margin"], reverse=True)
+        # real_ask_depth is raw shares at best ask; multiply by price for a USD figure
+        # comparable to find_candidates_99's depth_usd (prices differ a lot at 70% vs 99%).
+        r["depth_usd"] = (r.get("real_ask_depth") or 0.0) * (r.get("real_best_ask") or 0.0)
+    deduped.sort(key=lambda r: r["depth_usd"], reverse=True)
     return deduped
 
 
 def find_candidates() -> list[dict]:
-    """Pools both strategies' candidates, ranked together by margin (the
-    same Kelly-edge quantity in both scanners) -- see module docstring."""
+    """Pools both strategies' candidates and qualifies each on margin (the
+    same Kelly-edge quantity in both scanners -- a candidate must already
+    clear that bar to be in this list at all), but ranks the pooled list by
+    live order-book depth, highest first: with MAX_NEW_POSITIONS_PER_RUN
+    capping how many actually execute, this means only the highest-
+    liquidity qualifying signals get traded, not just the highest-margin
+    ones -- thin books are the ones most likely to slip or fail to fill."""
     candidates = find_candidates_99() + find_candidates_70()
-    candidates.sort(key=lambda r: r["margin"], reverse=True)
+    candidates.sort(key=lambda r: r["depth_usd"], reverse=True)
     return candidates
 
 
@@ -243,12 +262,24 @@ def main():
 
     print("Scanning for live $0.99+ (final_1pct) and $0.70+ (seventy_pct, two-pass verified) crossing signals ...")
     candidates = find_candidates()
-    print(f"{len(candidates)} qualifying signals across both strategies (post-exclusion), ranked by margin.")
+    print(f"{len(candidates)} qualifying signals across both strategies (post-exclusion), "
+          f"ranked by live order-book depth (highest liquidity first).")
 
     new_trades = 0
+    live_attempts = 0
+    consecutive_errors = 0
     for c in candidates:
         if new_trades >= MAX_NEW_POSITIONS_PER_RUN:
             print(f"Hit MAX_NEW_POSITIONS_PER_RUN ({MAX_NEW_POSITIONS_PER_RUN}) -- stopping.")
+            break
+        if live_attempts >= MAX_LIVE_ATTEMPTS_PER_RUN:
+            print(f"Hit MAX_LIVE_ATTEMPTS_PER_RUN ({MAX_LIVE_ATTEMPTS_PER_RUN}) -- stopping "
+                  f"(this caps attempts, not just fills, so a systematic failure can't turn into "
+                  f"hundreds of live order POSTs).")
+            break
+        if consecutive_errors >= MAX_CONSECUTIVE_ERRORS:
+            print(f"Hit {MAX_CONSECUTIVE_ERRORS} consecutive errors -- stopping (likely a systematic "
+                  f"failure, e.g. geoblock, not market-specific bad luck).")
             break
         market_id = str(c["market_id"])
         if market_id in open_positions:
@@ -279,20 +310,23 @@ def main():
             cost = round(size * price, 4)
 
             print(f"  [{'LIVE' if args.live else 'DRY'}] [{c['strategy']}] BUY {size} '{c['outcome']}' "
-                  f"@ ${price} = ${cost}  -- {c['question'][:60]!r}")
+                  f"@ ${price} = ${cost}  (depth=${c['depth_usd']:.0f})  -- {c['question'][:60]!r}")
 
             if not args.live:
                 new_trades += 1
                 continue
 
+            live_attempts += 1
             order_args = OrderArgsV2(token_id=token_id, price=price, size=size, side=BUY)
             signed_order = client.create_order(order_args)
             resp = client.post_order(signed_order)
 
             if not resp.get("success"):
+                consecutive_errors += 1
                 print(f"    order not filled: {resp}")
                 continue
 
+            consecutive_errors = 0
             balance -= cost
             new_trades += 1
             open_positions[market_id] = {
@@ -310,6 +344,7 @@ def main():
             })
             print(f"    filled: order {resp.get('orderID')}")
         except Exception as e:
+            consecutive_errors += 1
             print(f"  [error] {c['question'][:60]!r}: {e}")
             continue
 
