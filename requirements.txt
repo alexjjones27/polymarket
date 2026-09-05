@@ -6,3 +6,5 @@ arch>=6.3
 yfinance>=0.2.40
 matplotlib>=3.8
 pytest>=8.0
+python-dotenv>=1.0
+py_clob_client_v2>=1.1.0

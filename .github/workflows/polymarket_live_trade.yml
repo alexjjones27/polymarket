@@ -1,0 +1,52 @@
+name: Polymarket live strategy
+
+# Deliberately schedule + manual dispatch ONLY. This workflow trades real
+# money using POLYMARKET_PRIVATE_KEY -- never add a pull_request trigger,
+# which would expose repo secrets to workflow runs triggered from forks.
+on:
+  schedule:
+    - cron: "0 */4 * * *"
+  workflow_dispatch:
+    inputs:
+      live:
+        description: "Submit real orders (unchecked = dry run)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: polymarket-live-trade
+  cancel-in-progress: false
+
+jobs:
+  run-strategy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install -r requirements.txt
+
+      - name: Run strategy
+        env:
+          POLYMARKET_PRIVATE_KEY: ${{ secrets.POLYMARKET_PRIVATE_KEY }}
+          POLYMARKET_PROXY_ADDRESS: ${{ secrets.POLYMARKET_PROXY_ADDRESS }}
+        run: |
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ github.event.inputs.live }}" = "true" ]; then
+            python scripts/run_live_strategy.py --usd 3 --live
+          else
+            python scripts/run_live_strategy.py --usd 3
+          fi
+
+      - name: Commit updated trade log / open positions
+        run: |
+          git config user.name "polymarket-live-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add results/polymarket_live_test/trade_log.csv results/polymarket_live_test/open_positions.json
+          git diff --cached --quiet || git commit -m "Autonomous live strategy run: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          git push

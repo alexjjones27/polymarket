@@ -1,1 +1,2 @@
 date,market,outcome,quoted_price,actual_fill_price,stake_usd,live_depth_at_scan,resolution_date,result,payout_usd,notes
+2026-09-05,2026 Balance of Power: D Senate R House,No,0.991,0.991,2.00182,11769.1,2026-11-03,,,"first live execution test after fixing signature_type 2->3 (POLY_1271 Deposit Wallet, CLOB V2); order 0xb22d3d682b198bb1ab04b8772e1e35b4b054a9f33537dc49c6e9b95327298133; tx 0xf657a8fb765394fc3e4c6adfda160c0a281d41a011e36cdbbdad1b0b9a19cbb8"

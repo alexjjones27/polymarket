@@ -1,0 +1,13 @@
+{
+  "562829": {
+    "question": "2026 Balance of Power: D Senate, R House",
+    "outcome": "No",
+    "token_id": "45720947308530468765087874228584729250108790729495800420104302263408503667446",
+    "entry_price": 0.991,
+    "stake_usd": 2.0018,
+    "order_id": "0xb22d3d682b198bb1ab04b8772e1e35b4b054a9f33537dc49c6e9b95327298133",
+    "tx_hashes": ["0xf657a8fb765394fc3e4c6adfda160c0a281d41a011e36cdbbdad1b0b9a19cbb8"],
+    "entry_date": "2026-09-05",
+    "resolution_date": "2026-11-03T00:00:00Z"
+  }
+}

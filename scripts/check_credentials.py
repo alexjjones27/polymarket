@@ -30,7 +30,7 @@ client = ClobClient(
     host="https://clob.polymarket.com",
     chain_id=137,
     key=private_key,
-    signature_type=2,
+    signature_type=3,  # POLY_1271 Deposit Wallet (CLOB V2, post April 2026 migration)
     funder=proxy_address,
 )
 
@@ -43,10 +43,10 @@ except Exception as e:
     sys.exit(1)
 
 try:
-    bal = client.get_balance_allowance(BalanceAllowanceParams(asset_type=AssetType.COLLATERAL, signature_type=2))
+    bal = client.get_balance_allowance(BalanceAllowanceParams(asset_type=AssetType.COLLATERAL))
     raw = int(bal["balance"])
-    usdc = raw / 1_000_000  # USDC has 6 decimals
-    print(f"USDC balance at this address: ${usdc:,.2f}")
+    pusd = raw / 1_000_000  # pUSD has 6 decimals
+    print(f"pUSD balance at this address: ${pusd:,.2f}")
 except Exception as e:
     print(f"FAILED to fetch balance: {e}")
     sys.exit(1)

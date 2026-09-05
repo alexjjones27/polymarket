@@ -55,7 +55,7 @@ def main():
         host="https://clob.polymarket.com",
         chain_id=137,
         key=private_key,
-        signature_type=2,  # browser-wallet (Gnosis Safe proxy) account
+        signature_type=3,  # POLY_1271 Deposit Wallet (CLOB V2, post April 2026 migration)
         funder=proxy_address,
     )
     client.set_api_creds(client.create_or_derive_api_key())
