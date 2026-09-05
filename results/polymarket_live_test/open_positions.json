@@ -78,5 +78,47 @@
     ],
     "entry_date": "2026-09-05",
     "resolution_date": "2027-01-01T04:59:00Z"
+  },
+  "679051": {
+    "question": "Will Sarah Knafo win the 2027 French presidential election?",
+    "outcome": "No",
+    "token_id": "111794412652144167704069308280072217197603934608880258759356283739972969531609",
+    "strategy": "final_1pct",
+    "entry_price": 0.991,
+    "stake_usd": 3.0027,
+    "order_id": "0x141e29a32e135dcf9a3f24bf60f4206f083bfee662f0e652008276f1daaa665e",
+    "tx_hashes": [
+      "0x6493093da8256a098104022ac9292278f131ebd777d98ef106840e0c2389b427"
+    ],
+    "entry_date": "2026-09-05",
+    "resolution_date": "2027-04-30T00:00:00Z"
+  },
+  "608543": {
+    "question": "Will Ousmane Demb\u00e9l\u00e9 win the 2026 Ballon d'Or?",
+    "outcome": "No",
+    "token_id": "109359154677724641879093510140547924238031773808324195577981722875545957189531",
+    "strategy": "final_1pct",
+    "entry_price": 0.991,
+    "stake_usd": 3.0027,
+    "order_id": "0xeaf1c0103eddcbc3a87985e49aa9998717a6e436a4fc91c7bd49f2c329142bdf",
+    "tx_hashes": [
+      "0x8088699021d0039d15fa09866c4d0dc86404b07c4eb01e68d034b89dbe07b768"
+    ],
+    "entry_date": "2026-09-05",
+    "resolution_date": "2026-10-31T00:00:00Z"
+  },
+  "1088534": {
+    "question": "Will Stefanos Tsitsipas win the 2026 Men's US Open?",
+    "outcome": "No",
+    "token_id": "62222701209809038366304206553662688021684748160747210527495803277297778584547",
+    "strategy": "final_1pct",
+    "entry_price": 0.991,
+    "stake_usd": 3.0027,
+    "order_id": "0xd49f1cf8786a8d84d995284b84fd71ab985460b092f473d2c060a07555e5e7da",
+    "tx_hashes": [
+      "0x7d2679d30e757c5289c9b788e338bb0efc1e912d9b98c2e972e7a29403427f46"
+    ],
+    "entry_date": "2026-09-05",
+    "resolution_date": "2026-09-13T00:00:00Z"
   }
 }
