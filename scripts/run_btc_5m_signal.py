@@ -24,6 +24,11 @@ close) through END_MONITORING_S (after close). Since a window is 300s
 long and this span is 390s, two consecutive windows' monitoring periods
 can overlap -- this script tracks multiple windows concurrently.
 
+All monitoring times are measured against close_ts(), NOT the raw window
+id -- the slug epoch names a window's start, and conflating the two put
+this script's monitoring range 300s earlier than the backtest's for the
+first ~80 live trades. See close_ts() for the full story.
+
 Safety model (same caps as before):
   - Order size: max(5 shares, $5 target) -- Polymarket rejects orders below
     5 shares outright (discovered live, see MIN_SHARES), which at the
@@ -61,13 +66,14 @@ PRICE_THRESHOLD = 0.94  # raised from 0.90: live results (3/3 losses confirmed a
                          # roughly half as often as 0.90 did, but the skipped band was the only place
                          # losses occurred in both the live sample and the larger historical one.
 SUSTAIN_S = 5
-START_MONITORING_S = 90   # start watching a window 90s before its nominal close
+WINDOW_LEN_S = 300        # a window is 5 minutes long; see close_ts() -- the slug epoch is its START
+START_MONITORING_S = 90   # start watching a window 90s before its close
 END_MONITORING_S = 300    # keep watching up to 5 min after close
 MIN_SHARES = 5.0          # Polymarket's enforced minimum order size (discovered live: sub-5-share
                            # orders are rejected outright) -- at price>=0.85 this always dominates
                            # a $1 target, which is why a $1 stake was mechanically impossible here.
-TARGET_ORDER_USD = 8.00
-MAX_ORDER_USD = 8.50       # hard cap, headroom above the ~$7.20-7.92 the target implies at price<=1
+TARGET_ORDER_USD = 5.00
+MAX_ORDER_USD = 5.50       # hard cap, headroom above the ~$4.50-4.95 the target implies at price<=1
 MAX_CONSECUTIVE_LOSSES = 3
 MAX_CONSECUTIVE_ERRORS = 5  # per candidate (window, side): give up and require a fresh crossing
 POLL_INTERVAL_S = 1
@@ -143,14 +149,37 @@ def get_real_balance_usd(client) -> float:
     return int(bal["balance"]) / 1_000_000
 
 
+def close_ts(window_id: int) -> int:
+    """True close time of a window.
+
+    IMPORTANT: the number in the slug (`btc-updown-5m-<N>`) is the window's
+    START, not its end -- Gamma's endDate is always N+300, and slug 1788708300
+    is titled "11:25AM-11:30AM ET" (1788708300 = 11:25 ET). An earlier version
+    of this script took N to be the close and so monitored [N-90, N+300] =
+    [close-390, close]: the 90s before the window even opened, plus the whole
+    window. The backtest that validated this edge monitors [close-90, close+300].
+    Those overlap by only 90s, and since the first sustained crossing wins, live
+    almost always fired early in the window -- where the outcome is still
+    genuinely uncertain -- instead of in the informed late/post-close regime that
+    was actually backtested. Live loss rate was ~9% against ~1% backtested, and
+    every loss so far entered early by this measure.
+
+    Compare monitoring times against close_ts(), never against the raw window id.
+    """
+    return window_id + WINDOW_LEN_S
+
+
 def candidate_window_ends(epoch_now: int) -> list[int]:
-    """Every 5-min window boundary whose monitoring range currently overlaps now."""
-    w = ((epoch_now - START_MONITORING_S) // 300) * 300
+    """Every window id whose monitoring range -- [close-START, close+END] -- covers now.
+
+    Returns window ids (slug epochs); call close_ts() on one to get its close.
+    """
+    close = ((epoch_now - END_MONITORING_S) // WINDOW_LEN_S) * WINDOW_LEN_S
     out = []
-    while w <= epoch_now + START_MONITORING_S:
-        if -END_MONITORING_S <= (w - epoch_now) <= START_MONITORING_S:
-            out.append(w)
-        w += 300
+    while close <= epoch_now + START_MONITORING_S:
+        if -END_MONITORING_S <= (close - epoch_now) <= START_MONITORING_S:
+            out.append(close - WINDOW_LEN_S)
+        close += WINDOW_LEN_S
     return out
 
 
@@ -301,13 +330,13 @@ def run_one_cycle(client, state, active_windows, OrderArgsV2, BUY) -> None:
         if not info or len(info["tokens"]) != 2:
             continue  # will retry next cycle while still in range
         active_windows[window_end] = {"tokens": info["tokens"], "candidates": {"Up": None, "Down": None}}
-        log(f"window {window_end}: now tracking (secs_to_close={window_end - epoch_now})")
+        log(f"window {window_end}: now tracking (secs_to_close={close_ts(window_end) - epoch_now})")
 
     for window_end in list(active_windows.keys()):
         if window_end in already_traded:
             del active_windows[window_end]
             continue
-        if epoch_now - window_end > END_MONITORING_S:
+        if epoch_now - close_ts(window_end) > END_MONITORING_S:
             log(f"window {window_end}: monitoring period expired, no qualifying sustained crossing")
             del active_windows[window_end]
             continue
