@@ -98,6 +98,32 @@ STOP_LOSS_LEVEL = 0.70
 STOP_SUSTAIN_S = 2         # best bid must stay under STOP_LOSS_LEVEL this long
 STOP_MIN_EXIT_PRICE = 0.02  # below this the recovery is not worth the fee; just hold
 MAX_STOP_ATTEMPTS = 5      # per position, then give up and hold to settlement
+
+# --- trigger on consensus, not on the ask ---------------------------------------
+# This is the fix for the whole backtest-vs-live gap. The backtest that produced the
+# +2.72% OOS edge scans TRADE PRINTS. This script used to trigger on the BEST ASK.
+# Those are not the same signal, and measuring 133 live trades showed how far apart:
+#
+#   - we paid 0.9514 on average while the market was printing 0.9269 (+2.46pp),
+#     and we paid above the prevailing print on 89.4% of trades
+#   - applying the backtest's own print rule to our entry moments, only 13.5% of our
+#     trades would have been taken at all; 86.5% existed solely because a resting ask
+#     sat above threshold while actual trading was happening well below it
+#   - 11 of our 12 losses came from that ask-only group
+#
+# So the backtest never validated the rule we deployed, and the ask-only entries were
+# adverse selection: an ask detached from consensus is exactly the signature of a book
+# about to reprice. Window 1788770700 is the clean example -- ask 0.96 held 5.3s, we
+# bought, filled at 0.52 because the book had already collapsed, bid was 0.03 a second
+# later. No exit rule can help there; the entry itself was the error.
+#
+# Triggering on the MID (and refusing wide books) restores the consensus signal the
+# backtest actually measured: mid >= 0.94 with a tight spread means both sides agree,
+# whereas ask >= 0.94 can be one stale order. The spread guard does double duty --
+# it filters detached books AND bounds how far above mid we can pay, since we still
+# execute against the ask.
+TRIGGER_ON_MID = True      # False restores the old ask-based trigger
+MAX_SPREAD = 0.05          # skip the window entirely if ask - bid exceeds this
 MAX_CONSECUTIVE_LOSSES = 3
 MAX_CONSECUTIVE_ERRORS = 5  # per candidate (window, side): give up and require a fresh crossing
 POLL_INTERVAL_S = 1
@@ -134,7 +160,7 @@ def append_trade_log(row: dict) -> None:
     header = ["window_end", "side", "ask_price", "size", "cost_usd", "requested_price", "requested_size",
               "held_for_s", "order_id", "tx_hashes", "resolved_won", "trade_time",
               "exited", "exit_price", "exit_proceeds_usd", "realized_pnl_usd", "exit_time",
-              "false_stop"]
+              "false_stop", "entry_bid", "entry_ask", "entry_mid", "entry_spread"]
     write_header = not TRADE_LOG_PATH.exists()
     with open(TRADE_LOG_PATH, "a", newline="") as f:
         w = csv.DictWriter(f, fieldnames=header)
@@ -332,17 +358,35 @@ def poll_window(client, state, window_end: int, tracked: dict, OrderArgsV2, BUY)
         try:
             book = client.get_order_book(token)
             asks = sorted(book.get("asks") or [], key=lambda a: float(a["price"]))
+            bids = sorted(book.get("bids") or [], key=lambda b: float(b["price"]), reverse=True)
         except Exception as e:
             log(f"window {window_end}: {side} poll error: {e}")
             continue
 
-        if not asks:
+        # Both sides are now required: without a bid there is no consensus to read,
+        # only a lone ask -- which is precisely the case that lost us money.
+        if not asks or not bids:
             tracked["candidates"][side] = None
             continue
-        price = float(asks[0]["price"])
+        price = float(asks[0]["price"])   # what we will actually pay
         avail = float(asks[0]["size"])
+        bid = float(bids[0]["price"])
+        mid = (price + bid) / 2.0
+        spread = price - bid
 
-        if price < PRICE_THRESHOLD:
+        signal_price = mid if TRIGGER_ON_MID else price
+
+        if spread > MAX_SPREAD:
+            # A book this wide is not expressing a consensus, and the ask is not
+            # evidence of one. Reset rather than accumulate sustain time on it.
+            if tracked["candidates"][side] is not None:
+                log(f"window {window_end}: {side} spread {spread:.3f} > {MAX_SPREAD} "
+                    f"(bid {bid:.3f} / ask {price:.3f}) -- resetting, book too wide to trust")
+            tracked["candidates"][side] = None
+            failures[side] = 0
+            continue
+
+        if signal_price < PRICE_THRESHOLD:
             tracked["candidates"][side] = None
             failures[side] = 0
             continue
@@ -406,8 +450,9 @@ def poll_window(client, state, window_end: int, tracked: dict, OrderArgsV2, BUY)
         except (TypeError, ValueError, ZeroDivisionError):
             real_size, real_cost, real_price = size, cost, price
 
-        log(f"window {window_end}: BUY {side} {real_size} @ {real_price} (sustained {held_for:.1f}s, "
-            f"requested {size}@{price}) = ${real_cost:.4f} -- order {resp.get('orderID')}")
+        log(f"window {window_end}: BUY {side} {real_size} @ {real_price} (sustained {held_for:.1f}s "
+            f"on {'mid' if TRIGGER_ON_MID else 'ask'} {signal_price:.3f}, bid {bid:.3f} / ask "
+            f"{price:.3f}, spread {spread:.3f}) = ${real_cost:.4f} -- order {resp.get('orderID')}")
         state["pending"].append({
             "window_end": window_end, "side": side, "ask_price": real_price, "size": real_size,
             "cost_usd": round(real_cost, 4), "requested_price": price, "requested_size": size,
@@ -416,6 +461,10 @@ def poll_window(client, state, window_end: int, tracked: dict, OrderArgsV2, BUY)
             # token_id is what manage_open_positions polls and sells; without it a
             # position cannot be stop-lossed, only held to settlement.
             "token_id": token, "exited": False, "stop_breach_since": None, "stop_attempts": 0,
+            # Book state at entry. Logged because the ask-vs-consensus gap is what
+            # broke this strategy once already and was invisible without it.
+            "entry_bid": bid, "entry_ask": price, "entry_mid": round(mid, 4),
+            "entry_spread": round(spread, 4),
         })
         state["traded_windows"].append(window_end)
         save_state(state)

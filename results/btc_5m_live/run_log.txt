@@ -13721,3 +13721,18 @@
 2026-09-07 09:38:31 window 1788770100: now tracking (secs_to_close=90)
 2026-09-07 09:38:46 window 1788770100: BUY Down 5.15 @ 0.97 (sustained 6.4s, requested 5.15@0.97) = $4.9955 -- order 0x6937a2c1cc5f7f88f6dc38ee9baaf997163dcc78a75eb90bdca387fc9192d49a
 2026-09-07 09:42:23 SETTLED window 1788769800: Up WON (consecutive_losses=0)
+2026-09-07 09:43:30 window 1788770400: now tracking (secs_to_close=90)
+2026-09-07 09:43:38 Starting. threshold=0.94 sustain=5s stop=0.7/2s consecutive_losses=0, 1 pending settlement(s).
+2026-09-07 09:43:38 window 1788770400: now tracking (secs_to_close=82)
+2026-09-07 09:43:45 window 1788770400: BUY Up 5.15 @ 0.97 (sustained 5.8s, requested 5.15@0.97) = $4.9955 -- order 0xb82330e7f67d52fe03d88b47ffc7deaacf9196aff3fd6d7295eaf354cddda5ea
+2026-09-07 09:47:24 SETTLED window 1788770100: Down WON (consecutive_losses=0)
+2026-09-07 09:47:41 SETTLED window 1788770400: Up WON (consecutive_losses=0)
+2026-09-07 09:48:31 window 1788770700: now tracking (secs_to_close=90)
+2026-09-07 09:49:03 window 1788770700: BUY Up 5.21 @ 0.52 (sustained 5.3s, requested 5.21@0.96) = $2.7092 -- order 0xfeae9f1bde1cfd5e254fb9f78eae0b18568eac19f76c31a92628f221e3ac7b14
+2026-09-07 09:49:04 window 1788770700: Up bid 0.030 below 0.7 -- watching for 2s
+2026-09-07 09:52:43 SETTLED window 1788770700: Up LOST (consecutive_losses=1)
+2026-09-07 09:53:30 window 1788771000: now tracking (secs_to_close=90)
+2026-09-07 09:54:19 window 1788771000: BUY Down 5.15 @ 0.97 (sustained 5.3s, requested 5.15@0.97) = $4.9955 -- order 0x23c200f7da208436c8aa1a0f24fc19d295ce4b98e1590b366e1e82248bc8cbac
+2026-09-07 09:55:25 window 999: BUY Up 5.15 @ 0.97 (sustained 6.0s on mid 0.960, bid 0.950 / ask 0.970, spread 0.020) = $4.9955 -- order FAKE
+2026-09-07 09:55:25 window 999: BUY Up 5.21 @ 0.96 (sustained 6.0s on mid 0.950, bid 0.940 / ask 0.960, spread 0.020) = $5.0016 -- order FAKE
+2026-09-07 09:55:25 window 999: BUY Up 5.26 @ 0.95 (sustained 6.0s on mid 0.940, bid 0.930 / ask 0.950, spread 0.020) = $4.9970 -- order FAKE
