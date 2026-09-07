@@ -74,6 +74,30 @@ MIN_SHARES = 5.0          # Polymarket's enforced minimum order size (discovered
                            # a $1 target, which is why a $1 stake was mechanically impossible here.
 TARGET_ORDER_USD = 5.00
 MAX_ORDER_USD = 5.50       # hard cap, headroom above the ~$4.50-4.95 the target implies at price<=1
+
+# --- emergency exit (stop-loss) -------------------------------------------------
+# Until this existed the bot bought once and held to settlement with no position
+# management, so every reversal cost the full stake. Forensics on all 11 live
+# losses found no entry filter that identifies them in advance (timing, conviction,
+# pre-entry volatility, volume, side, hour all fail to separate losses from a
+# price-matched win sample), so the only remaining lever is exiting after the fact.
+# The collapses run 10-43s with heavy trading throughout, so there is time.
+#
+# 0.70 is the level with the lowest break-even loss rate (2.42%) of those tested:
+# it costs $0.068/trade in false stops (measured on 575 historical pre-close
+# entries) and saves $2.81 per real loss (measured on the 11 actual live losses,
+# average realised loss $5.02 -> $2.21). Live loss rate is 6.1% post-fix and 8.5%
+# all-in, both above break-even. See scripts/backtest_stop_loss*.py.
+#
+# STOP_SUSTAIN_S: the backtest actually favours 0 (first touch) at our loss rate --
+# waiting costs more on genuine collapses than it saves on wicks, break-even ~1.6-2.2%.
+# But the backtest models trade PRINTS while this reads the book's best BID, and a
+# lone low print can be someone hitting a thin bid while the book recovers instantly.
+# 2s is the cheapest non-zero hedge against that gap (~$0.02/trade modelled).
+STOP_LOSS_LEVEL = 0.70
+STOP_SUSTAIN_S = 2         # best bid must stay under STOP_LOSS_LEVEL this long
+STOP_MIN_EXIT_PRICE = 0.02  # below this the recovery is not worth the fee; just hold
+MAX_STOP_ATTEMPTS = 5      # per position, then give up and hold to settlement
 MAX_CONSECUTIVE_LOSSES = 3
 MAX_CONSECUTIVE_ERRORS = 5  # per candidate (window, side): give up and require a fresh crossing
 POLL_INTERVAL_S = 1
@@ -108,7 +132,9 @@ def append_trade_log(row: dict) -> None:
     import csv
     STATE_DIR.mkdir(parents=True, exist_ok=True)
     header = ["window_end", "side", "ask_price", "size", "cost_usd", "requested_price", "requested_size",
-              "held_for_s", "order_id", "tx_hashes", "resolved_won", "trade_time"]
+              "held_for_s", "order_id", "tx_hashes", "resolved_won", "trade_time",
+              "exited", "exit_price", "exit_proceeds_usd", "realized_pnl_usd", "exit_time",
+              "false_stop"]
     write_header = not TRADE_LOG_PATH.exists()
     with open(TRADE_LOG_PATH, "a", newline="") as f:
         w = csv.DictWriter(f, fieldnames=header)
@@ -136,11 +162,126 @@ def settle_pending(state: dict) -> None:
             continue
         up_won = float(info["outcome_prices"][0]) == 1.0
         won = up_won if p["side"] == "Up" else (not up_won)
+
+        if p.get("exited"):
+            # Already sold out via the stop-loss. The realised P&L is the exit
+            # proceeds minus cost regardless of how the window then resolved; we
+            # still record the resolution so false stops (we sold, it recovered
+            # and would have won) are visible in the log rather than hidden.
+            realized = round(float(p["exit_proceeds_usd"]) - float(p["cost_usd"]), 4)
+            false_stop = bool(won)
+            state["consecutive_losses"] += 1  # a stop-out is a realised loss
+            log(f"SETTLED window {p['window_end']}: {p['side']} STOPPED OUT at "
+                f"{p['exit_price']} -- realised ${realized:+.4f}"
+                f"{' [FALSE STOP: would have won]' if false_stop else ''} "
+                f"(consecutive_losses={state['consecutive_losses']})")
+            append_trade_log({**p, "resolved_won": won, "realized_pnl_usd": realized,
+                              "false_stop": false_stop})
+            continue
+
         state["consecutive_losses"] = 0 if won else state["consecutive_losses"] + 1
+        realized = round((float(p["size"]) - float(p["cost_usd"])) if won
+                         else -float(p["cost_usd"]), 4)
         log(f"SETTLED window {p['window_end']}: {p['side']} {'WON' if won else 'LOST'} "
             f"(consecutive_losses={state['consecutive_losses']})")
-        append_trade_log({**p, "resolved_won": won})
+        append_trade_log({**p, "resolved_won": won, "exited": False,
+                          "realized_pnl_usd": realized})
     state["pending"] = still_pending
+
+
+def manage_open_positions(client, state: dict, OrderArgsV2, SELL) -> None:
+    """Emergency exit: sell a position whose best bid has stayed under
+    STOP_LOSS_LEVEL for STOP_SUSTAIN_S seconds.
+
+    Reads the BID, not the ask -- the bid is what we can actually liquidate into,
+    so it is the honest measure of the position's value (and slightly conservative,
+    since bid < mid, meaning we trigger marginally earlier than a mid-price rule).
+
+    Exit liquidity was verified before this was built rather than assumed: across
+    all 11 real live losses, 3,376-18,167 shares traded in the 15s after the stop
+    would have fired, against our ~5.3-share position (0.0-0.2% of flow).
+    """
+    now = time.time()
+    dirty = False
+    for p in state["pending"]:
+        if p.get("exited") or not p.get("token_id"):
+            continue
+        if p.get("stop_attempts", 0) >= MAX_STOP_ATTEMPTS:
+            continue
+
+        try:
+            book = client.get_order_book(p["token_id"])
+            bids = sorted(book.get("bids") or [], key=lambda b: float(b["price"]), reverse=True)
+        except Exception:
+            continue  # 404s are routine once a window resolves; settle_pending handles it
+
+        if not bids:
+            continue
+        bid = float(bids[0]["price"])
+
+        if bid >= STOP_LOSS_LEVEL:
+            if p.get("stop_breach_since") is not None:
+                log(f"window {p['window_end']}: {p['side']} recovered to bid {bid:.3f} "
+                    f"before stop confirmed -- resetting")
+                p["stop_breach_since"] = None
+                dirty = True
+            continue
+
+        if p.get("stop_breach_since") is None:
+            p["stop_breach_since"] = now
+            log(f"window {p['window_end']}: {p['side']} bid {bid:.3f} below "
+                f"{STOP_LOSS_LEVEL} -- watching for {STOP_SUSTAIN_S}s")
+            dirty = True
+            continue
+
+        held = now - p["stop_breach_since"]
+        if held < STOP_SUSTAIN_S:
+            continue
+        if bid < STOP_MIN_EXIT_PRICE:
+            continue  # already collapsed; recovery is not worth the fee
+
+        size = float(p["size"])
+        avail = sum(float(b["size"]) for b in bids if float(b["price"]) >= bid)
+        if avail < size:
+            log(f"window {p['window_end']}: {p['side']} stop confirmed at bid {bid:.3f} "
+                f"but depth {avail} < {size} -- still trying")
+            continue
+
+        try:
+            order_args = OrderArgsV2(token_id=p["token_id"], price=bid, size=size, side=SELL)
+            resp = client.post_order(client.create_order(order_args))
+        except Exception as e:
+            p["stop_attempts"] = p.get("stop_attempts", 0) + 1
+            log(f"window {p['window_end']}: {p['side']} STOP sell error "
+                f"({p['stop_attempts']}/{MAX_STOP_ATTEMPTS}): {e}")
+            dirty = True
+            continue
+        if not resp.get("success"):
+            p["stop_attempts"] = p.get("stop_attempts", 0) + 1
+            log(f"window {p['window_end']}: {p['side']} STOP sell not filled "
+                f"({p['stop_attempts']}/{MAX_STOP_ATTEMPTS}): {resp}")
+            dirty = True
+            continue
+
+        # As with buys, the real fill can beat the submitted limit -- use the response.
+        try:
+            sold_size = float(resp.get("makingAmount", size))
+            proceeds = float(resp.get("takingAmount", size * bid))
+            exit_price = round(proceeds / sold_size, 4) if sold_size else bid
+        except (TypeError, ValueError, ZeroDivisionError):
+            sold_size, proceeds, exit_price = size, size * bid, bid
+
+        p["exited"] = True
+        p["exit_price"] = exit_price
+        p["exit_proceeds_usd"] = round(proceeds, 4)
+        p["exit_time"] = time.strftime("%Y-%m-%d %H:%M:%S")
+        dirty = True
+        log(f"window {p['window_end']}: STOP OUT {p['side']} sold {sold_size} @ {exit_price} "
+            f"= ${proceeds:.4f} (held under {STOP_LOSS_LEVEL} for {held:.1f}s, "
+            f"cost was ${p['cost_usd']}) -- order {resp.get('orderID')}")
+
+    if dirty:
+        save_state(state)
 
 
 def get_real_balance_usd(client) -> float:
@@ -272,6 +413,9 @@ def poll_window(client, state, window_end: int, tracked: dict, OrderArgsV2, BUY)
             "cost_usd": round(real_cost, 4), "requested_price": price, "requested_size": size,
             "held_for_s": round(held_for, 1), "order_id": resp.get("orderID"),
             "tx_hashes": resp.get("transactionsHashes"), "trade_time": time.strftime("%Y-%m-%d %H:%M:%S"),
+            # token_id is what manage_open_positions polls and sells; without it a
+            # position cannot be stop-lossed, only held to settlement.
+            "token_id": token, "exited": False, "stop_breach_since": None, "stop_attempts": 0,
         })
         state["traded_windows"].append(window_end)
         save_state(state)
@@ -289,7 +433,7 @@ def main():
 
     from py_clob_client_v2 import ClobClient
     from py_clob_client_v2.clob_types import OrderArgsV2
-    from py_clob_client_v2.order_builder.constants import BUY
+    from py_clob_client_v2.order_builder.constants import BUY, SELL
 
     client = ClobClient(host="https://clob.polymarket.com", chain_id=137,
                          key=private_key, signature_type=3, funder=proxy_address)
@@ -297,21 +441,25 @@ def main():
 
     state = load_state()
     state.setdefault("traded_windows", [])
-    log(f"Starting. threshold={PRICE_THRESHOLD} sustain={SUSTAIN_S}s consecutive_losses="
+    log(f"Starting. threshold={PRICE_THRESHOLD} sustain={SUSTAIN_S}s "
+        f"stop={STOP_LOSS_LEVEL}/{STOP_SUSTAIN_S}s consecutive_losses="
         f"{state['consecutive_losses']}, {len(state['pending'])} pending settlement(s).")
 
     active_windows: dict[int, dict] = {}
 
     while True:
         try:
-            run_one_cycle(client, state, active_windows, OrderArgsV2, BUY)
+            run_one_cycle(client, state, active_windows, OrderArgsV2, BUY, SELL)
         except Exception as e:
             log(f"top-level error, will retry: {e}")
             time.sleep(5)
 
 
-def run_one_cycle(client, state, active_windows, OrderArgsV2, BUY) -> None:
+def run_one_cycle(client, state, active_windows, OrderArgsV2, BUY, SELL) -> None:
     settle_pending(state)
+    # Stop-loss runs right after settlement so resolved windows are already gone --
+    # no point trying to sell into a market that has finished.
+    manage_open_positions(client, state, OrderArgsV2, SELL)
     save_state(state)
 
     if state["consecutive_losses"] >= MAX_CONSECUTIVE_LOSSES:
