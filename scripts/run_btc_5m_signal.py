@@ -126,12 +126,28 @@ TRIGGER_ON_MID = True      # False restores the old ask-based trigger
 MAX_SPREAD = 0.05          # skip the window entirely if ask - bid exceeds this
 MAX_CONSECUTIVE_LOSSES = 3
 MAX_CONSECUTIVE_ERRORS = 5  # per candidate (window, side): give up and require a fresh crossing
-POLL_INTERVAL_S = 1
+
+# 0.25s, not the 0.1s originally proposed. Measured against the live endpoint
+# (scripts/measure_book_update_rate.py, 198 samples over 30s):
+#   - median round-trip latency is 155ms, so 0.1s is physically unreachable; the
+#     achieved rate at a 0.1s target was 6.6 req/s, not 10
+#   - 97.5% of responses were byte-identical to the previous one, and the median
+#     gap between genuine book changes was 5.3s
+# But the minimum observed gap between changes was 249ms and half of all changes
+# arrived within 1s of the previous, so the book does move sub-second when it
+# matters -- the 5.3s median is dominated by quiet stretches. 0.25s captures
+# essentially every real update without a 10x rate-limit gamble on an endpoint
+# whose limits are undocumented. Note this also makes the sustain filter stricter:
+# SUSTAIN_S is wall-clock, so 5s is now 20 samples rather than 5, and any one of
+# them below threshold resets. That is the intended direction given our losses
+# came from entering on prices that were not genuinely held.
+POLL_INTERVAL_S = 0.25
 
 STATE_DIR = REPO_ROOT / "results" / "btc_5m_live"
 STATE_PATH = STATE_DIR / "state.json"
 TRADE_LOG_PATH = STATE_DIR / "trade_log.csv"
 LOG_PATH = STATE_DIR / "run_log.txt"
+BOOK_DIR = REPO_ROOT / "data" / "raw" / "polymarket" / "book_snapshots"
 
 
 def log(msg: str) -> None:
@@ -167,6 +183,50 @@ def append_trade_log(row: dict) -> None:
         if write_header:
             w.writeheader()
         w.writerow({k: row.get(k, "") for k in header})
+
+
+_last_book_state: dict[str, tuple] = {}
+
+
+def record_book_snapshot(window_end: int, side: str, token: str, book: dict) -> None:
+    """Append a full-depth book snapshot to the collection log.
+
+    Exists because every strategy question still open needs order-book history we
+    do not have: whether the mid trigger is actually the right rule (it was deployed
+    on a diagnosis, never a backtest, since historical data is trade prints and the
+    entire point is that prints != book), whether MAX_SPREAD is calibrated, and
+    whether the resting-bid idea survives queue-position modelling -- the print
+    backtest for it counted "a trade printed at <= level" as a fill, which ignores
+    that orders already resting at that price fill first.
+
+    Two deliberate cheapnesses:
+      - piggybacks on polls the bot already makes, so it costs zero extra requests
+        and cannot itself trip a rate limit
+      - writes only when the top of book actually changes. Measured duplicate rate
+        is 97.5%, so this cuts volume ~40x with no information loss.
+    """
+    try:
+        bids = sorted(book.get("bids") or [], key=lambda b: float(b["price"]), reverse=True)[:10]
+        asks = sorted(book.get("asks") or [], key=lambda a: float(a["price"]))[:10]
+        if not bids and not asks:
+            return
+        top = (bids[0]["price"] if bids else None, bids[0]["size"] if bids else None,
+               asks[0]["price"] if asks else None, asks[0]["size"] if asks else None)
+        if _last_book_state.get(token) == top:
+            return
+        _last_book_state[token] = top
+
+        BOOK_DIR.mkdir(parents=True, exist_ok=True)
+        path = BOOK_DIR / f"{time.strftime('%Y-%m-%d')}.jsonl"
+        with open(path, "a") as f:
+            f.write(json.dumps({
+                "ts": round(time.time(), 3), "window_end": window_end,
+                "close_ts": close_ts(window_end), "side": side, "token": token,
+                "bids": [[b["price"], b["size"]] for b in bids],
+                "asks": [[a["price"], a["size"]] for a in asks],
+            }) + "\n")
+    except Exception:
+        pass  # collection must never be able to interfere with trading
 
 
 def get_window(window_end: int) -> dict | None:
@@ -240,6 +300,10 @@ def manage_open_positions(client, state: dict, OrderArgsV2, SELL) -> None:
             bids = sorted(book.get("bids") or [], key=lambda b: float(b["price"]), reverse=True)
         except Exception:
             continue  # 404s are routine once a window resolves; settle_pending handles it
+
+        # Post-entry book history is the part the resting-bid and stop-loss questions
+        # both need, and nothing else records it.
+        record_book_snapshot(p["window_end"], p["side"], p["token_id"], book)
 
         if not bids:
             continue
@@ -362,6 +426,8 @@ def poll_window(client, state, window_end: int, tracked: dict, OrderArgsV2, BUY)
         except Exception as e:
             log(f"window {window_end}: {side} poll error: {e}")
             continue
+
+        record_book_snapshot(window_end, side, token, book)
 
         # Both sides are now required: without a bid there is no consensus to read,
         # only a lone ask -- which is precisely the case that lost us money.
