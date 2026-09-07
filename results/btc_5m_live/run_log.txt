@@ -13736,3 +13736,10 @@
 2026-09-07 09:55:25 window 999: BUY Up 5.15 @ 0.97 (sustained 6.0s on mid 0.960, bid 0.950 / ask 0.970, spread 0.020) = $4.9955 -- order FAKE
 2026-09-07 09:55:25 window 999: BUY Up 5.21 @ 0.96 (sustained 6.0s on mid 0.950, bid 0.940 / ask 0.960, spread 0.020) = $5.0016 -- order FAKE
 2026-09-07 09:55:25 window 999: BUY Up 5.26 @ 0.95 (sustained 6.0s on mid 0.940, bid 0.930 / ask 0.950, spread 0.020) = $4.9970 -- order FAKE
+2026-09-07 09:55:55 Starting. threshold=0.94 sustain=5s stop=0.7/2s consecutive_losses=1, 1 pending settlement(s).
+2026-09-07 09:58:30 window 1788771300: now tracking (secs_to_close=90)
+2026-09-07 09:58:42 window 1788771300: BUY Up 5.26 @ 0.85 (sustained 6.3s on mid 0.945, bid 0.940 / ask 0.950, spread 0.010) = $4.4710 -- order 0x9d09382054e947e0b6e48afa154b9534751db517cebb5c824efd4783df39c0e0
+2026-09-07 10:01:25 SETTLED window 1788771000: Down WON (consecutive_losses=0)
+2026-09-07 10:03:08 SETTLED window 1788771300: Up WON (consecutive_losses=0)
+2026-09-07 10:03:30 window 1788771600: now tracking (secs_to_close=90)
+2026-09-07 10:04:03 window 1788771600: BUY Up 5.05 @ 0.99 (sustained 5.3s on mid 0.985, bid 0.980 / ask 0.990, spread 0.010) = $4.9995 -- order 0x1491d3b004ae575b9c0832a85daa5d106c21817f252d3040550d1a786f685948
