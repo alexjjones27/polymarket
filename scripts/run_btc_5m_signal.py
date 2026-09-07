@@ -60,6 +60,9 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT / "src"))
 import polymarket_final_pct as pmf  # noqa: E402
 
+sys.path.insert(0, str(REPO_ROOT / "scripts"))
+import shadow_trader  # noqa: E402  -- paper-trades alternative thresholds, never trades real money
+
 PRICE_THRESHOLD = 0.94  # raised from 0.90: live results (3/3 losses confirmed at 0.90-0.92) plus the
                          # historical backtest (584 observations: 0.90-0.94 band ~95-97% win rate vs
                          # ~99.6-100% at 0.94+) both show a real, consistent gap at this cutoff. Trades
@@ -429,6 +432,14 @@ def poll_window(client, state, window_end: int, tracked: dict, OrderArgsV2, BUY)
 
         record_book_snapshot(window_end, side, token, book)
 
+        # Shadow configs see exactly the book we just fetched, at zero API cost.
+        # Fully isolated: paper trades only, and any failure here is swallowed so it
+        # can never affect real execution.
+        try:
+            shadow_trader.observe(window_end, close_ts(window_end), side, bids, asks)
+        except Exception:
+            pass
+
         # Both sides are now required: without a bid there is no consensus to read,
         # only a lone ask -- which is precisely the case that lost us money.
         if not asks or not bids:
@@ -576,6 +587,11 @@ def run_one_cycle(client, state, active_windows, OrderArgsV2, BUY, SELL) -> None
     # no point trying to sell into a market that has finished.
     manage_open_positions(client, state, OrderArgsV2, SELL)
     save_state(state)
+
+    try:
+        shadow_trader.settle(get_window, log)
+    except Exception:
+        pass
 
     if state["consecutive_losses"] >= MAX_CONSECUTIVE_LOSSES:
         log(f"STOPPING: {state['consecutive_losses']} consecutive losses -- this is "

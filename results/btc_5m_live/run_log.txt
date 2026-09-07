@@ -14004,3 +14004,8 @@
 2026-09-07 10:28:02 SETTLED window 1788772800: Down WON (consecutive_losses=0)
 2026-09-07 10:28:30 window 1788773100: now tracking (secs_to_close=90)
 2026-09-07 10:28:57 window 1788773100: BUY Up 5.09 @ 0.98 (sustained 5.4s on mid 0.975, bid 0.970 / ask 0.980, spread 0.010) = $4.9882 -- order 0xc85b62daf0fba297fab3c5978f943cbb5e21a5ae20c45f376177b8fac8c1e903
+2026-09-07 10:33:30 window 1788773400: now tracking (secs_to_close=90)
+2026-09-07 10:33:37 window 1788773400: BUY Down 5.26 @ 0.95 (sustained 5.2s on mid 0.945, bid 0.940 / ask 0.950, spread 0.010) = $4.9970 -- order 0x0f919acf46b225fb4a25fc7e5e7492e67fd31ac258c03b7a2d3890e9061b9df4
+2026-09-07 10:34:07 SETTLED window 1788773100: Up WON (consecutive_losses=0)
+2026-09-07 10:38:30 window 1788773700: now tracking (secs_to_close=90)
+2026-09-07 10:39:00 SETTLED window 1788773400: Down WON (consecutive_losses=0)
