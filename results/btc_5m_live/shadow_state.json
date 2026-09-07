@@ -1,0 +1,30 @@
+{
+  "candidates": {
+    "sustain15|1788792900|Down": 1788793111.1819189,
+    "sustain30|1788792900|Down": 1788793111.1819189
+  },
+  "pending": [
+    {
+      "config": "mid0.94",
+      "window_end": 1788792900,
+      "side": "Down",
+      "shares": 5.1,
+      "avg_price": 0.98,
+      "best_ask": 0.98,
+      "best_bid": 0.97,
+      "mid": 0.975,
+      "spread": 0.01,
+      "cost_usd": 4.998,
+      "fee_usd": 0.007,
+      "slippage": 0.0,
+      "held_for_s": 5.4,
+      "secs_to_close": 83.4,
+      "trade_time": "2026-09-07 15:58:36"
+    }
+  ],
+  "traded": {
+    "mid0.94": [
+      1788792900
+    ]
+  }
+}

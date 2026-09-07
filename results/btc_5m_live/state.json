@@ -2,20 +2,20 @@
   "consecutive_losses": 0,
   "pending": [
     {
-      "window_end": 1788792300,
-      "side": "Up",
+      "window_end": 1788792900,
+      "side": "Down",
       "ask_price": 0.98,
       "size": 5.09,
       "cost_usd": 4.9882,
       "requested_price": 0.98,
       "requested_size": 5.1,
-      "held_for_s": 5.6,
-      "order_id": "0x36b1c6bb450427c9a7372ff49c7f03c68bb423d07c913738571c0dbab1d59e9e",
+      "held_for_s": 5.4,
+      "order_id": "0x1e46805183f8efd72ef7ccceeb1cbfc3090519c48cc333a2181c6c049440fa5f",
       "tx_hashes": [
-        "0x955c45177e6709ee5aabc7a78d0c75270ec8dfe9ee24c16fcfd5f6cee1d9793c"
+        "0x77c9c8d301e8cab012fe0c3e435e3d12a06b731c8235492db7e6da58ea3d23d3"
       ],
-      "trade_time": "2026-09-07 15:49:05",
-      "token_id": "105459422646097198255358035011248003465783285797968380036162867462843991804995",
+      "trade_time": "2026-09-07 15:58:38",
+      "token_id": "13572182253064898233242509176844307678391602099950638275638695458678281678",
       "exited": false,
       "stop_breach_since": null,
       "stop_attempts": 0,
@@ -217,6 +217,7 @@
     1788791100,
     1788791400,
     1788791700,
-    1788792300
+    1788792300,
+    1788792900
   ]
 }

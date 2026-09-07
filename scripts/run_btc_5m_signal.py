@@ -473,6 +473,14 @@ def poll_window(client, state, window_end: int, tracked: dict, OrderArgsV2, BUY)
         except Exception:
             pass
 
+        # Once the live bot has traded this window we keep polling it purely to feed
+        # the collector and the shadow configs, but place no further real orders.
+        # Without this the window is dropped on trade, and the post-close shadow
+        # configs would only ever see the ~17% of windows we did NOT trade -- a
+        # biased subsample, and exactly the population their hypothesis is not about.
+        if tracked.get("live_done"):
+            continue
+
         # Both sides are now required: without a bid there is no consensus to read,
         # only a lone ask -- which is precisely the case that lost us money.
         if not asks or not bids:
@@ -645,16 +653,19 @@ def run_one_cycle(client, state, active_windows, OrderArgsV2, BUY, SELL) -> None
         log(f"window {window_end}: now tracking (secs_to_close={close_ts(window_end) - epoch_now})")
 
     for window_end in list(active_windows.keys()):
+        tracked = active_windows[window_end]
         if window_end in already_traded:
-            del active_windows[window_end]
-            continue
+            # Traded windows stay tracked (in shadow/collect-only mode) until their
+            # monitoring period expires, rather than being dropped here.
+            tracked["live_done"] = True
         if epoch_now - close_ts(window_end) > END_MONITORING_S:
-            log(f"window {window_end}: monitoring period expired, no qualifying sustained crossing")
+            if not tracked.get("live_done"):
+                log(f"window {window_end}: monitoring period expired, "
+                    f"no qualifying sustained crossing")
             del active_windows[window_end]
             continue
-        traded = poll_window(client, state, window_end, active_windows[window_end], OrderArgsV2, BUY)
-        if traded:
-            del active_windows[window_end]
+        if poll_window(client, state, window_end, tracked, OrderArgsV2, BUY):
+            tracked["live_done"] = True
 
     time.sleep(POLL_INTERVAL_S)
 
