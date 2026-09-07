@@ -1,30 +1,6 @@
 {
-  "consecutive_losses": 0,
-  "pending": [
-    {
-      "window_end": 1788792900,
-      "side": "Down",
-      "ask_price": 0.98,
-      "size": 5.09,
-      "cost_usd": 4.9882,
-      "requested_price": 0.98,
-      "requested_size": 5.1,
-      "held_for_s": 5.4,
-      "order_id": "0x1e46805183f8efd72ef7ccceeb1cbfc3090519c48cc333a2181c6c049440fa5f",
-      "tx_hashes": [
-        "0x77c9c8d301e8cab012fe0c3e435e3d12a06b731c8235492db7e6da58ea3d23d3"
-      ],
-      "trade_time": "2026-09-07 15:58:38",
-      "token_id": "13572182253064898233242509176844307678391602099950638275638695458678281678",
-      "exited": false,
-      "stop_breach_since": null,
-      "stop_attempts": 0,
-      "entry_bid": 0.97,
-      "entry_ask": 0.98,
-      "entry_mid": 0.975,
-      "entry_spread": 0.01
-    }
-  ],
+  "consecutive_losses": 1,
+  "pending": [],
   "last_window_end": 1788685200,
   "traded_windows": [
     1788685800,
@@ -218,6 +194,9 @@
     1788791400,
     1788791700,
     1788792300,
-    1788792900
+    1788792900,
+    1788793200,
+    1788793500,
+    1788794100
   ]
 }

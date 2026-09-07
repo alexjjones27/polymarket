@@ -367,14 +367,37 @@ def manage_open_positions(client, state: dict, OrderArgsV2, SELL) -> None:
             continue  # already collapsed; recovery is not worth the fee
 
         size = float(p["size"])
-        avail = sum(float(b["size"]) for b in bids if float(b["price"]) >= bid)
-        if avail < size:
+        # Walk DOWN the bid ladder to find a limit that the visible depth can absorb,
+        # rather than demanding the best level alone cover us. We are exiting a
+        # collapsing position: taking a slightly worse price across two levels beats
+        # waiting for the top level to refill. This cost real money once -- window
+        # 1788794100 had the stop fire correctly at bid 0.670 but the top level held
+        # 5.0 against a 5.15 position, a 0.15-share shortfall, and by the time depth
+        # appeared 2s later the bid was 0.57 (~$0.51 worse).
+        # The order is still marketable, so it sweeps from the best bid down and the
+        # realised average beats this limit.
+        cum = 0.0
+        limit_px = None
+        for b in bids:
+            try:
+                cum += float(b["size"])
+            except (TypeError, ValueError, KeyError):
+                continue
+            if cum >= size:
+                limit_px = float(b["price"])
+                break
+        if limit_px is None:
             log(f"window {p['window_end']}: {p['side']} stop confirmed at bid {bid:.3f} "
-                f"but depth {avail} < {size} -- still trying")
+                f"but whole visible ladder holds {cum:.1f} < {size} -- still trying")
             continue
+        if limit_px < STOP_MIN_EXIT_PRICE:
+            continue  # would have to sweep below the floor to get out; hold instead
+        if limit_px < bid:
+            log(f"window {p['window_end']}: {p['side']} top bid {bid:.3f} holds only "
+                f"{float(bids[0]['size']):.1f} of {size} -- sweeping to {limit_px:.3f}")
 
         try:
-            order_args = OrderArgsV2(token_id=p["token_id"], price=bid, size=size, side=SELL)
+            order_args = OrderArgsV2(token_id=p["token_id"], price=limit_px, size=size, side=SELL)
             resp = client.post_order(client.create_order(order_args))
         except Exception as e:
             p["stop_attempts"] = p.get("stop_attempts", 0) + 1
@@ -393,9 +416,9 @@ def manage_open_positions(client, state: dict, OrderArgsV2, SELL) -> None:
         try:
             sold_size = float(resp.get("makingAmount", size))
             proceeds = float(resp.get("takingAmount", size * bid))
-            exit_price = round(proceeds / sold_size, 4) if sold_size else bid
+            exit_price = round(proceeds / sold_size, 4) if sold_size else limit_px
         except (TypeError, ValueError, ZeroDivisionError):
-            sold_size, proceeds, exit_price = size, size * bid, bid
+            sold_size, proceeds, exit_price = size, size * limit_px, limit_px
 
         p["exited"] = True
         p["exit_price"] = exit_price
