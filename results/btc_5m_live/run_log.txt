@@ -17978,3 +17978,6 @@
 2026-09-07 15:49:59 window 1788792000: Up poll error: PolyApiException[status_code=404, error_message={'error': 'No orderbook exists for the requested token id'}]
 2026-09-07 15:49:59 window 1788792000: Down poll error: PolyApiException[status_code=404, error_message={'error': 'No orderbook exists for the requested token id'}]
 2026-09-07 15:50:03 window 1788792000: monitoring period expired, no qualifying sustained crossing
+2026-09-07 15:51:37 Starting. threshold=0.94 sustain=5s stop=0.7/2s consecutive_losses=0, 1 pending settlement(s).
+2026-09-07 15:53:30 window 1788792600: now tracking (secs_to_close=90)
+2026-09-07 15:56:03 window 111: STOP OUT Down sold 5.26 @ 0.6 = $3.1560 (held under 0.7 for 0.0s, cost was $5.0) -- order FAKE

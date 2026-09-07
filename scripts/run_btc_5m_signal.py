@@ -98,7 +98,18 @@ MAX_ORDER_USD = 5.50       # hard cap, headroom above the ~$4.50-4.95 the target
 # lone low print can be someone hitting a thin bid while the book recovers instantly.
 # 2s is the cheapest non-zero hedge against that gap (~$0.02/trade modelled).
 STOP_LOSS_LEVEL = 0.70
-STOP_SUSTAIN_S = 2         # best bid must stay under STOP_LOSS_LEVEL this long
+# 0 = exit on first touch. Was 2s, as a hedge against the book wicking below the
+# level and recovering -- the print backtest could not see that case because it
+# models trade prints while this reads the bid.
+#
+# Lowered to 0 on evidence. The sustain backtest already favoured first touch at
+# any loss rate above ~1.6-2.2% (waiting costs more on genuine collapses than it
+# saves on wicks), and we run at 6%. Window 1788789600 then demonstrated it with
+# real money: the stop armed at bid 0.590 and filled at 0.27 after the 2s wait, a
+# ~$1.67 loss, and checking the path the bid never dipped below the level and
+# recovered -- so the confirmation window bought nothing and only delayed the exit
+# through a freefall. Worth roughly +$0.21/hr at our current stop rate.
+STOP_SUSTAIN_S = 0         # best bid must stay under STOP_LOSS_LEVEL this long
 STOP_MIN_EXIT_PRICE = 0.02  # below this the recovery is not worth the fee; just hold
 MAX_STOP_ATTEMPTS = 5      # per position, then give up and hold to settlement
 
@@ -341,10 +352,13 @@ def manage_open_positions(client, state: dict, OrderArgsV2, SELL) -> None:
 
         if p.get("stop_breach_since") is None:
             p["stop_breach_since"] = now
-            log(f"window {p['window_end']}: {p['side']} bid {bid:.3f} below "
-                f"{STOP_LOSS_LEVEL} -- watching for {STOP_SUSTAIN_S}s")
             dirty = True
-            continue
+            if STOP_SUSTAIN_S > 0:
+                log(f"window {p['window_end']}: {p['side']} bid {bid:.3f} below "
+                    f"{STOP_LOSS_LEVEL} -- watching for {STOP_SUSTAIN_S}s")
+                continue
+            # first-touch mode: fall through and sell on this same pass rather than
+            # costing another poll interval
 
         held = now - p["stop_breach_since"]
         if held < STOP_SUSTAIN_S:
