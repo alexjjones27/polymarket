@@ -63,6 +63,26 @@ import polymarket_final_pct as pmf  # noqa: E402
 sys.path.insert(0, str(REPO_ROOT / "scripts"))
 import shadow_trader  # noqa: E402  -- paper-trades alternative thresholds, never trades real money
 
+# --- master switch -------------------------------------------------------------
+# False = collect-only. The loop still tracks windows, polls both books, records
+# snapshots and feeds the shadow configs, and it still MANAGES AND SETTLES any
+# position already open (so the stop-loss keeps protecting it). It just places no
+# new buys.
+#
+# Turned off 2026-09-07 after 198 live trades totalling -$39.03. The post-fix run
+# reached only -$0.99 over 64 trades even after five separate defects were found
+# and fixed (window timing, ask-vs-mid trigger, trade-log header, stop arming delay,
+# exit depth guard). That every fix was a bug rather than an edge discovery, and
+# that removing all of them lands at roughly zero, is the tell: the calibration
+# curve puts the whole available edge at 1.3-1.7 cents/share (~1.4% on stake), and
+# fees, the spread we cross, and a ~6% tail where one stop-out costs 12 wins consume
+# it. Four separate entry filters have also failed out-of-sample.
+#
+# Collection continues at zero risk to answer the two questions still open: whether
+# a longer hold (sustain30) helps, and whether post-close entry avoids the churn
+# structurally. Set back to True only if the shadow data justifies it.
+LIVE_TRADING_ENABLED = False
+
 PRICE_THRESHOLD = 0.94  # raised from 0.90: live results (3/3 losses confirmed at 0.90-0.92) plus the
                          # historical backtest (584 observations: 0.90-0.94 band ~95-97% win rate vs
                          # ~99.6-100% at 0.94+) both show a real, consistent gap at this cutoff. Trades
@@ -501,7 +521,7 @@ def poll_window(client, state, window_end: int, tracked: dict, OrderArgsV2, BUY)
         # Without this the window is dropped on trade, and the post-close shadow
         # configs would only ever see the ~17% of windows we did NOT trade -- a
         # biased subsample, and exactly the population their hypothesis is not about.
-        if tracked.get("live_done"):
+        if tracked.get("live_done") or not LIVE_TRADING_ENABLED:
             continue
 
         # Both sides are now required: without a bid there is no consensus to read,
@@ -631,7 +651,8 @@ def main():
 
     state = load_state()
     state.setdefault("traded_windows", [])
-    log(f"Starting. threshold={PRICE_THRESHOLD} sustain={SUSTAIN_S}s "
+    log(f"Starting [{'LIVE TRADING' if LIVE_TRADING_ENABLED else 'COLLECT-ONLY, no new buys'}]. "
+        f"threshold={PRICE_THRESHOLD} sustain={SUSTAIN_S}s "
         f"stop={STOP_LOSS_LEVEL}/{STOP_SUSTAIN_S}s consecutive_losses="
         f"{state['consecutive_losses']}, {len(state['pending'])} pending settlement(s).")
 
