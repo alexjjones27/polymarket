@@ -36,12 +36,44 @@ TARGET_ORDER_USD = 5.00
 SUSTAIN_S = 5
 FEE_RATE = 0.07
 
-# name, threshold, trigger price, whether the live spread guard applies
+# name, threshold, spread guard, and earliest entry time relative to close.
+#
+# min_entry_s is the important addition. Every stop-out so far entered BEFORE the
+# close (T-84s, T-88s, T-82s), and that is not a coincidence: these markets settle
+# on BTC's price AT the close, so before it the outcome can still flip, and after it
+# the outcome is already fixed and the market is merely learning what it is. The
+# churn that keeps costing us is structurally confined to the pre-close window.
+#
+# backtest_min_entry_time.py already shows this: restricting to T+0s gave a 100%
+# win rate over 277 in-sample and 294 OOS entries -- 571 trades, zero losses --
+# against 99.33% unrestricted. The cost is a much higher entry price (~0.993 vs
+# ~0.96), so per-trade edge shrinks. That is why it was rejected earlier, when the
+# unrestricted +$2.60/hr was still believed. It is not believed now.
+#
+# Marginal on paper (0/571 gives a 95% CI upper of ~0.64% against a ~0.63%
+# break-even at 0.993) and some books vanish post-close, so this measures whether
+# it is actually tradeable rather than assuming it.
+# sustain_s is the second lever, and the only entry-side idea so far to replicate
+# out-of-sample. Requiring the threshold to HOLD longer -- rather than filtering on
+# anything about the window's earlier path -- cuts the stop rate monotonically in
+# both samples (in-sample 4.2% -> 1.2%, OOS 2.4% -> 0.8% going 5s -> 30s) while
+# still firing on 87-95% of windows. Note the backtest itself prefers 5s on net
+# return, because waiting raises the entry price from ~0.977 to ~0.990 and shrinks
+# each win; the two cross at roughly a 4% stop rate, and live we are running 6%.
+# So this is worth measuring live rather than assuming either way.
 CONFIGS = [
-    {"name": "mid0.70", "threshold": 0.70, "max_spread": 0.05},
-    {"name": "mid0.70_wide", "threshold": 0.70, "max_spread": 1.00},
-    {"name": "mid0.80", "threshold": 0.80, "max_spread": 0.05},
-    {"name": "mid0.94", "threshold": 0.94, "max_spread": 0.05},  # control: mirrors live
+    {"name": "mid0.94", "threshold": 0.94, "max_spread": 0.05, "sustain_s": 5,
+     "min_entry_s": None},                                            # control: mirrors live
+    {"name": "sustain15", "threshold": 0.94, "max_spread": 0.05, "sustain_s": 15,
+     "min_entry_s": None},
+    {"name": "sustain30", "threshold": 0.94, "max_spread": 0.05, "sustain_s": 30,
+     "min_entry_s": None},
+    {"name": "post_close_0", "threshold": 0.94, "max_spread": 0.05, "sustain_s": 5,
+     "min_entry_s": 0},
+    {"name": "post_close_30", "threshold": 0.94, "max_spread": 0.05, "sustain_s": 5,
+     "min_entry_s": 30},
+    {"name": "sustain30_postclose", "threshold": 0.94, "max_spread": 0.05, "sustain_s": 30,
+     "min_entry_s": 0},                                               # both protections
 ]
 
 STATE_DIR = Path(__file__).resolve().parents[1] / "results" / "btc_5m_live"
@@ -127,6 +159,11 @@ def observe(window_end, close_ts_val, side, bids, asks):
             continue
         key = f"{name}|{window_end}|{side}"
 
+        # secs relative to close; negative = before close
+        rel = now - close_ts_val
+        if cfg.get("min_entry_s") is not None and rel < cfg["min_entry_s"]:
+            continue  # too early for this config -- do not arm yet
+
         if spread > cfg["max_spread"] or mid < cfg["threshold"]:
             st["candidates"].pop(key, None)
             continue
@@ -134,7 +171,7 @@ def observe(window_end, close_ts_val, side, bids, asks):
         if key not in st["candidates"]:
             st["candidates"][key] = now
             continue
-        if now - st["candidates"][key] < SUSTAIN_S:
+        if now - st["candidates"][key] < cfg.get("sustain_s", SUSTAIN_S):
             continue
 
         target = max(MIN_SHARES, round(TARGET_ORDER_USD / ask, 2))

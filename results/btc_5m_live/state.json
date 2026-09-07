@@ -2,26 +2,26 @@
   "consecutive_losses": 0,
   "pending": [
     {
-      "window_end": 1788790800,
-      "side": "Down",
-      "ask_price": 0.96,
-      "size": 5.15,
-      "cost_usd": 4.944,
-      "requested_price": 0.97,
-      "requested_size": 5.15,
-      "held_for_s": 5.1,
-      "order_id": "0x84b65d8879f6b3265bbe52923188c9306d3d2452c13e44f7d50f808456f0de0b",
+      "window_end": 1788792300,
+      "side": "Up",
+      "ask_price": 0.98,
+      "size": 5.09,
+      "cost_usd": 4.9882,
+      "requested_price": 0.98,
+      "requested_size": 5.1,
+      "held_for_s": 5.6,
+      "order_id": "0x36b1c6bb450427c9a7372ff49c7f03c68bb423d07c913738571c0dbab1d59e9e",
       "tx_hashes": [
-        "0xb19d98d695063075512382ec41ea020e3a8b994fe77102cf4329307a25b77fdf"
+        "0x955c45177e6709ee5aabc7a78d0c75270ec8dfe9ee24c16fcfd5f6cee1d9793c"
       ],
-      "trade_time": "2026-09-07 15:23:40",
-      "token_id": "50707302193380141979852757945859046722099540890579429886740718603494418059178",
+      "trade_time": "2026-09-07 15:49:05",
+      "token_id": "105459422646097198255358035011248003465783285797968380036162867462843991804995",
       "exited": false,
       "stop_breach_since": null,
       "stop_attempts": 0,
-      "entry_bid": 0.96,
-      "entry_ask": 0.97,
-      "entry_mid": 0.965,
+      "entry_bid": 0.97,
+      "entry_ask": 0.98,
+      "entry_mid": 0.975,
       "entry_spread": 0.01
     }
   ],
@@ -213,6 +213,10 @@
     1788789600,
     1788790200,
     1788790500,
-    1788790800
+    1788790800,
+    1788791100,
+    1788791400,
+    1788791700,
+    1788792300
   ]
 }
