@@ -74,8 +74,25 @@
   "pending": [
     {
       "config": "mid0.94",
-      "window_end": 1788807900,
-      "side": "Down",
+      "window_end": 1788808500,
+      "side": "Up",
+      "shares": 5.21,
+      "avg_price": 0.96,
+      "best_ask": 0.96,
+      "best_bid": 0.95,
+      "mid": 0.955,
+      "spread": 0.01,
+      "cost_usd": 5.0016,
+      "fee_usd": 0.014,
+      "slippage": 0.0,
+      "held_for_s": 5.2,
+      "secs_to_close": 68.8,
+      "trade_time": "2026-09-07 20:18:51"
+    },
+    {
+      "config": "sustain15",
+      "window_end": 1788808500,
+      "side": "Up",
       "shares": 5.1,
       "avg_price": 0.98,
       "best_ask": 0.98,
@@ -85,13 +102,13 @@
       "cost_usd": 4.998,
       "fee_usd": 0.007,
       "slippage": 0.0,
-      "held_for_s": 5.1,
-      "secs_to_close": 37.5,
-      "trade_time": "2026-09-07 20:09:22"
+      "held_for_s": 15.5,
+      "secs_to_close": 58.4,
+      "trade_time": "2026-09-07 20:19:01"
     },
     {
-      "config": "mid0.94",
-      "window_end": 1788808200,
+      "config": "sustain30",
+      "window_end": 1788808500,
       "side": "Up",
       "shares": 5.05,
       "avg_price": 0.99,
@@ -102,9 +119,9 @@
       "cost_usd": 4.9995,
       "fee_usd": 0.0035,
       "slippage": -0.0,
-      "held_for_s": 5.1,
-      "secs_to_close": 13.6,
-      "trade_time": "2026-09-07 20:14:46"
+      "held_for_s": 31.0,
+      "secs_to_close": 42.9,
+      "trade_time": "2026-09-07 20:19:17"
     }
   ],
   "traded": {
@@ -153,7 +170,8 @@
       1788807300,
       1788807600,
       1788807900,
-      1788808200
+      1788808200,
+      1788808500
     ],
     "sustain15": [
       1788793500,
@@ -180,13 +198,15 @@
       1788806400,
       1788806700,
       1788807300,
-      1788807600
+      1788807600,
+      1788808500
     ],
     "sustain30": [
       1788798000,
       1788799800,
       1788804600,
-      1788807600
+      1788807600,
+      1788808500
     ]
   }
 }

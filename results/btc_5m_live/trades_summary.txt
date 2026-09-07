@@ -1,0 +1,43 @@
+POLYMARKET BTC 5-MINUTE STRATEGY -- TRADE SUMMARY
+generated 2026-09-07 20:24:28
+==============================================================
+
+ALL TRADES
+  trades          200
+  won             183   (91.5%)
+  lost outright   12
+  stopped out     5
+  avg entry price 0.9569
+  capital cycled  $1,220.54
+  P&L             $-41.10   (-3.37% on turnover)
+
+v1  ask-triggered (before 2026-09-07 09:55:55)
+  trades          134
+  won             122   (91.0%)
+  lost outright   12
+  stopped out     0
+  avg entry price 0.9484
+  capital cycled  $891.53
+  P&L             $-38.04   (-4.27% on turnover)
+
+v2  mid-triggered + stop-loss (after)
+  trades          66
+  won             61   (92.4%)
+  lost outright   0
+  stopped out     5
+  avg entry price 0.9744
+  capital cycled  $329.01
+  P&L             $-3.07   (-0.93% on turnover)
+
+==============================================================
+NOTE ON THE TWO ERAS
+  v1 triggered on the best ASK. The backtest that justified the
+  strategy read TRADE PRINTS. Those are not the same signal: only
+  13.5% of v1 trades would have been taken by the validated rule,
+  and 11 of its 12 losses came from the other 86.5%.
+
+  v2 triggers on the mid with a spread guard, and adds a stop-loss
+  at 0.70 which converts a total loss into a partial one.
+
+  Live trading was stopped on 2026-09-07; the bot now runs in
+  collect-only mode gathering order-book data at no risk.
