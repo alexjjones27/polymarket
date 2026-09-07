@@ -180,11 +180,30 @@ def append_trade_log(row: dict) -> None:
               "held_for_s", "order_id", "tx_hashes", "resolved_won", "trade_time",
               "exited", "exit_price", "exit_proceeds_usd", "realized_pnl_usd", "exit_time",
               "false_stop", "entry_bid", "entry_ask", "entry_mid", "entry_spread"]
-    write_header = not TRADE_LOG_PATH.exists()
+    # The header must be migrated, not assumed. Adding columns while an old file
+    # exists silently writes wider rows under a narrower header, so csv.DictReader
+    # maps by the stale names and every new column reads back as None. That happened:
+    # a real stop-out was recorded correctly on disk (exit 0.69, realised -$1.515)
+    # but read back as a full -$5.00 loss, overstating losses by $3.48.
+    existing = []
+    if TRADE_LOG_PATH.exists():
+        with open(TRADE_LOG_PATH, newline="") as f:
+            existing = list(csv.reader(f))
+    if existing and existing[0] != header:
+        padded = [r + [""] * (len(header) - len(r)) if len(r) < len(header) else r[:len(header)]
+                  for r in existing[1:]]
+        with open(TRADE_LOG_PATH, "w", newline="") as f:
+            w = csv.writer(f)
+            w.writerow(header)
+            w.writerows(padded)
+        log(f"trade log header migrated {len(existing[0])} -> {len(header)} columns")
+        existing = []
+
     with open(TRADE_LOG_PATH, "a", newline="") as f:
         w = csv.DictWriter(f, fieldnames=header)
-        if write_header:
-            w.writeheader()
+        if not TRADE_LOG_PATH.exists() or not existing:
+            if TRADE_LOG_PATH.stat().st_size == 0:
+                w.writeheader()
         w.writerow({k: row.get(k, "") for k in header})
 
 
