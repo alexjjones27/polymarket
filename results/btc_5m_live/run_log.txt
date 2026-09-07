@@ -13994,3 +13994,13 @@
 2026-09-07 10:15:00 window 1788771900: Up poll error: PolyApiException[status_code=404, error_message={'error': 'No orderbook exists for the requested token id'}]
 2026-09-07 10:15:00 window 1788771900: Down poll error: PolyApiException[status_code=404, error_message={'error': 'No orderbook exists for the requested token id'}]
 2026-09-07 10:15:02 window 1788771900: monitoring period expired, no qualifying sustained crossing
+2026-09-07 10:17:44 Starting. threshold=0.94 sustain=5s stop=0.7/2s consecutive_losses=0, 1 pending settlement(s).
+2026-09-07 10:18:30 window 1788772500: now tracking (secs_to_close=90)
+2026-09-07 10:18:40 SETTLED window 1788772200: Up WON (consecutive_losses=0)
+2026-09-07 10:19:09 window 1788772500: BUY Down 5.15 @ 0.97 (sustained 5.5s on mid 0.965, bid 0.960 / ask 0.970, spread 0.010) = $4.9955 -- order 0x0ffbbf44ee9e09043bb61b53084dc88315f5a7282e345ad49fe627b35b1bc758
+2026-09-07 10:23:30 window 1788772800: now tracking (secs_to_close=90)
+2026-09-07 10:23:36 window 1788772800: BUY Down 5.09 @ 0.98 (sustained 5.2s on mid 0.975, bid 0.970 / ask 0.980, spread 0.010) = $4.9882 -- order 0x4bd344cf37615429bd246e347c8dc4211382b98e80058963a305a2cb2d91d6dd
+2026-09-07 10:23:40 SETTLED window 1788772500: Down WON (consecutive_losses=0)
+2026-09-07 10:28:02 SETTLED window 1788772800: Down WON (consecutive_losses=0)
+2026-09-07 10:28:30 window 1788773100: now tracking (secs_to_close=90)
+2026-09-07 10:28:57 window 1788773100: BUY Up 5.09 @ 0.98 (sustained 5.4s on mid 0.975, bid 0.970 / ask 0.980, spread 0.010) = $4.9882 -- order 0xc85b62daf0fba297fab3c5978f943cbb5e21a5ae20c45f376177b8fac8c1e903
