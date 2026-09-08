@@ -1,0 +1,3 @@
+asset,window_close_utc,prev_outcome,bet_side,entry_time_utc,market_price_up,entry_ask,shares,cost_usd,fee_usd,resolved_up,won,pnl_usd,settle_time_utc,note
+btc,2026-09-08T08:00:00+00:00,DOWN,,,,,,,,,,,,declined: price=0.0185
+eth,2026-09-08T08:00:00+00:00,DOWN,Up,2026-09-08T07:13:33+00:00,0.057,0.062,80.6452,5.0,0.3283,,,,,"VOIDED - entered at 07:13 UTC, outside the backtested 04:06-04:30 window; rule did not match the backtest"

@@ -1,0 +1,5 @@
+2026-09-08 07:13:32 UTC  hour-08 paper trader started (PAPER ONLY, no real orders). 0 pending.
+2026-09-08 07:13:32 UTC  btc 1788854400: no usable price (0.0185) -- declining
+2026-09-08 07:13:33 UTC  PAPER ETH 1788854400: prev=DOWN -> buy Up 80.65@0.0620 (mid_up=0.0570) cost $5.00
+2026-09-08 07:15:25 UTC  VOIDED 1 mistimed paper trade(s); entry window narrowed to open+400s..open+1800s
+2026-09-08 07:15:42 UTC  hour-08 paper trader started (PAPER ONLY, no real orders). 0 pending.
