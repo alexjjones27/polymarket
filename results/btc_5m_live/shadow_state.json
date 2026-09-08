@@ -230,13 +230,20 @@
     "sustain30|1788867300|Down": 1788867543.9822526,
     "sustain15|1788867600|Down": 1788867870.6843636,
     "sustain30|1788867600|Down": 1788867870.6843636,
-    "sustain30|1788867900|Down": 1788868122.7183394
+    "sustain30|1788867900|Down": 1788868122.7183394,
+    "sustain15|1788868200|Down": 1788868463.8536565,
+    "sustain30|1788868200|Down": 1788868463.8536565,
+    "mid0.94|1788868500|Up": 1788868711.216706,
+    "sustain15|1788868500|Up": 1788868711.216706,
+    "sustain30|1788868500|Up": 1788868711.216706,
+    "sustain15|1788869100|Up": 1788869311.344785,
+    "sustain30|1788869100|Up": 1788869311.344785
   },
   "pending": [
     {
       "config": "mid0.94",
-      "window_end": 1788867600,
-      "side": "Down",
+      "window_end": 1788869100,
+      "side": "Up",
       "shares": 5.05,
       "avg_price": 0.99,
       "best_ask": 0.99,
@@ -247,42 +254,8 @@
       "fee_usd": 0.0035,
       "slippage": -0.0,
       "held_for_s": 5.4,
-      "secs_to_close": 23.9,
-      "trade_time": "2026-09-08 12:44:36"
-    },
-    {
-      "config": "mid0.94",
-      "window_end": 1788867900,
-      "side": "Down",
-      "shares": 5.15,
-      "avg_price": 0.9783,
-      "best_ask": 0.97,
-      "best_bid": 0.96,
-      "mid": 0.965,
-      "spread": 0.01,
-      "cost_usd": 5.0385,
-      "fee_usd": 0.0076,
-      "slippage": 0.0083,
-      "held_for_s": 5.3,
-      "secs_to_close": 72.0,
-      "trade_time": "2026-09-08 12:48:48"
-    },
-    {
-      "config": "sustain15",
-      "window_end": 1788867900,
-      "side": "Down",
-      "shares": 5.15,
-      "avg_price": 0.97,
-      "best_ask": 0.97,
-      "best_bid": 0.96,
-      "mid": 0.965,
-      "spread": 0.01,
-      "cost_usd": 4.9955,
-      "fee_usd": 0.0105,
-      "slippage": -0.0,
-      "held_for_s": 15.9,
-      "secs_to_close": 61.4,
-      "trade_time": "2026-09-08 12:48:58"
+      "secs_to_close": 83.3,
+      "trade_time": "2026-09-08 13:08:36"
     }
   ],
   "traded": {
@@ -438,7 +411,9 @@
       1788867000,
       1788867300,
       1788867600,
-      1788867900
+      1788867900,
+      1788868200,
+      1788869100
     ],
     "sustain15": [
       1788793500,
